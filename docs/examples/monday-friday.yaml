@@ -1,0 +1,74 @@
+# Weekly Calendar Strategy
+# Buy Monday open, sell Friday close
+
+$schema: https://utss.dev/schema/v2/strategy.json
+
+info:
+  id: weekly_momentum
+  name: Weekly Momentum Strategy
+  version: "1.0"
+  description: |
+    Calendar-based strategy that captures intra-week momentum.
+    Buy at Monday open, sell at Friday close.
+  tags:
+    - calendar
+    - momentum
+    - weekly
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - SPY
+    - QQQ
+
+rules:
+  - name: Monday Entry
+    description: Enter position at Monday open
+    when:
+      type: comparison
+      left:
+        type: calendar
+        day_of_week: monday
+        price: open
+      operator: ">"
+      right:
+        type: constant
+        value: 0
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 50
+
+  - name: Friday Exit
+    description: Exit position at Friday close
+    when:
+      type: comparison
+      left:
+        type: calendar
+        day_of_week: friday
+        price: close
+      operator: ">"
+      right:
+        type: constant
+        value: 0
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+
+constraints:
+  max_positions: 2
+  stop_loss:
+    percent: 3
+  no_shorting: true
+
+schedule:
+  frequency: daily
+  trading_days:
+    - monday
+    - friday

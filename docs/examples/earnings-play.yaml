@@ -1,0 +1,108 @@
+# Earnings Volatility Strategy
+# Trade around earnings announcements
+
+$schema: https://utss.dev/schema/v2/strategy.json
+
+info:
+  id: earnings_play
+  name: Earnings Volatility Strategy
+  version: "1.0"
+  description: |
+    Event-driven strategy that takes positions before earnings announcements
+    and exits after the event.
+  tags:
+    - event-driven
+    - earnings
+    - volatility
+  visibility: public
+
+universe:
+  type: screener
+  base: NASDAQ100
+  filters:
+    - type: comparison
+      left:
+        type: fundamental
+        metric: MARKET_CAP
+      operator: ">"
+      right:
+        type: constant
+        value: 10000000000  # > $10B market cap
+  limit: 20
+  sort_by:
+    type: indicator
+    indicator: ATR
+    params:
+      period: 14
+  sort_order: desc
+
+rules:
+  - name: Pre-earnings Entry
+    description: Enter position 3 days before earnings
+    when:
+      type: and
+      conditions:
+        - type: comparison
+          left:
+            type: event
+            event: EARNINGS_RELEASE
+            days_before: 3
+          operator: "="
+          right:
+            type: constant
+            value: 1
+        - type: comparison
+          left:
+            type: indicator
+            indicator: RSI
+            params:
+              period: 14
+          operator: "<"
+          right:
+            type: constant
+            value: 60
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: risk_based
+        risk_percent: 1
+        stop_distance:
+          type: indicator
+          indicator: ATR
+          params:
+            period: 14
+
+  - name: Post-earnings Exit
+    description: Exit position 1 day after earnings
+    when:
+      type: comparison
+      left:
+        type: event
+        event: EARNINGS_RELEASE
+        days_after: 1
+      operator: "="
+      right:
+        type: constant
+        value: 1
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+
+constraints:
+  max_positions: 5
+  max_position_size: 10
+  max_drawdown: 15
+  daily_loss_limit: 3
+  stop_loss:
+    atr_multiple: 2
+  no_shorting: true
+  no_leverage: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York

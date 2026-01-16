@@ -1,0 +1,80 @@
+# Golden Cross Strategy
+# Classic moving average crossover strategy
+
+$schema: https://utss.dev/schema/v2/strategy.json
+
+info:
+  id: golden_cross
+  name: Golden Cross Strategy
+  version: "1.0"
+  description: |
+    Trend-following strategy using SMA(50) and SMA(200) crossover.
+    Golden Cross (buy): SMA(50) crosses above SMA(200)
+    Death Cross (sell): SMA(50) crosses below SMA(200)
+  tags:
+    - trend-following
+    - moving-average
+    - crossover
+  visibility: public
+
+universe:
+  type: index
+  index: SP500
+
+components:
+  signals:
+    sma_50:
+      type: indicator
+      indicator: SMA
+      params:
+        period: 50
+
+    sma_200:
+      type: indicator
+      indicator: SMA
+      params:
+        period: 200
+
+rules:
+  - name: Golden Cross - Buy
+    description: Buy when SMA(50) crosses above SMA(200)
+    when:
+      type: cross
+      signal:
+        $ref: "#/components/signals/sma_50"
+      threshold:
+        $ref: "#/components/signals/sma_200"
+      direction: above
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 5
+
+  - name: Death Cross - Sell
+    description: Sell when SMA(50) crosses below SMA(200)
+    when:
+      type: cross
+      signal:
+        $ref: "#/components/signals/sma_50"
+      threshold:
+        $ref: "#/components/signals/sma_200"
+      direction: below
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+
+constraints:
+  max_positions: 10
+  max_position_size: 10
+  trailing_stop:
+    percent: 10
+  no_shorting: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true

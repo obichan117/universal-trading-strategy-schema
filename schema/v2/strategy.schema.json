@@ -1,0 +1,797 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://utss.dev/schema/v2/strategy.json",
+  "title": "Universal Trading Strategy Schema (UTSS) v2",
+  "description": "A comprehensive, composable schema for expressing any trading strategy",
+  "type": "object",
+  "required": ["info", "universe", "rules"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema URL for validation"
+    },
+    "info": { "$ref": "#/components/Info" },
+    "universe": { "$ref": "#/components/Universe" },
+    "rules": {
+      "type": "array",
+      "description": "Trading rules (condition -> action pairs)",
+      "items": { "$ref": "#/components/Rule" },
+      "minItems": 1
+    },
+    "constraints": { "$ref": "#/components/Constraints" },
+    "schedule": { "$ref": "#/components/Schedule" },
+    "components": { "$ref": "#/components/Components" }
+  },
+
+  "components": {
+    "Info": {
+      "type": "object",
+      "description": "Strategy metadata",
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "author": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" }
+          },
+          "required": ["id", "name"]
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 10
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "private", "unlisted"],
+          "default": "private"
+        }
+      }
+    },
+
+    "Signal": {
+      "description": "Produces a numeric value from market data",
+      "oneOf": [
+        { "$ref": "#/components/PriceSignal" },
+        { "$ref": "#/components/IndicatorSignal" },
+        { "$ref": "#/components/FundamentalSignal" },
+        { "$ref": "#/components/CalendarSignal" },
+        { "$ref": "#/components/EventSignal" },
+        { "$ref": "#/components/RelativeSignal" },
+        { "$ref": "#/components/ConstantSignal" },
+        { "$ref": "#/components/ArithmeticSignal" },
+        { "$ref": "#/components/Reference" }
+      ]
+    },
+
+    "PriceSignal": {
+      "type": "object",
+      "description": "Raw price data signal",
+      "required": ["type", "field"],
+      "properties": {
+        "type": { "const": "price" },
+        "field": {
+          "type": "string",
+          "enum": ["open", "high", "low", "close", "volume", "vwap"]
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Bars back (0 = current, 1 = previous)",
+          "default": 0
+        },
+        "timeframe": { "$ref": "#/components/Timeframe" }
+      }
+    },
+
+    "IndicatorSignal": {
+      "type": "object",
+      "description": "Technical indicator signal",
+      "required": ["type", "indicator"],
+      "properties": {
+        "type": { "const": "indicator" },
+        "indicator": {
+          "type": "string",
+          "enum": [
+            "SMA",
+            "EMA",
+            "WMA",
+            "DEMA",
+            "TEMA",
+            "RSI",
+            "MACD",
+            "MACD_SIGNAL",
+            "MACD_HIST",
+            "STOCH_K",
+            "STOCH_D",
+            "STOCH_RSI",
+            "BB_UPPER",
+            "BB_MIDDLE",
+            "BB_LOWER",
+            "BB_WIDTH",
+            "BB_PERCENT",
+            "ATR",
+            "ADX",
+            "PLUS_DI",
+            "MINUS_DI",
+            "CCI",
+            "MFI",
+            "OBV",
+            "VWAP",
+            "SUPERTREND",
+            "ICHIMOKU_TENKAN",
+            "ICHIMOKU_KIJUN",
+            "ICHIMOKU_SENKOU_A",
+            "ICHIMOKU_SENKOU_B"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Indicator-specific parameters",
+          "properties": {
+            "period": { "type": "integer", "minimum": 1 },
+            "fast_period": { "type": "integer", "minimum": 1 },
+            "slow_period": { "type": "integer", "minimum": 1 },
+            "signal_period": { "type": "integer", "minimum": 1 },
+            "std_dev": { "type": "number", "minimum": 0 },
+            "source": {
+              "type": "string",
+              "enum": ["open", "high", "low", "close", "hl2", "hlc3", "ohlc4"]
+            }
+          }
+        },
+        "offset": { "type": "integer", "default": 0 },
+        "timeframe": { "$ref": "#/components/Timeframe" }
+      }
+    },
+
+    "FundamentalSignal": {
+      "type": "object",
+      "description": "Fundamental data signal",
+      "required": ["type", "metric"],
+      "properties": {
+        "type": { "const": "fundamental" },
+        "metric": {
+          "type": "string",
+          "enum": [
+            "PE_RATIO",
+            "PB_RATIO",
+            "PS_RATIO",
+            "PEG_RATIO",
+            "EV_EBITDA",
+            "ROE",
+            "ROA",
+            "ROIC",
+            "PROFIT_MARGIN",
+            "OPERATING_MARGIN",
+            "NET_MARGIN",
+            "DIVIDEND_YIELD",
+            "PAYOUT_RATIO",
+            "MARKET_CAP",
+            "ENTERPRISE_VALUE",
+            "REVENUE",
+            "EBITDA",
+            "NET_INCOME",
+            "DEBT_TO_EQUITY",
+            "CURRENT_RATIO",
+            "QUICK_RATIO",
+            "EPS",
+            "EPS_GROWTH",
+            "REVENUE_GROWTH"
+          ]
+        }
+      }
+    },
+
+    "CalendarSignal": {
+      "type": "object",
+      "description": "Calendar/date pattern signal",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "calendar" },
+        "day_of_week": {
+          "type": "string",
+          "enum": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        },
+        "day_of_month": {
+          "type": "integer",
+          "description": "-1 for last day, 1 for first day, etc.",
+          "minimum": -31,
+          "maximum": 31
+        },
+        "week_of_month": {
+          "type": "integer",
+          "description": "Week within month (1-5, -1 for last)",
+          "minimum": -5,
+          "maximum": 5
+        },
+        "month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "price": {
+          "type": "string",
+          "enum": ["open", "close"],
+          "default": "close"
+        }
+      }
+    },
+
+    "EventSignal": {
+      "type": "object",
+      "description": "Event-driven signal",
+      "required": ["type", "event"],
+      "properties": {
+        "type": { "const": "event" },
+        "event": {
+          "type": "string",
+          "enum": [
+            "EARNINGS_RELEASE",
+            "DIVIDEND_EX_DATE",
+            "DIVIDEND_PAY_DATE",
+            "STOCK_SPLIT",
+            "IPO",
+            "DELISTING",
+            "FDA_APPROVAL",
+            "PRODUCT_LAUNCH",
+            "INDEX_ADD",
+            "INDEX_REMOVE",
+            "INSIDER_BUY",
+            "INSIDER_SELL",
+            "ANALYST_UPGRADE",
+            "ANALYST_DOWNGRADE"
+          ]
+        },
+        "days_before": { "type": "integer", "minimum": 0 },
+        "days_after": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "RelativeSignal": {
+      "type": "object",
+      "description": "Signal relative to a benchmark",
+      "required": ["type", "signal", "benchmark", "measure"],
+      "properties": {
+        "type": { "const": "relative" },
+        "signal": { "$ref": "#/components/Signal" },
+        "benchmark": {
+          "type": "string",
+          "description": "Index or symbol for comparison"
+        },
+        "measure": {
+          "type": "string",
+          "enum": ["ratio", "difference", "beta", "correlation", "percentile", "z_score"]
+        },
+        "lookback": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "ConstantSignal": {
+      "type": "object",
+      "description": "A constant numeric value",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "constant" },
+        "value": { "type": "number" }
+      }
+    },
+
+    "ArithmeticSignal": {
+      "type": "object",
+      "description": "Arithmetic operation on signals",
+      "required": ["type", "operator", "operands"],
+      "properties": {
+        "type": { "const": "arithmetic" },
+        "operator": {
+          "type": "string",
+          "enum": ["add", "subtract", "multiply", "divide", "min", "max", "avg"]
+        },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/components/Signal" },
+          "minItems": 2
+        }
+      }
+    },
+
+    "Condition": {
+      "description": "Produces a boolean from signals",
+      "oneOf": [
+        { "$ref": "#/components/ComparisonCondition" },
+        { "$ref": "#/components/CrossCondition" },
+        { "$ref": "#/components/RangeCondition" },
+        { "$ref": "#/components/AndCondition" },
+        { "$ref": "#/components/OrCondition" },
+        { "$ref": "#/components/NotCondition" },
+        { "$ref": "#/components/TemporalCondition" },
+        { "$ref": "#/components/Reference" }
+      ]
+    },
+
+    "ComparisonCondition": {
+      "type": "object",
+      "description": "Compare a signal to a value or another signal",
+      "required": ["type", "left", "operator", "right"],
+      "properties": {
+        "type": { "const": "comparison" },
+        "left": { "$ref": "#/components/Signal" },
+        "operator": {
+          "type": "string",
+          "enum": ["<", "<=", "=", ">=", ">", "!="]
+        },
+        "right": { "$ref": "#/components/Signal" }
+      }
+    },
+
+    "CrossCondition": {
+      "type": "object",
+      "description": "Detect when one signal crosses another",
+      "required": ["type", "signal", "threshold", "direction"],
+      "properties": {
+        "type": { "const": "cross" },
+        "signal": { "$ref": "#/components/Signal" },
+        "threshold": { "$ref": "#/components/Signal" },
+        "direction": {
+          "type": "string",
+          "enum": ["above", "below"]
+        }
+      }
+    },
+
+    "RangeCondition": {
+      "type": "object",
+      "description": "Check if signal is within a range",
+      "required": ["type", "signal", "min", "max"],
+      "properties": {
+        "type": { "const": "range" },
+        "signal": { "$ref": "#/components/Signal" },
+        "min": { "$ref": "#/components/Signal" },
+        "max": { "$ref": "#/components/Signal" },
+        "inclusive": { "type": "boolean", "default": true }
+      }
+    },
+
+    "AndCondition": {
+      "type": "object",
+      "description": "All conditions must be true",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "and" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/components/Condition" },
+          "minItems": 2
+        }
+      }
+    },
+
+    "OrCondition": {
+      "type": "object",
+      "description": "Any condition must be true",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "or" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/components/Condition" },
+          "minItems": 2
+        }
+      }
+    },
+
+    "NotCondition": {
+      "type": "object",
+      "description": "Negate a condition",
+      "required": ["type", "condition"],
+      "properties": {
+        "type": { "const": "not" },
+        "condition": { "$ref": "#/components/Condition" }
+      }
+    },
+
+    "TemporalCondition": {
+      "type": "object",
+      "description": "Time-based condition modifiers",
+      "required": ["type", "condition", "modifier"],
+      "properties": {
+        "type": { "const": "temporal" },
+        "condition": { "$ref": "#/components/Condition" },
+        "modifier": {
+          "type": "string",
+          "enum": ["for_bars", "within_bars", "since_bars", "first_time", "nth_time"]
+        },
+        "bars": { "type": "integer", "minimum": 1 },
+        "n": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "Action": {
+      "description": "What to do when a condition is met",
+      "oneOf": [
+        { "$ref": "#/components/TradeAction" },
+        { "$ref": "#/components/RebalanceAction" },
+        { "$ref": "#/components/HoldAction" }
+      ]
+    },
+
+    "TradeAction": {
+      "type": "object",
+      "description": "Execute a trade",
+      "required": ["type", "direction", "sizing"],
+      "properties": {
+        "type": { "const": "trade" },
+        "direction": {
+          "type": "string",
+          "enum": ["buy", "sell", "short", "cover"]
+        },
+        "sizing": { "$ref": "#/components/Sizing" },
+        "order_type": {
+          "type": "string",
+          "enum": ["market", "limit", "stop", "stop_limit"],
+          "default": "market"
+        },
+        "limit_price": { "$ref": "#/components/Signal" },
+        "stop_price": { "$ref": "#/components/Signal" },
+        "time_in_force": {
+          "type": "string",
+          "enum": ["day", "gtc", "ioc", "fok"],
+          "default": "day"
+        }
+      }
+    },
+
+    "RebalanceAction": {
+      "type": "object",
+      "description": "Rebalance to target weights",
+      "required": ["type", "targets"],
+      "properties": {
+        "type": { "const": "rebalance" },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "weight"],
+            "properties": {
+              "symbol": { "type": "string" },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Minimum deviation to trigger rebalance",
+          "default": 0.05
+        }
+      }
+    },
+
+    "HoldAction": {
+      "type": "object",
+      "description": "Explicitly do nothing",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "hold" },
+        "reason": { "type": "string" }
+      }
+    },
+
+    "Sizing": {
+      "description": "How to size a position",
+      "oneOf": [
+        { "$ref": "#/components/FixedAmountSizing" },
+        { "$ref": "#/components/PercentEquitySizing" },
+        { "$ref": "#/components/PercentPositionSizing" },
+        { "$ref": "#/components/RiskBasedSizing" },
+        { "$ref": "#/components/KellySizing" },
+        { "$ref": "#/components/VolatilityAdjustedSizing" }
+      ]
+    },
+
+    "FixedAmountSizing": {
+      "type": "object",
+      "required": ["type", "amount"],
+      "properties": {
+        "type": { "const": "fixed_amount" },
+        "amount": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "default": "USD" }
+      }
+    },
+
+    "PercentEquitySizing": {
+      "type": "object",
+      "required": ["type", "percent"],
+      "properties": {
+        "type": { "const": "percent_of_equity" },
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+
+    "PercentPositionSizing": {
+      "type": "object",
+      "required": ["type", "percent"],
+      "properties": {
+        "type": { "const": "percent_of_position" },
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+
+    "RiskBasedSizing": {
+      "type": "object",
+      "required": ["type", "risk_percent", "stop_distance"],
+      "properties": {
+        "type": { "const": "risk_based" },
+        "risk_percent": {
+          "type": "number",
+          "description": "Percent of equity to risk",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stop_distance": { "$ref": "#/components/Signal" }
+      }
+    },
+
+    "KellySizing": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "kelly" },
+        "fraction": {
+          "type": "number",
+          "description": "Fraction of Kelly (0.5 = half Kelly)",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lookback": {
+          "type": "integer",
+          "description": "Bars for win rate calculation",
+          "default": 100
+        }
+      }
+    },
+
+    "VolatilityAdjustedSizing": {
+      "type": "object",
+      "required": ["type", "target_volatility"],
+      "properties": {
+        "type": { "const": "volatility_adjusted" },
+        "target_volatility": {
+          "type": "number",
+          "description": "Target annualized volatility",
+          "minimum": 0
+        },
+        "lookback": { "type": "integer", "default": 20 }
+      }
+    },
+
+    "Rule": {
+      "type": "object",
+      "description": "A condition-action pair",
+      "required": ["name", "when", "then"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable rule name"
+        },
+        "description": { "type": "string" },
+        "when": { "$ref": "#/components/Condition" },
+        "then": { "$ref": "#/components/Action" },
+        "priority": {
+          "type": "integer",
+          "description": "Higher priority rules evaluated first",
+          "default": 0
+        },
+        "enabled": { "type": "boolean", "default": true }
+      }
+    },
+
+    "Universe": {
+      "description": "Which assets to trade",
+      "oneOf": [
+        { "$ref": "#/components/StaticUniverse" },
+        { "$ref": "#/components/IndexUniverse" },
+        { "$ref": "#/components/ScreenerUniverse" }
+      ]
+    },
+
+    "StaticUniverse": {
+      "type": "object",
+      "required": ["type", "symbols"],
+      "properties": {
+        "type": { "const": "static" },
+        "symbols": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+
+    "IndexUniverse": {
+      "type": "object",
+      "required": ["type", "index"],
+      "properties": {
+        "type": { "const": "index" },
+        "index": {
+          "type": "string",
+          "enum": [
+            "SP500",
+            "NASDAQ100",
+            "DOW30",
+            "RUSSELL2000",
+            "RUSSELL1000",
+            "NIKKEI225",
+            "TOPIX",
+            "TOPIX100",
+            "TOPIX500",
+            "JPXNIKKEI400"
+          ]
+        },
+        "filters": {
+          "type": "array",
+          "items": { "$ref": "#/components/Condition" }
+        }
+      }
+    },
+
+    "ScreenerUniverse": {
+      "type": "object",
+      "required": ["type", "filters"],
+      "properties": {
+        "type": { "const": "screener" },
+        "base": {
+          "type": "string",
+          "description": "Starting universe (index or 'all')"
+        },
+        "filters": {
+          "type": "array",
+          "items": { "$ref": "#/components/Condition" },
+          "minItems": 1
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Max number of symbols",
+          "minimum": 1
+        },
+        "sort_by": { "$ref": "#/components/Signal" },
+        "sort_order": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
+        }
+      }
+    },
+
+    "Constraints": {
+      "type": "object",
+      "description": "Risk and position constraints",
+      "properties": {
+        "max_positions": { "type": "integer", "minimum": 1 },
+        "max_position_size": {
+          "type": "number",
+          "description": "Max % of portfolio in single position",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_sector_exposure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_drawdown": {
+          "type": "number",
+          "description": "Stop trading at this drawdown %",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "daily_loss_limit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stop_loss": {
+          "type": "object",
+          "properties": {
+            "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "atr_multiple": { "type": "number", "minimum": 0 }
+          }
+        },
+        "take_profit": {
+          "type": "object",
+          "properties": {
+            "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "atr_multiple": { "type": "number", "minimum": 0 }
+          }
+        },
+        "trailing_stop": {
+          "type": "object",
+          "properties": {
+            "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "atr_multiple": { "type": "number", "minimum": 0 }
+          }
+        },
+        "no_shorting": { "type": "boolean", "default": false },
+        "no_leverage": { "type": "boolean", "default": true }
+      }
+    },
+
+    "Schedule": {
+      "type": "object",
+      "description": "When to evaluate the strategy",
+      "properties": {
+        "frequency": {
+          "type": "string",
+          "enum": ["tick", "1m", "5m", "15m", "30m", "1h", "4h", "daily", "weekly", "monthly"]
+        },
+        "market_hours_only": { "type": "boolean", "default": true },
+        "timezone": { "type": "string", "default": "America/New_York" },
+        "trading_days": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+          }
+        }
+      }
+    },
+
+    "Timeframe": {
+      "type": "string",
+      "enum": ["1m", "5m", "15m", "30m", "1h", "4h", "daily", "weekly", "monthly"]
+    },
+
+    "Reference": {
+      "type": "object",
+      "description": "Reference to a reusable component",
+      "required": ["$ref"],
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "description": "Path to component (e.g., #/components/signals/rsi_oversold)"
+        }
+      }
+    },
+
+    "Components": {
+      "type": "object",
+      "description": "Reusable named components",
+      "properties": {
+        "signals": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/components/Signal" }
+        },
+        "conditions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/components/Condition" }
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/components/Action" }
+        }
+      }
+    }
+  }
+}

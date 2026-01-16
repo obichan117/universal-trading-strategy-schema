@@ -1,0 +1,92 @@
+# RSI Reversal Strategy
+# Buy when RSI is oversold, sell when overbought
+
+$schema: https://utss.dev/schema/v2/strategy.json
+
+info:
+  id: rsi_reversal
+  name: RSI Reversal Strategy
+  version: "1.0"
+  description: |
+    A mean-reversion strategy that buys when RSI(14) drops below 30
+    and sells when RSI(14) rises above 70.
+  tags:
+    - reversal
+    - RSI
+    - mean-reversion
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - AAPL
+    - MSFT
+    - GOOGL
+
+# Reusable components
+components:
+  signals:
+    rsi_14:
+      type: indicator
+      indicator: RSI
+      params:
+        period: 14
+
+  conditions:
+    oversold:
+      type: comparison
+      left:
+        $ref: "#/components/signals/rsi_14"
+      operator: "<"
+      right:
+        type: constant
+        value: 30
+
+    overbought:
+      type: comparison
+      left:
+        $ref: "#/components/signals/rsi_14"
+      operator: ">"
+      right:
+        type: constant
+        value: 70
+
+rules:
+  - name: Buy on oversold
+    description: Enter long position when RSI drops below 30
+    when:
+      $ref: "#/components/conditions/oversold"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 10
+    priority: 1
+
+  - name: Sell on overbought
+    description: Exit position when RSI rises above 70
+    when:
+      $ref: "#/components/conditions/overbought"
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+    priority: 2
+
+constraints:
+  max_positions: 5
+  max_position_size: 20
+  stop_loss:
+    percent: 5
+  take_profit:
+    percent: 15
+  no_shorting: true
+  no_leverage: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
