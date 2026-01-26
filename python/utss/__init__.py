@@ -1,5 +1,5 @@
 """
-Universal Trading Strategy Schema (UTSS) v2
+Universal Trading Strategy Schema (UTSS) v2.1
 
 A comprehensive, composable schema for expressing any trading strategy.
 Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
@@ -8,8 +8,11 @@ Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
 from utss.models import (
     # Enums
     Timeframe,
+    Frequency,
     DayOfWeek,
     PriceField,
+    CalendarField,
+    PortfolioField,
     IndicatorType,
     FundamentalMetric,
     EventType,
@@ -18,11 +21,19 @@ from utss.models import (
     ComparisonOperator,
     CrossDirection,
     TemporalModifier,
+    ChangeDirection,
     TradeDirection,
     OrderType,
     TimeInForce,
+    RebalanceMethod,
+    AlertLevel,
+    AlertChannel,
+    ExternalSource,
     StockIndex,
     Visibility,
+    ParameterType,
+    # Parameter Reference
+    ParameterReference,
     # Signals
     IndicatorParams,
     PriceSignal,
@@ -30,9 +41,12 @@ from utss.models import (
     FundamentalSignal,
     CalendarSignal,
     EventSignal,
+    PortfolioSignal,
     RelativeSignal,
     ConstantSignal,
     ArithmeticSignal,
+    ExpressionSignal,
+    ExternalSignal,
     Reference,
     Signal,
     # Conditions
@@ -43,6 +57,10 @@ from utss.models import (
     OrCondition,
     NotCondition,
     TemporalCondition,
+    SequenceStep,
+    SequenceCondition,
+    ChangeCondition,
+    AlwaysCondition,
     Condition,
     # Sizing
     FixedAmountSizing,
@@ -51,11 +69,14 @@ from utss.models import (
     RiskBasedSizing,
     KellySizing,
     VolatilityAdjustedSizing,
+    ConditionalSizingCase,
+    ConditionalSizing,
     Sizing,
     # Actions
     TradeAction,
     RebalanceTarget,
     RebalanceAction,
+    AlertAction,
     HoldAction,
     Action,
     # Rules
@@ -64,14 +85,18 @@ from utss.models import (
     StaticUniverse,
     IndexUniverse,
     ScreenerUniverse,
+    DualUniverseSide,
+    DualUniverse,
     Universe,
     # Constraints
     StopConfig,
+    TrailingStopConfig,
+    TimeStop,
     Constraints,
     # Schedule
     Schedule,
-    # Components
-    Components,
+    # Parameters
+    Parameter,
     # Info
     Author,
     Info,
@@ -80,12 +105,15 @@ from utss.models import (
 )
 from utss.validator import validate_strategy, validate_yaml, ValidationError
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     # Enums
     "Timeframe",
+    "Frequency",
     "DayOfWeek",
     "PriceField",
+    "CalendarField",
+    "PortfolioField",
     "IndicatorType",
     "FundamentalMetric",
     "EventType",
@@ -94,11 +122,19 @@ __all__ = [
     "ComparisonOperator",
     "CrossDirection",
     "TemporalModifier",
+    "ChangeDirection",
     "TradeDirection",
     "OrderType",
     "TimeInForce",
+    "RebalanceMethod",
+    "AlertLevel",
+    "AlertChannel",
+    "ExternalSource",
     "StockIndex",
     "Visibility",
+    "ParameterType",
+    # Parameter Reference
+    "ParameterReference",
     # Signals
     "IndicatorParams",
     "PriceSignal",
@@ -106,9 +142,12 @@ __all__ = [
     "FundamentalSignal",
     "CalendarSignal",
     "EventSignal",
+    "PortfolioSignal",
     "RelativeSignal",
     "ConstantSignal",
     "ArithmeticSignal",
+    "ExpressionSignal",
+    "ExternalSignal",
     "Reference",
     "Signal",
     # Conditions
@@ -119,6 +158,10 @@ __all__ = [
     "OrCondition",
     "NotCondition",
     "TemporalCondition",
+    "SequenceStep",
+    "SequenceCondition",
+    "ChangeCondition",
+    "AlwaysCondition",
     "Condition",
     # Sizing
     "FixedAmountSizing",
@@ -127,11 +170,14 @@ __all__ = [
     "RiskBasedSizing",
     "KellySizing",
     "VolatilityAdjustedSizing",
+    "ConditionalSizingCase",
+    "ConditionalSizing",
     "Sizing",
     # Actions
     "TradeAction",
     "RebalanceTarget",
     "RebalanceAction",
+    "AlertAction",
     "HoldAction",
     "Action",
     # Rules
@@ -140,14 +186,18 @@ __all__ = [
     "StaticUniverse",
     "IndexUniverse",
     "ScreenerUniverse",
+    "DualUniverseSide",
+    "DualUniverse",
     "Universe",
     # Constraints
     "StopConfig",
+    "TrailingStopConfig",
+    "TimeStop",
     "Constraints",
     # Schedule
     "Schedule",
-    # Components
-    "Components",
+    # Parameters
+    "Parameter",
     # Info
     "Author",
     "Info",

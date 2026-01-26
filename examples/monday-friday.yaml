@@ -22,19 +22,22 @@ universe:
     - SPY
     - QQQ
 
+signals:
+  day_of_week:
+    type: calendar
+    field: day_of_week
+
 rules:
   - name: Monday Entry
     description: Enter position at Monday open
     when:
       type: comparison
       left:
-        type: calendar
-        day_of_week: monday
-        price: open
-      operator: ">"
+        $ref: "#/signals/day_of_week"
+      operator: "="
       right:
         type: constant
-        value: 0
+        value: 1  # Monday = 1 (Mon=1, Tue=2, ..., Fri=5)
     then:
       type: trade
       direction: buy
@@ -47,13 +50,11 @@ rules:
     when:
       type: comparison
       left:
-        type: calendar
-        day_of_week: friday
-        price: close
-      operator: ">"
+        $ref: "#/signals/day_of_week"
+      operator: "="
       right:
         type: constant
-        value: 0
+        value: 5  # Friday = 5
     then:
       type: trade
       direction: sell

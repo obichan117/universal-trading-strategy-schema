@@ -21,19 +21,18 @@ universe:
   type: index
   index: SP500
 
-components:
-  signals:
-    sma_50:
-      type: indicator
-      indicator: SMA
-      params:
-        period: 50
+signals:
+  sma_50:
+    type: indicator
+    indicator: SMA
+    params:
+      period: 50
 
-    sma_200:
-      type: indicator
-      indicator: SMA
-      params:
-        period: 200
+  sma_200:
+    type: indicator
+    indicator: SMA
+    params:
+      period: 200
 
 rules:
   - name: Golden Cross - Buy
@@ -41,9 +40,9 @@ rules:
     when:
       type: cross
       signal:
-        $ref: "#/components/signals/sma_50"
+        $ref: "#/signals/sma_50"
       threshold:
-        $ref: "#/components/signals/sma_200"
+        $ref: "#/signals/sma_200"
       direction: above
     then:
       type: trade
@@ -57,9 +56,9 @@ rules:
     when:
       type: cross
       signal:
-        $ref: "#/components/signals/sma_50"
+        $ref: "#/signals/sma_50"
       threshold:
-        $ref: "#/components/signals/sma_200"
+        $ref: "#/signals/sma_200"
       direction: below
     then:
       type: trade

@@ -1,7 +1,7 @@
 [project]
 name = "utss"
-version = "2.0.0"
-description = "Universal Trading Strategy Schema - Python types and validation"
+version = "2.1.0"
+description = "Universal Trading Strategy Schema - A composable schema for expressing any trading strategy"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "obichan117" }]
@@ -14,6 +14,8 @@ keywords = [
     "quantitative-finance",
     "algorithmic-trading",
     "pydantic",
+    "json-schema",
+    "llm",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -38,8 +40,11 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
+    "types-PyYAML>=6.0",
+    "twine>=5.0.0",
 ]
 
 [project.urls]

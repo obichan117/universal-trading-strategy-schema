@@ -29,12 +29,12 @@ universe:
         type: constant
         value: 10000000000  # > $10B market cap
   limit: 20
-  sort_by:
+  rank_by:
     type: indicator
     indicator: ATR
     params:
       period: 14
-  sort_order: desc
+  order: desc
 
 rules:
   - name: Pre-earnings Entry

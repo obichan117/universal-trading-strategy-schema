@@ -1,12 +1,12 @@
 """
-Universal Trading Strategy Schema (UTSS) v2 - Pydantic Models
+Universal Trading Strategy Schema (UTSS) v2.1 - Pydantic Models
 
 A comprehensive, composable schema for expressing any trading strategy.
 Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
 """
 
 from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +19,21 @@ from pydantic import BaseModel, ConfigDict, Field
 class Timeframe(str, Enum):
     """Trading timeframes."""
 
+    M1 = "1m"
+    M5 = "5m"
+    M15 = "15m"
+    M30 = "30m"
+    H1 = "1h"
+    H4 = "4h"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
+class Frequency(str, Enum):
+    """Evaluation frequency (includes tick)."""
+
+    TICK = "tick"
     M1 = "1m"
     M5 = "5m"
     M15 = "15m"
@@ -51,6 +66,43 @@ class PriceField(str, Enum):
     VWAP = "vwap"
 
 
+class CalendarField(str, Enum):
+    """Calendar signal fields."""
+
+    DAY_OF_WEEK = "day_of_week"
+    DAY_OF_MONTH = "day_of_month"
+    WEEK_OF_MONTH = "week_of_month"
+    MONTH = "month"
+    QUARTER = "quarter"
+    YEAR = "year"
+    IS_MONTH_START = "is_month_start"
+    IS_MONTH_END = "is_month_end"
+    IS_QUARTER_START = "is_quarter_start"
+    IS_QUARTER_END = "is_quarter_end"
+    IS_YEAR_START = "is_year_start"
+    IS_YEAR_END = "is_year_end"
+
+
+class PortfolioField(str, Enum):
+    """Portfolio signal fields."""
+
+    POSITION_QTY = "position_qty"
+    POSITION_VALUE = "position_value"
+    POSITION_SIDE = "position_side"
+    AVG_ENTRY_PRICE = "avg_entry_price"
+    UNREALIZED_PNL = "unrealized_pnl"
+    UNREALIZED_PNL_PCT = "unrealized_pnl_pct"
+    REALIZED_PNL = "realized_pnl"
+    DAYS_IN_POSITION = "days_in_position"
+    BARS_IN_POSITION = "bars_in_position"
+    EQUITY = "equity"
+    CASH = "cash"
+    BUYING_POWER = "buying_power"
+    MARGIN_USED = "margin_used"
+    DAILY_PNL = "daily_pnl"
+    DAILY_PNL_PCT = "daily_pnl_pct"
+
+
 class IndicatorType(str, Enum):
     """Technical indicator types."""
 
@@ -60,6 +112,9 @@ class IndicatorType(str, Enum):
     WMA = "WMA"
     DEMA = "DEMA"
     TEMA = "TEMA"
+    KAMA = "KAMA"
+    HULL = "HULL"
+    VWMA = "VWMA"
     # Momentum
     RSI = "RSI"
     MACD = "MACD"
@@ -68,26 +123,59 @@ class IndicatorType(str, Enum):
     STOCH_K = "STOCH_K"
     STOCH_D = "STOCH_D"
     STOCH_RSI = "STOCH_RSI"
+    ROC = "ROC"
+    MOMENTUM = "MOMENTUM"
+    WILLIAMS_R = "WILLIAMS_R"
+    CCI = "CCI"
+    MFI = "MFI"
+    CMO = "CMO"
+    TSI = "TSI"
+    # Trend
+    ADX = "ADX"
+    PLUS_DI = "PLUS_DI"
+    MINUS_DI = "MINUS_DI"
+    AROON_UP = "AROON_UP"
+    AROON_DOWN = "AROON_DOWN"
+    AROON_OSC = "AROON_OSC"
+    SUPERTREND = "SUPERTREND"
+    PSAR = "PSAR"
     # Volatility
+    ATR = "ATR"
+    STDDEV = "STDDEV"
+    VARIANCE = "VARIANCE"
     BB_UPPER = "BB_UPPER"
     BB_MIDDLE = "BB_MIDDLE"
     BB_LOWER = "BB_LOWER"
     BB_WIDTH = "BB_WIDTH"
     BB_PERCENT = "BB_PERCENT"
-    ATR = "ATR"
-    ADX = "ADX"
-    PLUS_DI = "PLUS_DI"
-    MINUS_DI = "MINUS_DI"
-    # Volume & Other
-    CCI = "CCI"
-    MFI = "MFI"
+    KC_UPPER = "KC_UPPER"
+    KC_MIDDLE = "KC_MIDDLE"
+    KC_LOWER = "KC_LOWER"
+    DC_UPPER = "DC_UPPER"
+    DC_MIDDLE = "DC_MIDDLE"
+    DC_LOWER = "DC_LOWER"
+    # Volume
     OBV = "OBV"
     VWAP = "VWAP"
-    SUPERTREND = "SUPERTREND"
+    AD = "AD"
+    CMF = "CMF"
+    KLINGER = "KLINGER"
+    # Statistical
+    HIGHEST = "HIGHEST"
+    LOWEST = "LOWEST"
+    RETURN = "RETURN"
+    DRAWDOWN = "DRAWDOWN"
+    ZSCORE = "ZSCORE"
+    PERCENTILE = "PERCENTILE"
+    RANK = "RANK"
+    CORRELATION = "CORRELATION"
+    BETA = "BETA"
+    # Ichimoku
     ICHIMOKU_TENKAN = "ICHIMOKU_TENKAN"
     ICHIMOKU_KIJUN = "ICHIMOKU_KIJUN"
     ICHIMOKU_SENKOU_A = "ICHIMOKU_SENKOU_A"
     ICHIMOKU_SENKOU_B = "ICHIMOKU_SENKOU_B"
+    ICHIMOKU_CHIKOU = "ICHIMOKU_CHIKOU"
 
 
 class FundamentalMetric(str, Enum):
@@ -99,6 +187,7 @@ class FundamentalMetric(str, Enum):
     PS_RATIO = "PS_RATIO"
     PEG_RATIO = "PEG_RATIO"
     EV_EBITDA = "EV_EBITDA"
+    EARNINGS_YIELD = "EARNINGS_YIELD"
     # Profitability
     ROE = "ROE"
     ROA = "ROA"
@@ -109,18 +198,30 @@ class FundamentalMetric(str, Enum):
     # Dividend
     DIVIDEND_YIELD = "DIVIDEND_YIELD"
     PAYOUT_RATIO = "PAYOUT_RATIO"
-    # Size & Growth
+    # Size & Financials
     MARKET_CAP = "MARKET_CAP"
     ENTERPRISE_VALUE = "ENTERPRISE_VALUE"
     REVENUE = "REVENUE"
     EBITDA = "EBITDA"
     NET_INCOME = "NET_INCOME"
-    DEBT_TO_EQUITY = "DEBT_TO_EQUITY"
-    CURRENT_RATIO = "CURRENT_RATIO"
-    QUICK_RATIO = "QUICK_RATIO"
     EPS = "EPS"
     EPS_GROWTH = "EPS_GROWTH"
     REVENUE_GROWTH = "REVENUE_GROWTH"
+    # Solvency
+    DEBT_TO_EQUITY = "DEBT_TO_EQUITY"
+    CURRENT_RATIO = "CURRENT_RATIO"
+    QUICK_RATIO = "QUICK_RATIO"
+    INTEREST_COVERAGE = "INTEREST_COVERAGE"
+    # Quality Scores
+    F_SCORE = "F_SCORE"
+    ALTMAN_Z = "ALTMAN_Z"
+    # Market Data
+    INDEX_WEIGHT = "INDEX_WEIGHT"
+    FREE_FLOAT = "FREE_FLOAT"
+    SHORT_INTEREST = "SHORT_INTEREST"
+    ANALYST_RATING = "ANALYST_RATING"
+    PRICE_TARGET = "PRICE_TARGET"
+    EARNINGS_SURPRISE = "EARNINGS_SURPRISE"
 
 
 class EventType(str, Enum):
@@ -140,6 +241,9 @@ class EventType(str, Enum):
     INSIDER_SELL = "INSIDER_SELL"
     ANALYST_UPGRADE = "ANALYST_UPGRADE"
     ANALYST_DOWNGRADE = "ANALYST_DOWNGRADE"
+    SEC_FILING_10K = "SEC_FILING_10K"
+    SEC_FILING_10Q = "SEC_FILING_10Q"
+    SEC_FILING_8K = "SEC_FILING_8K"
 
 
 class RelativeMeasure(str, Enum):
@@ -163,6 +267,8 @@ class ArithmeticOperator(str, Enum):
     MIN = "min"
     MAX = "max"
     AVG = "avg"
+    ABS = "abs"
+    POW = "pow"
 
 
 class ComparisonOperator(str, Enum):
@@ -193,6 +299,14 @@ class TemporalModifier(str, Enum):
     NTH_TIME = "nth_time"
 
 
+class ChangeDirection(str, Enum):
+    """Change condition direction."""
+
+    INCREASE = "increase"
+    DECREASE = "decrease"
+    ANY = "any"
+
+
 class TradeDirection(str, Enum):
     """Trade directions."""
 
@@ -220,21 +334,87 @@ class TimeInForce(str, Enum):
     FOK = "fok"
 
 
+class RebalanceMethod(str, Enum):
+    """Rebalance methods."""
+
+    EQUAL_WEIGHT = "equal_weight"
+    MARKET_CAP_WEIGHT = "market_cap_weight"
+    RISK_PARITY = "risk_parity"
+    INVERSE_VOLATILITY = "inverse_volatility"
+    TARGET_WEIGHTS = "target_weights"
+
+
+class AlertLevel(str, Enum):
+    """Alert severity levels."""
+
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+class AlertChannel(str, Enum):
+    """Alert notification channels."""
+
+    LOG = "log"
+    WEBHOOK = "webhook"
+    EMAIL = "email"
+    SMS = "sms"
+    TELEGRAM = "telegram"
+    DISCORD = "discord"
+    SLACK = "slack"
+
+
+class ExternalSource(str, Enum):
+    """External signal sources."""
+
+    WEBHOOK = "webhook"
+    FILE = "file"
+    PROVIDER = "provider"
+
+
 class StockIndex(str, Enum):
     """Stock indices."""
 
-    # US
-    SP500 = "SP500"
-    NASDAQ100 = "NASDAQ100"
-    DOW30 = "DOW30"
-    RUSSELL2000 = "RUSSELL2000"
-    RUSSELL1000 = "RUSSELL1000"
     # Japan
     NIKKEI225 = "NIKKEI225"
     TOPIX = "TOPIX"
     TOPIX100 = "TOPIX100"
     TOPIX500 = "TOPIX500"
     JPXNIKKEI400 = "JPXNIKKEI400"
+    TSE_PRIME = "TSE_PRIME"
+    TSE_STANDARD = "TSE_STANDARD"
+    TSE_GROWTH = "TSE_GROWTH"
+    TOPIX_LARGE70 = "TOPIX_LARGE70"
+    TOPIX_MID400 = "TOPIX_MID400"
+    TOPIX_SMALL = "TOPIX_SMALL"
+    MOTHERS = "MOTHERS"
+    # US
+    SP500 = "SP500"
+    NASDAQ100 = "NASDAQ100"
+    DOW30 = "DOW30"
+    RUSSELL2000 = "RUSSELL2000"
+    RUSSELL1000 = "RUSSELL1000"
+    SP400 = "SP400"
+    SP600 = "SP600"
+    # Europe
+    FTSE100 = "FTSE100"
+    DAX40 = "DAX40"
+    CAC40 = "CAC40"
+    STOXX50 = "STOXX50"
+    STOXX600 = "STOXX600"
+    # Asia Pacific
+    HANG_SENG = "HANG_SENG"
+    SSE50 = "SSE50"
+    CSI300 = "CSI300"
+    KOSPI = "KOSPI"
+    KOSDAQ = "KOSDAQ"
+    TWSE = "TWSE"
+    ASX200 = "ASX200"
+    # Global
+    MSCI_WORLD = "MSCI_WORLD"
+    MSCI_EM = "MSCI_EM"
+    MSCI_ACWI = "MSCI_ACWI"
+    MSCI_EAFE = "MSCI_EAFE"
 
 
 class Visibility(str, Enum):
@@ -243,6 +423,15 @@ class Visibility(str, Enum):
     PUBLIC = "public"
     PRIVATE = "private"
     UNLISTED = "unlisted"
+
+
+class ParameterType(str, Enum):
+    """Parameter types."""
+
+    INTEGER = "integer"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    STRING = "string"
 
 
 # =============================================================================
@@ -261,6 +450,17 @@ class BaseSchema(BaseModel):
 
 
 # =============================================================================
+# PARAMETER REFERENCE
+# =============================================================================
+
+
+class ParameterReference(BaseSchema):
+    """Reference to an optimizable parameter."""
+
+    param: str = Field(..., alias="$param")
+
+
+# =============================================================================
 # SIGNALS - Produce numeric values
 # =============================================================================
 
@@ -268,12 +468,20 @@ class BaseSchema(BaseModel):
 class IndicatorParams(BaseSchema):
     """Indicator parameters."""
 
-    period: int | None = Field(None, ge=1)
-    fast_period: int | None = Field(None, ge=1)
-    slow_period: int | None = Field(None, ge=1)
-    signal_period: int | None = Field(None, ge=1)
-    std_dev: float | None = Field(None, ge=0)
-    source: Literal["open", "high", "low", "close", "hl2", "hlc3", "ohlc4"] | None = None
+    period: int | ParameterReference | None = Field(None, ge=1)
+    fast_period: int | ParameterReference | None = Field(None, ge=1)
+    slow_period: int | ParameterReference | None = Field(None, ge=1)
+    signal_period: int | ParameterReference | None = Field(None, ge=1)
+    std_dev: float | ParameterReference | None = Field(None, ge=0)
+    source: Literal["open", "high", "low", "close", "hl2", "hlc3", "ohlc4"] | None = (
+        None
+    )
+
+    model_config = ConfigDict(
+        use_enum_values=True,
+        populate_by_name=True,
+        extra="allow",  # Allow additional indicator-specific params
+    )
 
 
 class PriceSignal(BaseSchema):
@@ -283,6 +491,7 @@ class PriceSignal(BaseSchema):
     field: PriceField
     offset: int = 0
     timeframe: Timeframe | None = None
+    symbol: str | None = None
 
 
 class IndicatorSignal(BaseSchema):
@@ -293,6 +502,7 @@ class IndicatorSignal(BaseSchema):
     params: IndicatorParams | None = None
     offset: int = 0
     timeframe: Timeframe | None = None
+    symbol: str | None = None
 
 
 class FundamentalSignal(BaseSchema):
@@ -300,17 +510,14 @@ class FundamentalSignal(BaseSchema):
 
     type: Literal["fundamental"]
     metric: FundamentalMetric
+    symbol: str | None = None
 
 
 class CalendarSignal(BaseSchema):
     """Calendar/date pattern signal."""
 
     type: Literal["calendar"]
-    day_of_week: DayOfWeek | None = None
-    day_of_month: int | None = Field(None, ge=-31, le=31)
-    week_of_month: int | None = Field(None, ge=-5, le=5)
-    month: int | None = Field(None, ge=1, le=12)
-    price: Literal["open", "close"] = "close"
+    field: CalendarField
 
 
 class EventSignal(BaseSchema):
@@ -322,11 +529,19 @@ class EventSignal(BaseSchema):
     days_after: int | None = Field(None, ge=0)
 
 
+class PortfolioSignal(BaseSchema):
+    """Portfolio and position state signal."""
+
+    type: Literal["portfolio"]
+    field: PortfolioField
+    symbol: str | None = None
+
+
 class ConstantSignal(BaseSchema):
     """A constant numeric value."""
 
     type: Literal["constant"]
-    value: float
+    value: float | ParameterReference
 
 
 class Reference(BaseSchema):
@@ -351,23 +566,43 @@ class ArithmeticSignal(BaseSchema):
 
     type: Literal["arithmetic"]
     operator: ArithmeticOperator
-    operands: list["Signal"] = Field(..., min_length=2)
+    operands: list["Signal"] = Field(..., min_length=1)
 
 
-# Signal discriminated union
-Signal = Annotated[
-    Union[
-        PriceSignal,
-        IndicatorSignal,
-        FundamentalSignal,
-        CalendarSignal,
-        EventSignal,
-        RelativeSignal,
-        ConstantSignal,
-        ArithmeticSignal,
-        Reference,
-    ],
-    Field(discriminator="type"),
+class ExpressionSignal(BaseSchema):
+    """Custom formula expression signal."""
+
+    type: Literal["expr"]
+    formula: str
+
+
+class ExternalSignal(BaseSchema):
+    """Runtime-resolved external signal."""
+
+    type: Literal["external"]
+    source: ExternalSource
+    url: str | None = None
+    path: str | None = None
+    provider: str | None = None
+    refresh: Frequency | None = None
+    default: float | None = None
+
+
+# Signal union (no discriminator due to Reference and ParameterReference not having type field)
+Signal = Union[
+    PriceSignal,
+    IndicatorSignal,
+    FundamentalSignal,
+    CalendarSignal,
+    EventSignal,
+    PortfolioSignal,
+    RelativeSignal,
+    ConstantSignal,
+    ArithmeticSignal,
+    ExpressionSignal,
+    ExternalSignal,
+    Reference,
+    ParameterReference,
 ]
 
 
@@ -435,19 +670,55 @@ class TemporalCondition(BaseSchema):
     n: int | None = Field(None, ge=1)
 
 
-# Condition discriminated union
-Condition = Annotated[
-    Union[
-        ComparisonCondition,
-        CrossCondition,
-        RangeCondition,
-        AndCondition,
-        OrCondition,
-        NotCondition,
-        TemporalCondition,
-        Reference,
-    ],
-    Field(discriminator="type"),
+class SequenceStep(BaseSchema):
+    """A step in a sequence condition."""
+
+    condition: "Condition"
+    within_bars: int | None = Field(None, ge=1)
+    min_bars: int | None = Field(None, ge=0)
+
+
+class SequenceCondition(BaseSchema):
+    """Detect ordered sequence of conditions."""
+
+    type: Literal["sequence"]
+    steps: list[SequenceStep] = Field(..., min_length=2)
+    reset_on: "Condition | None" = None
+    expire_bars: int | None = Field(None, ge=1)
+
+
+class ChangeCondition(BaseSchema):
+    """Detect signal change over time."""
+
+    type: Literal["change"]
+    signal: Signal
+    bars: int = Field(..., ge=1)
+    direction: ChangeDirection = ChangeDirection.ANY
+    min_amount: float | None = None
+    min_percent: float | None = None
+    max_amount: float | None = None
+    max_percent: float | None = None
+
+
+class AlwaysCondition(BaseSchema):
+    """Always true (for scheduled actions)."""
+
+    type: Literal["always"]
+
+
+# Condition union (no discriminator due to Reference not having type field)
+Condition = Union[
+    ComparisonCondition,
+    CrossCondition,
+    RangeCondition,
+    AndCondition,
+    OrCondition,
+    NotCondition,
+    TemporalCondition,
+    SequenceCondition,
+    ChangeCondition,
+    AlwaysCondition,
+    Reference,
 ]
 
 
@@ -468,7 +739,7 @@ class PercentEquitySizing(BaseSchema):
     """Percent of portfolio equity."""
 
     type: Literal["percent_of_equity"]
-    percent: float = Field(..., ge=0, le=100)
+    percent: float | ParameterReference = Field(..., ge=0, le=100)
 
 
 class PercentPositionSizing(BaseSchema):
@@ -502,6 +773,21 @@ class VolatilityAdjustedSizing(BaseSchema):
     lookback: int = 20
 
 
+class ConditionalSizingCase(BaseSchema):
+    """A case in conditional sizing."""
+
+    when: "Condition"
+    sizing: "Sizing"
+
+
+class ConditionalSizing(BaseSchema):
+    """Size based on conditions."""
+
+    type: Literal["conditional"]
+    cases: list[ConditionalSizingCase] = Field(..., min_length=1)
+    default: "Sizing"
+
+
 # Sizing discriminated union
 Sizing = Annotated[
     Union[
@@ -511,6 +797,7 @@ Sizing = Annotated[
         RiskBasedSizing,
         KellySizing,
         VolatilityAdjustedSizing,
+        ConditionalSizing,
     ],
     Field(discriminator="type"),
 ]
@@ -527,6 +814,7 @@ class TradeAction(BaseSchema):
     type: Literal["trade"]
     direction: TradeDirection
     sizing: Sizing
+    symbol: str | None = None
     order_type: OrderType = OrderType.MARKET
     limit_price: Signal | None = None
     stop_price: Signal | None = None
@@ -544,8 +832,19 @@ class RebalanceAction(BaseSchema):
     """Rebalance to target weights."""
 
     type: Literal["rebalance"]
-    targets: list[RebalanceTarget]
+    method: RebalanceMethod
+    targets: list[RebalanceTarget] | None = None
     threshold: float = 0.05
+
+
+class AlertAction(BaseSchema):
+    """Send notification or log event."""
+
+    type: Literal["alert"]
+    message: str
+    level: AlertLevel = AlertLevel.INFO
+    channels: list[AlertChannel] = Field(default_factory=lambda: [AlertChannel.LOG])
+    throttle_minutes: int | None = Field(None, ge=0)
 
 
 class HoldAction(BaseSchema):
@@ -557,7 +856,7 @@ class HoldAction(BaseSchema):
 
 # Action discriminated union
 Action = Annotated[
-    Union[TradeAction, RebalanceAction, HoldAction],
+    Union[TradeAction, RebalanceAction, AlertAction, HoldAction],
     Field(discriminator="type"),
 ]
 
@@ -596,6 +895,9 @@ class IndexUniverse(BaseSchema):
     type: Literal["index"]
     index: StockIndex
     filters: list[Condition] | None = None
+    rank_by: Signal | None = None
+    order: Literal["asc", "desc"] = "desc"
+    limit: int | ParameterReference | None = Field(None, ge=1)
 
 
 class ScreenerUniverse(BaseSchema):
@@ -604,14 +906,33 @@ class ScreenerUniverse(BaseSchema):
     type: Literal["screener"]
     base: str | None = None
     filters: list[Condition] = Field(..., min_length=1)
+    rank_by: Signal | None = None
+    order: Literal["asc", "desc"] = "desc"
     limit: int | None = Field(None, ge=1)
-    sort_by: Signal | None = None
-    sort_order: Literal["asc", "desc"] = "desc"
+
+
+class DualUniverseSide(BaseSchema):
+    """One side of a dual universe."""
+
+    type: str | None = None
+    index: StockIndex | None = None
+    filters: list[Condition] | None = None
+    rank_by: Signal | None = None
+    order: Literal["asc", "desc"] | None = None
+    limit: int | None = Field(None, ge=1)
+
+
+class DualUniverse(BaseSchema):
+    """Separate long and short universes."""
+
+    type: Literal["dual"]
+    long: DualUniverseSide
+    short: DualUniverseSide
 
 
 # Universe discriminated union
 Universe = Annotated[
-    Union[StaticUniverse, IndexUniverse, ScreenerUniverse],
+    Union[StaticUniverse, IndexUniverse, ScreenerUniverse, DualUniverse],
     Field(discriminator="type"),
 ]
 
@@ -628,17 +949,36 @@ class StopConfig(BaseSchema):
     atr_multiple: float | None = Field(None, ge=0)
 
 
+class TrailingStopConfig(BaseSchema):
+    """Trailing stop configuration."""
+
+    percent: float | None = Field(None, ge=0, le=100)
+    atr_multiple: float | None = Field(None, ge=0)
+    activation_percent: float | None = Field(None, ge=0)
+
+
+class TimeStop(BaseSchema):
+    """Time-based exit."""
+
+    bars: int = Field(..., ge=1)
+
+
 class Constraints(BaseSchema):
     """Risk and position constraints."""
 
     max_positions: int | None = Field(None, ge=1)
+    min_positions: int | None = Field(None, ge=0)
     max_position_size: float | None = Field(None, ge=0, le=100)
     max_sector_exposure: float | None = Field(None, ge=0, le=100)
+    max_correlation: float | None = Field(None, ge=0, le=1)
     max_drawdown: float | None = Field(None, ge=0, le=100)
     daily_loss_limit: float | None = Field(None, ge=0, le=100)
     stop_loss: StopConfig | None = None
     take_profit: StopConfig | None = None
-    trailing_stop: StopConfig | None = None
+    trailing_stop: TrailingStopConfig | None = None
+    time_stop: TimeStop | None = None
+    max_daily_turnover: float | None = Field(None, ge=0, le=100)
+    min_holding_bars: int | None = Field(None, ge=0)
     no_shorting: bool = False
     no_leverage: bool = True
 
@@ -651,23 +991,28 @@ class Constraints(BaseSchema):
 class Schedule(BaseSchema):
     """Evaluation schedule."""
 
-    frequency: Timeframe | Literal["tick"] | None = None
+    frequency: Frequency | None = None
     market_hours_only: bool = True
     timezone: str = "America/New_York"
     trading_days: list[DayOfWeek] | None = None
+    evaluate_at: list[str] | None = None
 
 
 # =============================================================================
-# COMPONENTS - Reusable named components
+# PARAMETERS - Optimizable values
 # =============================================================================
 
 
-class Components(BaseSchema):
-    """Reusable named components."""
+class Parameter(BaseSchema):
+    """Optimizable parameter definition."""
 
-    signals: dict[str, Signal] | None = None
-    conditions: dict[str, Condition] | None = None
-    actions: dict[str, Action] | None = None
+    type: ParameterType
+    default: Any
+    min: float | None = None
+    max: float | None = None
+    step: float | None = None
+    choices: list[Any] | None = None
+    description: str | None = None
 
 
 # =============================================================================
@@ -704,13 +1049,21 @@ class Info(BaseSchema):
 class Strategy(BaseSchema):
     """Complete strategy definition."""
 
+    model_config = ConfigDict(
+        use_enum_values=True,
+        populate_by_name=True,
+        extra="allow",  # Allow x-extensions
+    )
+
     schema_: str | None = Field(None, alias="$schema")
     info: Info
     universe: Universe
+    signals: dict[str, Signal] | None = None
+    conditions: dict[str, Condition] | None = None
     rules: list[Rule] = Field(..., min_length=1)
     constraints: Constraints | None = None
     schedule: Schedule | None = None
-    components: Components | None = None
+    parameters: dict[str, Parameter] | None = None
 
 
 # Update forward references
@@ -723,9 +1076,15 @@ AndCondition.model_rebuild()
 OrCondition.model_rebuild()
 NotCondition.model_rebuild()
 TemporalCondition.model_rebuild()
+SequenceStep.model_rebuild()
+SequenceCondition.model_rebuild()
+ChangeCondition.model_rebuild()
 RiskBasedSizing.model_rebuild()
+ConditionalSizingCase.model_rebuild()
+ConditionalSizing.model_rebuild()
 TradeAction.model_rebuild()
 IndexUniverse.model_rebuild()
 ScreenerUniverse.model_rebuild()
-Components.model_rebuild()
+DualUniverseSide.model_rebuild()
+DualUniverse.model_rebuild()
 Strategy.model_rebuild()
