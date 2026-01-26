@@ -289,9 +289,15 @@ universal-trading-strategy-schema/
 
 MIT
 
+## Documentation
+
+- **[Quickstart Guide](./docs/quickstart.md)** - Get started in 5 minutes
+- **[Architecture & Design](./docs/architecture.md)** - Design philosophy and decisions
+- **[Specification](./docs/UTSS-v2.1-SPEC.md)** - Complete schema reference
+- **[Examples](./examples/)** - Working strategy files
+
 ## Links
 
 - [JSON Schema](./schema/v2/strategy.schema.json)
 - [Python Package](./python/)
-- [Examples](./examples/)
-- [Specification](./docs/UTSS-v2.1-SPEC.md)
+- [PyPI](https://pypi.org/project/utss/)

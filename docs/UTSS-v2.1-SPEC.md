@@ -1177,8 +1177,8 @@ schedule:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.0 | 2024-01 | Initial release |
-| 2.1.0 | Planned | Portfolio signals, expressions, parameters, extended indicators |
+| 2.0.0 | 2024-01 | Initial release with signals, conditions, rules |
+| 2.1.0 | 2024-01 | Portfolio signals, expressions, parameters, extended indicators/indices, alerts |
 
 ---
 

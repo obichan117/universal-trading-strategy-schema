@@ -110,7 +110,9 @@ universal-trading-strategy-schema/
 │   └── monday-friday.yaml
 │
 ├── docs/
-│   └── UTSS-v2.1-SPEC.md            # Detailed specification
+│   ├── quickstart.md                # Getting started guide
+│   ├── architecture.md              # Design philosophy & decisions
+│   └── UTSS-v2.1-SPEC.md            # Complete specification
 │
 └── .claude/
     └── CLAUDE.md                     # This file
