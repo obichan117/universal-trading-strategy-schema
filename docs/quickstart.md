@@ -418,7 +418,7 @@ schedule:
 ## Next Steps
 
 1. **Read the [Architecture Guide](architecture.md)** - Understand design philosophy
-2. **Browse [Examples](../examples/)** - See complete strategy files
+2. **Browse [Examples](examples.md)** - See complete strategy files
 3. **Read the [Specification](UTSS-v2.1-SPEC.md)** - Full reference documentation
 4. **Build your own strategy** - Start with a simple idea, add complexity gradually
 

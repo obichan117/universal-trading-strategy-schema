@@ -46,10 +46,16 @@ dev = [
     "types-PyYAML>=6.0",
     "twine>=5.0.0",
 ]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+    "pymdown-extensions>=10.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/obichan117/universal-trading-strategy-schema"
-Documentation = "https://github.com/obichan117/universal-trading-strategy-schema#readme"
+Documentation = "https://obichan117.github.io/universal-trading-strategy-schema"
 Repository = "https://github.com/obichan117/universal-trading-strategy-schema"
 Issues = "https://github.com/obichan117/universal-trading-strategy-schema/issues"
 

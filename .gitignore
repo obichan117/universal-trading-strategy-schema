@@ -48,6 +48,7 @@ htmlcov/
 # Build artifacts
 typescript/dist/
 *.tsbuildinfo
+site/
 
 # Logs
 *.log
