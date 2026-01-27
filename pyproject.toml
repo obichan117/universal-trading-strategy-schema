@@ -1,0 +1,56 @@
+[project]
+name = "utss-workspace"
+version = "0.1.0"
+description = "Universal Trading Strategy Schema - Monorepo workspace"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "utss",
+    "pyutss",
+]
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+utss = { workspace = true }
+pyutss = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+    "pymdown-extensions>=10.0",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "RUF", # Ruff-specific rules
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages/utss/tests", "packages/pyutss/tests"]
+addopts = "-v"
+asyncio_mode = "auto"

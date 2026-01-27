@@ -1,0 +1,61 @@
+[project]
+name = "pyutss"
+version = "0.1.0"
+description = "Python backtesting engine for Universal Trading Strategy Schema (UTSS)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "obichan117" }]
+requires-python = ">=3.10"
+keywords = [
+    "trading",
+    "backtesting",
+    "quantitative-finance",
+    "algorithmic-trading",
+    "utss",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "utss",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+yahoo = ["yfinance>=0.2.0"]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/obichan117/utss"
+Documentation = "https://obichan117.github.io/utss"
+Repository = "https://github.com/obichan117/utss"
+Issues = "https://github.com/obichan117/utss/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyutss"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/pyutss"]

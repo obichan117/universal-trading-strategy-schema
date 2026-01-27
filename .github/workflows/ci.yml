@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint with ruff
+        run: uv run ruff check packages/
+
+      - name: Type check with mypy
+        run: uv run mypy packages/utss/src/utss --ignore-missing-imports
+
+      - name: Run tests
+        run: uv run pytest packages/ tests/ -v
+
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Validate example strategies
+        run: |
+          uv run python -c "
+          from pathlib import Path
+          from utss import validate_yaml
+
+          examples_dir = Path('examples')
+          for yaml_file in examples_dir.glob('*.yaml'):
+              print(f'Validating {yaml_file}...')
+              strategy = validate_yaml(yaml_file.read_text())
+              print(f'  ✓ {strategy.info.name}')
+          print('All examples valid!')
+          "

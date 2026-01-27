@@ -2,6 +2,13 @@
 
 A comprehensive, composable schema for expressing any trading strategy. Define your strategies in YAML/JSON and use them across different trading platforms, backtesting engines, and execution systems.
 
+## Packages
+
+| Package | Description | Install |
+|---------|-------------|---------|
+| **[utss](./packages/utss/)** | Schema definition & validation | `pip install utss` |
+| **[pyutss](./packages/pyutss/)** | Backtesting engine (WIP) | `pip install pyutss` |
+
 ## Features
 
 - **Composable Architecture**: Signal → Condition → Rule → Strategy hierarchy
@@ -14,9 +21,11 @@ A comprehensive, composable schema for expressing any trading strategy. Define y
 ## Installation
 
 ```bash
+# Schema package only
 pip install utss
-# or
-uv add utss
+
+# With backtesting engine (coming soon)
+pip install pyutss
 ```
 
 ## Quick Start
@@ -276,13 +285,43 @@ except ValidationError as e:
 ## Project Structure
 
 ```
-universal-trading-strategy-schema/
-├── schema/v2/strategy.schema.json    # JSON Schema (source of truth)
-├── python/utss/                      # Python package
-│   ├── models.py                     # Pydantic models
-│   └── validator.py                  # YAML/dict validation
-├── examples/                         # Example strategies
-└── docs/specification.md             # Full specification
+utss/
+├── packages/
+│   ├── utss/                    # Schema package (pip install utss)
+│   │   └── src/utss/
+│   │       ├── models.py        # Pydantic models
+│   │       ├── validator.py     # YAML/dict validation
+│   │       └── capabilities.py  # Exported capabilities for engine sync
+│   │
+│   └── pyutss/                  # Backtesting engine (pip install pyutss)
+│       └── src/pyutss/
+│           ├── data/            # Data providers (Yahoo, J-Quants)
+│           ├── engine/          # Backtest execution
+│           └── metrics/         # Performance metrics
+│
+├── schema/v2/
+│   └── strategy.schema.json     # JSON Schema (source of truth)
+│
+├── examples/                    # Example strategies
+│
+└── docs/                        # Documentation
+```
+
+## Development
+
+```bash
+# Clone and setup
+git clone https://github.com/obichan117/utss.git
+cd utss
+
+# Install dependencies (uses uv workspaces)
+uv sync
+
+# Run tests
+uv run pytest
+
+# Build docs
+uv run mkdocs build
 ```
 
 ## License
@@ -299,5 +338,5 @@ MIT
 ## Links
 
 - [JSON Schema](./schema/v2/strategy.schema.json)
-- [Python Package](./python/)
-- [PyPI](https://pypi.org/project/utss/)
+- [PyPI - utss](https://pypi.org/project/utss/)
+- [Documentation](https://obichan117.github.io/utss/)
