@@ -7,6 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "utss",
     "pyutss",
+    "utss-llm",
 ]
 
 [tool.uv.workspace]
@@ -15,6 +16,7 @@ members = ["packages/*"]
 [tool.uv.sources]
 utss = { workspace = true }
 pyutss = { workspace = true }
+utss-llm = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -51,6 +53,6 @@ python_version = "3.10"
 strict = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "packages/utss/tests", "packages/pyutss/tests"]
+testpaths = ["tests", "packages/utss/tests", "packages/pyutss/tests", "packages/utss-llm/tests"]
 addopts = "-v"
 asyncio_mode = "auto"
