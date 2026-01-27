@@ -282,7 +282,7 @@ universal-trading-strategy-schema/
 │   ├── models.py                     # Pydantic models
 │   └── validator.py                  # YAML/dict validation
 ├── examples/                         # Example strategies
-└── docs/UTSS-v2.1-SPEC.md           # Full specification
+└── docs/specification.md             # Full specification
 ```
 
 ## License
@@ -293,7 +293,7 @@ MIT
 
 - **[Quickstart Guide](./docs/quickstart.md)** - Get started in 5 minutes
 - **[Architecture & Design](./docs/architecture.md)** - Design philosophy and decisions
-- **[Specification](./docs/UTSS-v2.1-SPEC.md)** - Complete schema reference
+- **[Specification](./docs/specification.md)** - Complete schema reference
 - **[Examples](./examples/)** - Working strategy files
 
 ## Links

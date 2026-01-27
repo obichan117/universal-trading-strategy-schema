@@ -112,7 +112,7 @@ universal-trading-strategy-schema/
 ├── docs/
 │   ├── quickstart.md                # Getting started guide
 │   ├── architecture.md              # Design philosophy & decisions
-│   └── UTSS-v2.1-SPEC.md            # Complete specification
+│   └── specification.md              # Complete specification
 │
 └── .claude/
     └── CLAUDE.md                     # This file

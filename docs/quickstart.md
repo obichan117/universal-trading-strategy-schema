@@ -419,7 +419,7 @@ schedule:
 
 1. **Read the [Architecture Guide](architecture.md)** - Understand design philosophy
 2. **Browse [Examples](examples.md)** - See complete strategy files
-3. **Read the [Specification](UTSS-v2.1-SPEC.md)** - Full reference documentation
+3. **Read the [Specification](specification.md)** - Full reference documentation
 4. **Build your own strategy** - Start with a simple idea, add complexity gradually
 
 ---
@@ -473,4 +473,4 @@ when:
 
 - **Validation errors**: Use `validate_yaml()` to get detailed error messages
 - **Examples**: Check the `examples/` directory for working strategies
-- **Specification**: See `docs/UTSS-v2.1-SPEC.md` for complete reference
+- **Specification**: See [specification.md](specification.md) for complete reference
