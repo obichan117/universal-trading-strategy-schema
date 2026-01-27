@@ -77,6 +77,7 @@ nav:
       - Installation: installation.md
   - Guide:
       - Architecture: architecture.md
+      - Comparison: comparison.md
       - Examples: examples.md
   - Reference:
       - Specification: specification.md
