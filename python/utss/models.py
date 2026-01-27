@@ -3,12 +3,17 @@ Universal Trading Strategy Schema (UTSS) v2.1 - Pydantic Models
 
 A comprehensive, composable schema for expressing any trading strategy.
 Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
+
+Extensibility: Core enum values are guaranteed portable. Prefixed values
+(custom:, talib:, platform:, etc.) provide extensibility for user-defined
+or platform-specific features.
 """
 
+import re
 from enum import Enum
 from typing import Annotated, Any, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 
 # =============================================================================
@@ -435,6 +440,82 @@ class ParameterType(str, Enum):
 
 
 # =============================================================================
+# EXTENSIBLE ENUM VALIDATORS
+# =============================================================================
+# These create validated string types that accept both core enum values
+# and prefixed extension values (custom:, talib:, platform:, etc.)
+
+# Prefix patterns for extensible enums
+INDICATOR_PREFIXES = [
+    r"^custom:[a-zA-Z0-9_]+$",
+    r"^talib:[A-Z0-9_]+$",
+    r"^platform:[a-z]+:[a-zA-Z0-9_]+$",
+]
+
+FUNDAMENTAL_PREFIXES = [
+    r"^custom:[a-zA-Z0-9_]+$",
+    r"^provider:[a-z]+:[a-zA-Z0-9_]+$",
+]
+
+EVENT_PREFIXES = [
+    r"^custom:[a-zA-Z0-9_]+$",
+    r"^calendar:[a-zA-Z0-9_]+$",
+]
+
+INDEX_PREFIXES = [
+    r"^custom:[a-zA-Z0-9_]+$",
+    r"^etf:[A-Z0-9]+$",
+    r"^sector:[A-Z0-9_]+$",
+]
+
+
+def _make_extensible_validator(enum_class: type[Enum], prefixes: list[str]):
+    """Create a validator that accepts enum values or prefixed extensions."""
+    core_values = {e.value for e in enum_class}
+    compiled_patterns = [re.compile(p) for p in prefixes]
+
+    def validator(v: str) -> str:
+        if v in core_values:
+            return v
+        for pattern in compiled_patterns:
+            if pattern.match(v):
+                return v
+        valid_prefixes = ", ".join(p.split(":")[0].lstrip("^") + ":" for p in prefixes)
+        raise ValueError(
+            f"Invalid value '{v}'. Must be a core {enum_class.__name__} value "
+            f"or use extension prefix ({valid_prefixes})"
+        )
+
+    return validator
+
+
+# Extensible type aliases
+ExtensibleIndicator = Annotated[
+    str,
+    AfterValidator(_make_extensible_validator(IndicatorType, INDICATOR_PREFIXES)),
+    Field(description="Technical indicator (core or custom:, talib:, platform: prefixed)"),
+]
+
+ExtensibleFundamental = Annotated[
+    str,
+    AfterValidator(_make_extensible_validator(FundamentalMetric, FUNDAMENTAL_PREFIXES)),
+    Field(description="Fundamental metric (core or custom:, provider: prefixed)"),
+]
+
+ExtensibleEvent = Annotated[
+    str,
+    AfterValidator(_make_extensible_validator(EventType, EVENT_PREFIXES)),
+    Field(description="Event type (core or custom:, calendar: prefixed)"),
+]
+
+ExtensibleIndex = Annotated[
+    str,
+    AfterValidator(_make_extensible_validator(StockIndex, INDEX_PREFIXES)),
+    Field(description="Stock index (core or custom:, etf:, sector: prefixed)"),
+]
+
+
+# =============================================================================
 # BASE SCHEMA
 # =============================================================================
 
@@ -495,10 +576,16 @@ class PriceSignal(BaseSchema):
 
 
 class IndicatorSignal(BaseSchema):
-    """Technical indicator signal."""
+    """Technical indicator signal.
+
+    Supports core indicators (e.g., RSI, SMA) and extensions:
+    - custom:MY_INDICATOR - User-defined indicators
+    - talib:CDLHAMMER - TA-Lib indicators
+    - platform:tradingview:SQUEEZE - Platform-specific
+    """
 
     type: Literal["indicator"]
-    indicator: IndicatorType
+    indicator: ExtensibleIndicator
     params: IndicatorParams | None = None
     offset: int = 0
     timeframe: Timeframe | None = None
@@ -506,10 +593,15 @@ class IndicatorSignal(BaseSchema):
 
 
 class FundamentalSignal(BaseSchema):
-    """Fundamental data signal."""
+    """Fundamental data signal.
+
+    Supports core metrics (e.g., PE_RATIO) and extensions:
+    - custom:MY_METRIC - User-defined metrics
+    - provider:bloomberg:WACC - Provider-specific metrics
+    """
 
     type: Literal["fundamental"]
-    metric: FundamentalMetric
+    metric: ExtensibleFundamental
     symbol: str | None = None
 
 
@@ -521,10 +613,15 @@ class CalendarSignal(BaseSchema):
 
 
 class EventSignal(BaseSchema):
-    """Event-driven signal."""
+    """Event-driven signal.
+
+    Supports core events (e.g., EARNINGS_RELEASE) and extensions:
+    - custom:MY_EVENT - User-defined events
+    - calendar:FOMC_DECISION - Economic calendar events
+    """
 
     type: Literal["event"]
-    event: EventType
+    event: ExtensibleEvent
     days_before: int | None = Field(None, ge=0)
     days_after: int | None = Field(None, ge=0)
 
@@ -890,10 +987,16 @@ class StaticUniverse(BaseSchema):
 
 
 class IndexUniverse(BaseSchema):
-    """Index-based universe."""
+    """Index-based universe.
+
+    Supports core indices (e.g., SP500, NIKKEI225) and extensions:
+    - custom:MY_WATCHLIST - User-defined symbol lists
+    - etf:SPY - ETF as universe source
+    - sector:TECHNOLOGY - Sector-based universes
+    """
 
     type: Literal["index"]
-    index: StockIndex
+    index: ExtensibleIndex
     filters: list[Condition] | None = None
     rank_by: Signal | None = None
     order: Literal["asc", "desc"] = "desc"
@@ -915,7 +1018,7 @@ class DualUniverseSide(BaseSchema):
     """One side of a dual universe."""
 
     type: str | None = None
-    index: StockIndex | None = None
+    index: ExtensibleIndex | None = None
     filters: list[Condition] | None = None
     rank_by: Signal | None = None
     order: Literal["asc", "desc"] | None = None

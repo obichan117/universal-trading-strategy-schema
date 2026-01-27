@@ -1272,109 +1272,107 @@ default: Sizing             # Required. Fallback sizing
 
 ## Enumerations
 
-### Timeframe
+All enumerations follow the **extensible enum pattern**: core values are guaranteed portable, while prefixed values provide extensibility.
+
+### Closed Enums (Fixed Values)
+
+These enums are closed and do not support extensions:
+
+#### Timeframe
 
 ```
 tick | 1m | 5m | 15m | 30m | 1h | 4h | daily | weekly | monthly
 ```
 
-### DayOfWeek
+#### DayOfWeek
 
 ```
 monday | tuesday | wednesday | thursday | friday
 ```
 
-### PriceField
+#### PriceField
 
 ```
 open | high | low | close | volume | vwap
 ```
 
-### IndicatorType
+#### OrderType
 
-**Moving Averages:**
 ```
-SMA | EMA | WMA | DEMA | TEMA | KAMA | HULL | VWMA
-```
-
-**Momentum:**
-```
-RSI | MACD | MACD_SIGNAL | MACD_HIST | STOCH_K | STOCH_D | STOCH_RSI |
-ROC | MOMENTUM | WILLIAMS_R | CCI | MFI | CMO | TSI
+market | limit | stop | stop_limit
 ```
 
-**Trend:**
+#### TimeInForce
+
 ```
-ADX | PLUS_DI | MINUS_DI | AROON_UP | AROON_DOWN | AROON_OSC |
-SUPERTREND | PSAR
+day | gtc | ioc | fok
 ```
 
-**Volatility:**
+#### ComparisonOp
+
 ```
-ATR | STDDEV | VARIANCE | BB_UPPER | BB_MIDDLE | BB_LOWER | BB_WIDTH | BB_PERCENT |
-KC_UPPER | KC_MIDDLE | KC_LOWER | DC_UPPER | DC_MIDDLE | DC_LOWER
+< | <= | = | >= | > | !=
 ```
 
-**Volume:**
+#### ArithmeticOp
+
 ```
-OBV | VWAP | AD | CMF | KLINGER
+add | subtract | multiply | divide | min | max | avg | abs | pow
 ```
 
-**Price Patterns:**
-```
-HIGHEST | LOWEST | RETURN | DRAWDOWN
-```
+---
 
-**Statistical:**
-```
-ZSCORE | PERCENTILE | RANK | CORRELATION | BETA
-```
+### Extensible Enums (Open for Extensions)
 
-**Ichimoku:**
-```
-ICHIMOKU_TENKAN | ICHIMOKU_KIJUN | ICHIMOKU_SENKOU_A | ICHIMOKU_SENKOU_B | ICHIMOKU_CHIKOU
-```
+These enums support namespaced extensions via prefixes.
 
-### FundamentalMetric
+#### IndicatorType
 
-**Valuation:**
-```
-PE_RATIO | PB_RATIO | PS_RATIO | PEG_RATIO | EV_EBITDA | EARNINGS_YIELD
-```
+**Core Values (Portable):**
 
-**Profitability:**
-```
-ROE | ROA | ROIC | PROFIT_MARGIN | OPERATING_MARGIN | NET_MARGIN
-```
+| Category | Indicators |
+|----------|------------|
+| Moving Averages | `SMA`, `EMA`, `WMA`, `DEMA`, `TEMA`, `KAMA`, `HULL`, `VWMA` |
+| Momentum | `RSI`, `MACD`, `MACD_SIGNAL`, `MACD_HIST`, `STOCH_K`, `STOCH_D`, `STOCH_RSI`, `ROC`, `MOMENTUM`, `WILLIAMS_R`, `CCI`, `MFI`, `CMO`, `TSI` |
+| Trend | `ADX`, `PLUS_DI`, `MINUS_DI`, `AROON_UP`, `AROON_DOWN`, `AROON_OSC`, `SUPERTREND`, `PSAR` |
+| Volatility | `ATR`, `STDDEV`, `VARIANCE`, `BB_UPPER`, `BB_MIDDLE`, `BB_LOWER`, `BB_WIDTH`, `BB_PERCENT`, `KC_UPPER`, `KC_MIDDLE`, `KC_LOWER`, `DC_UPPER`, `DC_MIDDLE`, `DC_LOWER` |
+| Volume | `OBV`, `VWAP`, `AD`, `CMF`, `KLINGER` |
+| Price Patterns | `HIGHEST`, `LOWEST`, `RETURN`, `DRAWDOWN` |
+| Statistical | `ZSCORE`, `PERCENTILE`, `RANK`, `CORRELATION`, `BETA` |
+| Ichimoku | `ICHIMOKU_TENKAN`, `ICHIMOKU_KIJUN`, `ICHIMOKU_SENKOU_A`, `ICHIMOKU_SENKOU_B`, `ICHIMOKU_CHIKOU` |
 
-**Dividend:**
-```
-DIVIDEND_YIELD | PAYOUT_RATIO
-```
+**Extension Prefixes:**
 
-**Size & Growth:**
-```
-MARKET_CAP | ENTERPRISE_VALUE | REVENUE | EBITDA | NET_INCOME |
-EPS | EPS_GROWTH | REVENUE_GROWTH
-```
+| Prefix | Pattern | Example | Use Case |
+|--------|---------|---------|----------|
+| `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:MY_SUPERTREND` | User-defined indicators |
+| `talib:` | `talib:[A-Z0-9_]+` | `talib:CDLHAMMER` | TA-Lib candle patterns |
+| `platform:` | `platform:[a-z]+:[a-zA-Z0-9_]+` | `platform:tradingview:SQUEEZE` | Platform-specific |
 
-**Financial Health:**
-```
-DEBT_TO_EQUITY | CURRENT_RATIO | QUICK_RATIO | INTEREST_COVERAGE
-```
+#### FundamentalMetric
 
-**Quality:**
-```
-F_SCORE | ALTMAN_Z
-```
+**Core Values (Portable):**
 
-**Other:**
-```
-INDEX_WEIGHT | FREE_FLOAT | SHORT_INTEREST | ANALYST_RATING | PRICE_TARGET |
-EARNINGS_SURPRISE
-```
+| Category | Metrics |
+|----------|---------|
+| Valuation | `PE_RATIO`, `PB_RATIO`, `PS_RATIO`, `PEG_RATIO`, `EV_EBITDA`, `EARNINGS_YIELD` |
+| Profitability | `ROE`, `ROA`, `ROIC`, `PROFIT_MARGIN`, `OPERATING_MARGIN`, `NET_MARGIN` |
+| Dividend | `DIVIDEND_YIELD`, `PAYOUT_RATIO` |
+| Size & Growth | `MARKET_CAP`, `ENTERPRISE_VALUE`, `REVENUE`, `EBITDA`, `NET_INCOME`, `EPS`, `EPS_GROWTH`, `REVENUE_GROWTH` |
+| Financial Health | `DEBT_TO_EQUITY`, `CURRENT_RATIO`, `QUICK_RATIO`, `INTEREST_COVERAGE` |
+| Quality | `F_SCORE`, `ALTMAN_Z` |
+| Other | `INDEX_WEIGHT`, `FREE_FLOAT`, `SHORT_INTEREST`, `ANALYST_RATING`, `PRICE_TARGET`, `EARNINGS_SURPRISE` |
 
-### EventType
+**Extension Prefixes:**
+
+| Prefix | Pattern | Example | Use Case |
+|--------|---------|---------|----------|
+| `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:MODIFIED_ALTMAN_Z` | User-defined metrics |
+| `provider:` | `provider:[a-z]+:[a-zA-Z0-9_]+` | `provider:bloomberg:WACC` | Data provider-specific |
+
+#### EventType
+
+**Core Values (Portable):**
 
 ```
 EARNINGS_RELEASE | DIVIDEND_EX_DATE | DIVIDEND_PAY_DATE | STOCK_SPLIT |
@@ -1383,83 +1381,127 @@ INSIDER_BUY | INSIDER_SELL | ANALYST_UPGRADE | ANALYST_DOWNGRADE |
 SEC_FILING_10K | SEC_FILING_10Q | SEC_FILING_8K
 ```
 
-### StockIndex
+**Extension Prefixes:**
 
-**Japan:**
-```
-NIKKEI225 | TOPIX | TOPIX100 | TOPIX500 | JPXNIKKEI400 |
-TSE_PRIME | TSE_STANDARD | TSE_GROWTH |
-TOPIX_LARGE70 | TOPIX_MID400 | TOPIX_SMALL | MOTHERS
-```
+| Prefix | Pattern | Example | Use Case |
+|--------|---------|---------|----------|
+| `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:PRODUCT_RECALL` | User-defined events |
+| `calendar:` | `calendar:[a-zA-Z0-9_]+` | `calendar:FOMC_DECISION` | Economic calendar events |
 
-**US:**
-```
-SP500 | NASDAQ100 | DOW30 | RUSSELL2000 | RUSSELL1000 | SP400 | SP600
-```
+#### StockIndex
 
-**Europe:**
-```
-FTSE100 | DAX40 | CAC40 | STOXX50 | STOXX600
-```
+**Core Values (Portable):**
 
-**Asia-Pacific:**
-```
-HANG_SENG | SSE50 | CSI300 | KOSPI | KOSDAQ | TWSE | ASX200
-```
+| Region | Indices |
+|--------|---------|
+| Japan | `NIKKEI225`, `TOPIX`, `TOPIX100`, `TOPIX500`, `JPXNIKKEI400`, `TSE_PRIME`, `TSE_STANDARD`, `TSE_GROWTH`, `TOPIX_LARGE70`, `TOPIX_MID400`, `TOPIX_SMALL`, `MOTHERS` |
+| US | `SP500`, `NASDAQ100`, `DOW30`, `RUSSELL2000`, `RUSSELL1000`, `SP400`, `SP600` |
+| Europe | `FTSE100`, `DAX40`, `CAC40`, `STOXX50`, `STOXX600` |
+| Asia-Pacific | `HANG_SENG`, `SSE50`, `CSI300`, `KOSPI`, `KOSDAQ`, `TWSE`, `ASX200` |
+| Global | `MSCI_WORLD`, `MSCI_EM`, `MSCI_ACWI`, `MSCI_EAFE` |
 
-**Global:**
-```
-MSCI_WORLD | MSCI_EM | MSCI_ACWI | MSCI_EAFE
-```
+**Extension Prefixes:**
 
-### OrderType
-
-```
-market | limit | stop | stop_limit
-```
-
-### TimeInForce
-
-```
-day | gtc | ioc | fok
-```
-
-### ComparisonOp
-
-```
-< | <= | = | >= | > | !=
-```
-
-### ArithmeticOp
-
-```
-add | subtract | multiply | divide | min | max | avg | abs | pow
-```
+| Prefix | Pattern | Example | Use Case |
+|--------|---------|---------|----------|
+| `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:MY_WATCHLIST` | User-defined lists |
+| `etf:` | `etf:[A-Z0-9]+` | `etf:SPY` | ETF as universe source |
+| `sector:` | `sector:[A-Z0-9_]+` | `sector:TECHNOLOGY` | Sector-based universes |
 
 ---
 
 ## Extensibility
 
-### Layer 1: Strict Core
+UTSS uses a **layered extensibility model** that balances portability with flexibility. This design is inspired by protocols like [FIX](https://www.fixtrading.org/standards/user-defined-fields/) (registered tag ranges) and [Protocol Buffers](https://protobuf.dev/programming-guides/enum/) (open enums with unknown value handling).
 
-All enumerated types above. Fully validated, portable across all engines.
+### Extensibility Philosophy
 
-### Layer 2: Expression Language
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EXTENSIBILITY LAYERS                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 1: Core Enums     │ Portable, all engines MUST support  │
+│  Layer 2: Namespaced     │ custom:, talib:, platform:, etc.    │
+│  Layer 3: Expressions    │ type: expr with formula string      │
+│  Layer 4: External       │ type: external for runtime signals  │
+│  Layer 5: x-extensions   │ Platform-specific, ignored by spec  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-For signals not expressible with strict types:
+### Layer 1: Core Enums (Portable)
+
+All values in the core enum lists are **guaranteed portable**. Every UTSS-compliant engine MUST support them.
+
+```yaml
+indicator: RSI              # Core - all engines support
+metric: PE_RATIO            # Core - all engines support
+index: SP500                # Core - all engines support
+```
+
+### Layer 2: Namespaced Extensions (Semi-Portable)
+
+For values not in the core enum, use namespaced prefixes:
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `custom:` | User-defined | `custom:MY_SUPERTREND` |
+| `talib:` | TA-Lib indicators | `talib:CDLHAMMER` |
+| `platform:` | Platform-specific | `platform:tradingview:SQUEEZE` |
+| `provider:` | Data provider | `provider:bloomberg:WACC` |
+| `calendar:` | Economic events | `calendar:FOMC_DECISION` |
+| `etf:` | ETF as universe | `etf:SPY` |
+| `sector:` | Sector universe | `sector:TECHNOLOGY` |
+
+**Engine behavior for namespaced values:**
+- Engine MAY support the value
+- Engine SHOULD log a warning if unsupported
+- Engine MUST NOT fail validation (schema allows the pattern)
+
+**Example:**
 
 ```yaml
 signals:
-  custom:
+  # Core indicator - guaranteed support
+  rsi:
+    type: indicator
+    indicator: RSI
+    params: { period: 14 }
+
+  # Custom indicator - engine may or may not support
+  squeeze:
+    type: indicator
+    indicator: platform:tradingview:SQUEEZE_MOMENTUM
+    params: { length: 20 }
+
+  # TA-Lib candle pattern
+  hammer:
+    type: indicator
+    indicator: talib:CDLHAMMER
+```
+
+### Layer 3: Expression Language
+
+For calculations not expressible with built-in indicators:
+
+```yaml
+signals:
+  custom_ratio:
     type: expr
     formula: "(SMA(close, 20) - SMA(close, 50)) / ATR(14)"
 ```
 
+Expression language supports:
+- Arithmetic: `+`, `-`, `*`, `/`, `^`
+- Functions: `SMA(source, period)`, `RSI(period)`, etc.
+- Conditionals: `IF(condition, then, else)`
+- Comparisons: `<`, `>`, `<=`, `>=`, `==`, `!=`
+- Logical: `AND`, `OR`, `NOT`
+
 Execution engines must implement an expression parser.
 
-### Layer 3: External Signals
+### Layer 4: External Signals
 
-For runtime-resolved values:
+For runtime-resolved values (ML models, webhooks, files):
 
 ```yaml
 signals:
@@ -1473,7 +1515,7 @@ signals:
 
 Execution engines must implement HTTP client / file reader.
 
-### Layer 4: x-extensions
+### Layer 5: x-extensions
 
 For platform-specific metadata (ignored by schema validation):
 
@@ -1486,6 +1528,25 @@ x-live:
   broker: sbi
   account_type: margin
 ```
+
+### Adding New Core Values
+
+To add a value to core enums:
+1. Submit proposal to UTSS specification
+2. Value is reviewed for broad applicability
+3. If accepted, added in next schema version
+4. Until then, use `custom:` prefix
+
+### Portability Matrix
+
+| Layer | Validation | Portability | LLM-Friendly |
+|-------|------------|-------------|--------------|
+| Core enum | ✅ Strict | ✅ All engines | ✅ High |
+| `custom:` prefix | ✅ Pattern | ⚠️ Engine-dependent | ✅ High |
+| `platform:` prefix | ✅ Pattern | ❌ Platform-specific | ⚠️ Medium |
+| `expr:` formula | ✅ Type | ⚠️ Parser-dependent | ⚠️ Medium |
+| `external:` | ✅ Type | ⚠️ Runtime-dependent | ⚠️ Medium |
+| `x-*` | ❌ Ignored | ❌ Non-portable | ❌ Low |
 
 ---
 

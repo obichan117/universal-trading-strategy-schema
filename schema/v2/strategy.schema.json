@@ -1024,61 +1024,135 @@
     },
 
     "IndicatorType": {
-      "type": "string",
-      "enum": [
-        "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA",
-        "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
-        "STOCH_K", "STOCH_D", "STOCH_RSI",
-        "ROC", "MOMENTUM", "WILLIAMS_R", "CCI", "MFI", "CMO", "TSI",
-        "ADX", "PLUS_DI", "MINUS_DI", "AROON_UP", "AROON_DOWN", "AROON_OSC",
-        "SUPERTREND", "PSAR",
-        "ATR", "STDDEV", "VARIANCE",
-        "BB_UPPER", "BB_MIDDLE", "BB_LOWER", "BB_WIDTH", "BB_PERCENT",
-        "KC_UPPER", "KC_MIDDLE", "KC_LOWER",
-        "DC_UPPER", "DC_MIDDLE", "DC_LOWER",
-        "OBV", "VWAP", "AD", "CMF", "KLINGER",
-        "HIGHEST", "LOWEST", "RETURN", "DRAWDOWN",
-        "ZSCORE", "PERCENTILE", "RANK", "CORRELATION", "BETA",
-        "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B", "ICHIMOKU_CHIKOU"
+      "description": "Technical indicator. Core indicators are portable across all engines. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core indicators (portable)",
+          "enum": [
+            "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA",
+            "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
+            "STOCH_K", "STOCH_D", "STOCH_RSI",
+            "ROC", "MOMENTUM", "WILLIAMS_R", "CCI", "MFI", "CMO", "TSI",
+            "ADX", "PLUS_DI", "MINUS_DI", "AROON_UP", "AROON_DOWN", "AROON_OSC",
+            "SUPERTREND", "PSAR",
+            "ATR", "STDDEV", "VARIANCE",
+            "BB_UPPER", "BB_MIDDLE", "BB_LOWER", "BB_WIDTH", "BB_PERCENT",
+            "KC_UPPER", "KC_MIDDLE", "KC_LOWER",
+            "DC_UPPER", "DC_MIDDLE", "DC_LOWER",
+            "OBV", "VWAP", "AD", "CMF", "KLINGER",
+            "HIGHEST", "LOWEST", "RETURN", "DRAWDOWN",
+            "ZSCORE", "PERCENTILE", "RANK", "CORRELATION", "BETA",
+            "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B", "ICHIMOKU_CHIKOU"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined indicator (e.g., custom:MY_SUPERTREND). Engine MAY support, SHOULD log warning if not."
+        },
+        {
+          "type": "string",
+          "pattern": "^talib:[A-Z0-9_]+$",
+          "description": "TA-Lib indicator (e.g., talib:CDLHAMMER). For engines with TA-Lib support."
+        },
+        {
+          "type": "string",
+          "pattern": "^platform:[a-z]+:[a-zA-Z0-9_]+$",
+          "description": "Platform-specific indicator (e.g., platform:tradingview:SQUEEZE_MOMENTUM)."
+        }
       ]
     },
 
     "FundamentalMetric": {
-      "type": "string",
-      "enum": [
-        "PE_RATIO", "PB_RATIO", "PS_RATIO", "PEG_RATIO", "EV_EBITDA", "EARNINGS_YIELD",
-        "ROE", "ROA", "ROIC", "PROFIT_MARGIN", "OPERATING_MARGIN", "NET_MARGIN",
-        "DIVIDEND_YIELD", "PAYOUT_RATIO",
-        "MARKET_CAP", "ENTERPRISE_VALUE", "REVENUE", "EBITDA", "NET_INCOME",
-        "EPS", "EPS_GROWTH", "REVENUE_GROWTH",
-        "DEBT_TO_EQUITY", "CURRENT_RATIO", "QUICK_RATIO", "INTEREST_COVERAGE",
-        "F_SCORE", "ALTMAN_Z",
-        "INDEX_WEIGHT", "FREE_FLOAT", "SHORT_INTEREST", "ANALYST_RATING", "PRICE_TARGET",
-        "EARNINGS_SURPRISE"
+      "description": "Fundamental data metric. Core metrics are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core metrics (portable)",
+          "enum": [
+            "PE_RATIO", "PB_RATIO", "PS_RATIO", "PEG_RATIO", "EV_EBITDA", "EARNINGS_YIELD",
+            "ROE", "ROA", "ROIC", "PROFIT_MARGIN", "OPERATING_MARGIN", "NET_MARGIN",
+            "DIVIDEND_YIELD", "PAYOUT_RATIO",
+            "MARKET_CAP", "ENTERPRISE_VALUE", "REVENUE", "EBITDA", "NET_INCOME",
+            "EPS", "EPS_GROWTH", "REVENUE_GROWTH",
+            "DEBT_TO_EQUITY", "CURRENT_RATIO", "QUICK_RATIO", "INTEREST_COVERAGE",
+            "F_SCORE", "ALTMAN_Z",
+            "INDEX_WEIGHT", "FREE_FLOAT", "SHORT_INTEREST", "ANALYST_RATING", "PRICE_TARGET",
+            "EARNINGS_SURPRISE"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined metric (e.g., custom:MODIFIED_ALTMAN_Z)"
+        },
+        {
+          "type": "string",
+          "pattern": "^provider:[a-z]+:[a-zA-Z0-9_]+$",
+          "description": "Data provider-specific metric (e.g., provider:bloomberg:WACC)"
+        }
       ]
     },
 
     "EventType": {
-      "type": "string",
-      "enum": [
-        "EARNINGS_RELEASE", "DIVIDEND_EX_DATE", "DIVIDEND_PAY_DATE", "STOCK_SPLIT",
-        "IPO", "DELISTING", "FDA_APPROVAL", "PRODUCT_LAUNCH",
-        "INDEX_ADD", "INDEX_REMOVE",
-        "INSIDER_BUY", "INSIDER_SELL", "ANALYST_UPGRADE", "ANALYST_DOWNGRADE",
-        "SEC_FILING_10K", "SEC_FILING_10Q", "SEC_FILING_8K"
+      "description": "Corporate/market event type. Core events are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core events (portable)",
+          "enum": [
+            "EARNINGS_RELEASE", "DIVIDEND_EX_DATE", "DIVIDEND_PAY_DATE", "STOCK_SPLIT",
+            "IPO", "DELISTING", "FDA_APPROVAL", "PRODUCT_LAUNCH",
+            "INDEX_ADD", "INDEX_REMOVE",
+            "INSIDER_BUY", "INSIDER_SELL", "ANALYST_UPGRADE", "ANALYST_DOWNGRADE",
+            "SEC_FILING_10K", "SEC_FILING_10Q", "SEC_FILING_8K"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined event (e.g., custom:CENTRAL_BANK_MEETING)"
+        },
+        {
+          "type": "string",
+          "pattern": "^calendar:[a-zA-Z0-9_]+$",
+          "description": "Economic calendar event (e.g., calendar:FOMC_DECISION, calendar:NFP_RELEASE)"
+        }
       ]
     },
 
     "StockIndex": {
-      "type": "string",
-      "enum": [
-        "NIKKEI225", "TOPIX", "TOPIX100", "TOPIX500", "JPXNIKKEI400",
-        "TSE_PRIME", "TSE_STANDARD", "TSE_GROWTH",
-        "TOPIX_LARGE70", "TOPIX_MID400", "TOPIX_SMALL", "MOTHERS",
-        "SP500", "NASDAQ100", "DOW30", "RUSSELL2000", "RUSSELL1000", "SP400", "SP600",
-        "FTSE100", "DAX40", "CAC40", "STOXX50", "STOXX600",
-        "HANG_SENG", "SSE50", "CSI300", "KOSPI", "KOSDAQ", "TWSE", "ASX200",
-        "MSCI_WORLD", "MSCI_EM", "MSCI_ACWI", "MSCI_EAFE"
+      "description": "Stock index/universe. Core indices are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core indices (portable)",
+          "enum": [
+            "NIKKEI225", "TOPIX", "TOPIX100", "TOPIX500", "JPXNIKKEI400",
+            "TSE_PRIME", "TSE_STANDARD", "TSE_GROWTH",
+            "TOPIX_LARGE70", "TOPIX_MID400", "TOPIX_SMALL", "MOTHERS",
+            "SP500", "NASDAQ100", "DOW30", "RUSSELL2000", "RUSSELL1000", "SP400", "SP600",
+            "FTSE100", "DAX40", "CAC40", "STOXX50", "STOXX600",
+            "HANG_SENG", "SSE50", "CSI300", "KOSPI", "KOSDAQ", "TWSE", "ASX200",
+            "MSCI_WORLD", "MSCI_EM", "MSCI_ACWI", "MSCI_EAFE"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined index/list (e.g., custom:MY_WATCHLIST)"
+        },
+        {
+          "type": "string",
+          "pattern": "^etf:[A-Z0-9]+$",
+          "description": "ETF as universe source (e.g., etf:SPY, etf:QQQ)"
+        },
+        {
+          "type": "string",
+          "pattern": "^sector:[A-Z0-9_]+$",
+          "description": "Sector-based universe (e.g., sector:TECHNOLOGY, sector:HEALTHCARE)"
+        }
       ]
     }
   }
