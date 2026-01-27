@@ -42,7 +42,7 @@ jobs:
       - name: Build documentation
         run: |
           cd python
-          uv run mkdocs build --config-file ../mkdocs.yml --site-dir ../site
+          uv run mkdocs build --config-file ../mkdocs.yml --site-dir ${{ github.workspace }}/site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
