@@ -28,6 +28,127 @@ UTSS is a declarative schema for expressing trading strategies. A valid UTSS doc
 - Specify risk limits (constraints)
 - Set evaluation schedule (schedule)
 
+### Schema Architecture
+
+```mermaid
+graph TB
+    subgraph Strategy["📄 Strategy Document"]
+        Info["info"]
+        Universe["universe"]
+        Parameters["parameters"]
+        Signals["signals"]
+        Conditions["conditions"]
+        Rules["rules"]
+        Constraints["constraints"]
+        Schedule["schedule"]
+    end
+
+    subgraph Rule["📋 Rule"]
+        When["when: Condition"]
+        Then["then: Action"]
+    end
+
+    subgraph SignalTypes["📊 Signal Types"]
+        Price["PriceSignal"]
+        Indicator["IndicatorSignal"]
+        Fundamental["FundamentalSignal"]
+        Calendar["CalendarSignal"]
+        Event["EventSignal"]
+        Portfolio["PortfolioSignal"]
+        Relative["RelativeSignal"]
+        Constant["ConstantSignal"]
+        Arithmetic["ArithmeticSignal"]
+        Expression["ExpressionSignal"]
+        External["ExternalSignal"]
+    end
+
+    subgraph ConditionTypes["✅ Condition Types"]
+        Comparison["ComparisonCondition"]
+        Cross["CrossCondition"]
+        Range["RangeCondition"]
+        Logical["And/Or/Not"]
+        Temporal["TemporalCondition"]
+        Sequence["SequenceCondition"]
+        Change["ChangeCondition"]
+        Always["AlwaysCondition"]
+    end
+
+    subgraph ActionTypes["⚡ Action Types"]
+        Trade["TradeAction"]
+        Rebalance["RebalanceAction"]
+        Alert["AlertAction"]
+        Hold["HoldAction"]
+    end
+
+    subgraph SizingTypes["📐 Sizing Types"]
+        Fixed["FixedAmount"]
+        PctEquity["PercentEquity"]
+        PctPosition["PercentPosition"]
+        RiskBased["RiskBased"]
+        Kelly["Kelly"]
+        VolAdj["VolatilityAdjusted"]
+    end
+
+    Rules --> Rule
+    When --> ConditionTypes
+    Then --> ActionTypes
+    Signals --> SignalTypes
+    Conditions --> ConditionTypes
+    Trade --> SizingTypes
+    Comparison --> SignalTypes
+    Cross --> SignalTypes
+    Range --> SignalTypes
+
+    Parameters -.->|"$param"| SignalTypes
+    Signals -.->|"$ref"| ConditionTypes
+
+    style Strategy fill:#e1f5fe
+    style Rule fill:#fff3e0
+    style SignalTypes fill:#e8f5e9
+    style ConditionTypes fill:#fce4ec
+    style ActionTypes fill:#f3e5f5
+    style SizingTypes fill:#fff8e1
+```
+
+### Type System Overview
+
+```mermaid
+graph LR
+    subgraph Primitives["Primitives"]
+        Number["number"]
+        String["string"]
+        Boolean["boolean"]
+        Integer["integer"]
+    end
+
+    subgraph ValueTypes["Value Producers"]
+        Signal["Signal → number"]
+        Condition["Condition → boolean"]
+    end
+
+    subgraph References["References"]
+        Ref["$ref → any component"]
+        Param["$param → parameter value"]
+    end
+
+    subgraph Composites["Composites"]
+        Rule["Rule = Condition + Action"]
+        Action["Action = what to do"]
+        Sizing["Sizing = how much"]
+    end
+
+    Signal --> Number
+    Condition --> Boolean
+    Rule --> Condition
+    Rule --> Action
+    Action --> Sizing
+
+    style Primitives fill:#f5f5f5
+    style ValueTypes fill:#e3f2fd
+    style References fill:#fff3e0
+    style Composites fill:#e8f5e9
+```
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      UTSS Document                          │
@@ -104,6 +225,84 @@ rules:
 
 ### 5. Execution-Agnostic
 Schema defines strategy logic. Execution details (slippage, fees, broker) are out of scope.
+
+### Evaluation Flow
+
+The conceptual evaluation flow (implemented by consuming applications):
+
+```mermaid
+sequenceDiagram
+    participant S as Schedule
+    participant U as Universe
+    participant Sig as Signals
+    participant C as Conditions
+    participant R as Rules
+    participant A as Actions
+    participant E as Execution Engine
+
+    S->>U: Trigger evaluation
+    U->>U: Resolve symbols
+    loop For each symbol
+        U->>Sig: Compute signals
+        Sig->>C: Evaluate conditions
+        C->>R: Check rule triggers
+        R->>R: Sort by priority
+        loop For each triggered rule
+            R->>A: Get action
+            A->>E: Submit order/alert
+        end
+    end
+    E->>E: Apply constraints
+    E->>E: Execute actions
+```
+
+### Data Flow
+
+```mermaid
+flowchart LR
+    subgraph Input["📥 Market Data"]
+        OHLCV["OHLCV"]
+        Fund["Fundamentals"]
+        Events["Events"]
+    end
+
+    subgraph Signals["📊 Signals"]
+        Price["Price"]
+        Ind["Indicators"]
+        Port["Portfolio"]
+        Calc["Calculated"]
+    end
+
+    subgraph Logic["🧠 Logic"]
+        Cond["Conditions"]
+        Rules["Rules"]
+    end
+
+    subgraph Output["📤 Output"]
+        Orders["Orders"]
+        Alerts["Alerts"]
+        Positions["Positions"]
+    end
+
+    OHLCV --> Price
+    OHLCV --> Ind
+    Fund --> Calc
+    Events --> Calc
+    Price --> Cond
+    Ind --> Cond
+    Port --> Cond
+    Calc --> Cond
+    Cond --> Rules
+    Rules --> Orders
+    Rules --> Alerts
+    Orders --> Positions
+    Positions --> Port
+
+    style Input fill:#e3f2fd
+    style Signals fill:#e8f5e9
+    style Logic fill:#fff3e0
+    style Output fill:#f3e5f5
+```
 
 ---
 
@@ -309,11 +508,102 @@ Signal:
     - CalendarSignal
     - EventSignal
     - PortfolioSignal
+    - RelativeSignal
     - ConstantSignal
     - ArithmeticSignal
     - ExpressionSignal
     - ExternalSignal
     - Reference
+    - ParameterReference
+```
+
+```mermaid
+classDiagram
+    class Signal {
+        <<abstract>>
+    }
+    class PriceSignal {
+        +type: "price"
+        +field: PriceField
+        +offset: integer
+        +timeframe: Timeframe
+        +symbol: string
+    }
+    class IndicatorSignal {
+        +type: "indicator"
+        +indicator: IndicatorType
+        +params: object
+        +offset: integer
+    }
+    class FundamentalSignal {
+        +type: "fundamental"
+        +metric: FundamentalMetric
+        +symbol: string
+    }
+    class CalendarSignal {
+        +type: "calendar"
+        +field: CalendarField
+    }
+    class EventSignal {
+        +type: "event"
+        +event: EventType
+        +days_before: integer
+        +days_after: integer
+    }
+    class PortfolioSignal {
+        +type: "portfolio"
+        +field: PortfolioField
+        +symbol: string
+    }
+    class RelativeSignal {
+        +type: "relative"
+        +signal: Signal
+        +benchmark: string
+        +measure: RelativeMeasure
+        +lookback: integer
+    }
+    class ConstantSignal {
+        +type: "constant"
+        +value: number
+    }
+    class ArithmeticSignal {
+        +type: "arithmetic"
+        +operator: ArithmeticOp
+        +operands: Signal[]
+    }
+    class ExpressionSignal {
+        +type: "expr"
+        +formula: string
+    }
+    class ExternalSignal {
+        +type: "external"
+        +source: string
+        +url: string
+        +default: number
+    }
+    class Reference {
+        +$ref: string
+    }
+    class ParameterReference {
+        +$param: string
+    }
+
+    Signal <|-- PriceSignal
+    Signal <|-- IndicatorSignal
+    Signal <|-- FundamentalSignal
+    Signal <|-- CalendarSignal
+    Signal <|-- EventSignal
+    Signal <|-- PortfolioSignal
+    Signal <|-- RelativeSignal
+    Signal <|-- ConstantSignal
+    Signal <|-- ArithmeticSignal
+    Signal <|-- ExpressionSignal
+    Signal <|-- ExternalSignal
+    Signal <|-- Reference
+    Signal <|-- ParameterReference
+
+    ArithmeticSignal o-- Signal : operands
+    RelativeSignal o-- Signal : signal
 ```
 
 #### PriceSignal
@@ -405,6 +695,45 @@ PortfolioField options:
 - `daily_pnl`: Today's P/L
 - `daily_pnl_pct`: Today's P/L as %
 
+#### RelativeSignal
+
+For cross-asset or benchmark-relative comparisons.
+
+```yaml
+type: relative
+signal: Signal              # Required. The signal to compare
+benchmark: string           # Required. Index or symbol (e.g., "SPY", "NIKKEI225")
+measure: RelativeMeasure    # Required. How to compare
+lookback: integer           # Optional. Lookback period for rolling calculations
+```
+
+RelativeMeasure options:
+- `ratio`: signal / benchmark (e.g., price relative strength)
+- `difference`: signal - benchmark
+- `beta`: Rolling beta vs benchmark
+- `correlation`: Rolling correlation vs benchmark
+- `percentile`: Where signal ranks vs benchmark universe
+- `z_score`: Standardized score vs benchmark
+
+**Example - Price Relative to S&P 500:**
+
+```yaml
+signals:
+  relative_strength:
+    type: relative
+    signal: { type: price, field: close }
+    benchmark: SPY
+    measure: ratio
+    lookback: 20
+
+conditions:
+  outperforming:
+    type: comparison
+    left: { $ref: "#/signals/relative_strength" }
+    operator: ">"
+    right: { type: constant, value: 1.0 }
+```
+
 #### ConstantSignal
 
 ```yaml
@@ -463,6 +792,49 @@ $ref: string                # JSON Pointer path
 # "#/conditions/oversold"
 ```
 
+#### ParameterReference
+
+Reference to a strategy parameter defined in the `parameters` section.
+
+```yaml
+$param: string              # Parameter name
+# Examples:
+# { $param: rsi_period }
+# { $param: oversold_threshold }
+```
+
+**Example - Parameterized RSI Strategy:**
+
+```yaml
+parameters:
+  rsi_period:
+    type: integer
+    default: 14
+    min: 5
+    max: 30
+    description: RSI calculation period
+
+  oversold_level:
+    type: integer
+    default: 30
+    min: 20
+    max: 40
+
+signals:
+  rsi:
+    type: indicator
+    indicator: RSI
+    params:
+      period: { $param: rsi_period }     # Uses parameter
+
+conditions:
+  oversold:
+    type: comparison
+    left: { $ref: "#/signals/rsi" }
+    operator: "<"
+    right: { $param: oversold_level }    # Uses parameter
+```
+
 ---
 
 ### Condition
@@ -483,6 +855,86 @@ Condition:
     - ChangeCondition
     - AlwaysCondition
     - Reference
+```
+
+```mermaid
+classDiagram
+    class Condition {
+        <<abstract>>
+    }
+    class ComparisonCondition {
+        +type: "comparison"
+        +left: Signal
+        +operator: ComparisonOp
+        +right: Signal
+    }
+    class CrossCondition {
+        +type: "cross"
+        +signal: Signal
+        +threshold: Signal
+        +direction: "above" | "below"
+    }
+    class RangeCondition {
+        +type: "range"
+        +signal: Signal
+        +min: Signal
+        +max: Signal
+        +inclusive: boolean
+    }
+    class AndCondition {
+        +type: "and"
+        +conditions: Condition[]
+    }
+    class OrCondition {
+        +type: "or"
+        +conditions: Condition[]
+    }
+    class NotCondition {
+        +type: "not"
+        +condition: Condition
+    }
+    class TemporalCondition {
+        +type: "temporal"
+        +condition: Condition
+        +modifier: TemporalMod
+        +bars: integer
+    }
+    class SequenceCondition {
+        +type: "sequence"
+        +steps: SequenceStep[]
+        +reset_on: Condition
+        +expire_bars: integer
+    }
+    class ChangeCondition {
+        +type: "change"
+        +signal: Signal
+        +bars: integer
+        +direction: string
+    }
+    class AlwaysCondition {
+        +type: "always"
+    }
+
+    Condition <|-- ComparisonCondition
+    Condition <|-- CrossCondition
+    Condition <|-- RangeCondition
+    Condition <|-- AndCondition
+    Condition <|-- OrCondition
+    Condition <|-- NotCondition
+    Condition <|-- TemporalCondition
+    Condition <|-- SequenceCondition
+    Condition <|-- ChangeCondition
+    Condition <|-- AlwaysCondition
+
+    ComparisonCondition o-- Signal : left, right
+    CrossCondition o-- Signal : signal, threshold
+    RangeCondition o-- Signal : signal, min, max
+    AndCondition o-- Condition : conditions
+    OrCondition o-- Condition : conditions
+    NotCondition o-- Condition : condition
+    TemporalCondition o-- Condition : condition
+    SequenceCondition o-- Condition : steps, reset_on
+    ChangeCondition o-- Signal : signal
 ```
 
 #### ComparisonCondition
@@ -598,6 +1050,48 @@ Action:
     - HoldAction
 ```
 
+```mermaid
+classDiagram
+    class Action {
+        <<abstract>>
+    }
+    class TradeAction {
+        +type: "trade"
+        +direction: Direction
+        +symbol: string
+        +sizing: Sizing
+        +order_type: OrderType
+        +limit_price: Signal
+        +stop_price: Signal
+        +time_in_force: TimeInForce
+    }
+    class RebalanceAction {
+        +type: "rebalance"
+        +method: RebalanceMethod
+        +targets: TargetWeight[]
+        +threshold: number
+    }
+    class AlertAction {
+        +type: "alert"
+        +message: string
+        +level: AlertLevel
+        +channels: Channel[]
+        +throttle_minutes: integer
+    }
+    class HoldAction {
+        +type: "hold"
+        +reason: string
+    }
+
+    Action <|-- TradeAction
+    Action <|-- RebalanceAction
+    Action <|-- AlertAction
+    Action <|-- HoldAction
+
+    TradeAction o-- Sizing : sizing
+    TradeAction o-- Signal : limit_price, stop_price
+```
+
 #### TradeAction
 
 ```yaml
@@ -664,6 +1158,58 @@ Sizing:
     - KellySizing
     - VolatilityAdjustedSizing
     - ConditionalSizing
+```
+
+```mermaid
+classDiagram
+    class Sizing {
+        <<abstract>>
+    }
+    class FixedAmountSizing {
+        +type: "fixed_amount"
+        +amount: number
+        +currency: string
+    }
+    class PercentEquitySizing {
+        +type: "percent_of_equity"
+        +percent: number
+    }
+    class PercentPositionSizing {
+        +type: "percent_of_position"
+        +percent: number
+    }
+    class RiskBasedSizing {
+        +type: "risk_based"
+        +risk_percent: number
+        +stop_distance: Signal
+    }
+    class KellySizing {
+        +type: "kelly"
+        +fraction: number
+        +lookback: integer
+    }
+    class VolatilityAdjustedSizing {
+        +type: "volatility_adjusted"
+        +target_volatility: number
+        +lookback: integer
+    }
+    class ConditionalSizing {
+        +type: "conditional"
+        +cases: SizingCase[]
+        +default: Sizing
+    }
+
+    Sizing <|-- FixedAmountSizing
+    Sizing <|-- PercentEquitySizing
+    Sizing <|-- PercentPositionSizing
+    Sizing <|-- RiskBasedSizing
+    Sizing <|-- KellySizing
+    Sizing <|-- VolatilityAdjustedSizing
+    Sizing <|-- ConditionalSizing
+
+    RiskBasedSizing o-- Signal : stop_distance
+    ConditionalSizing o-- Sizing : cases, default
+    ConditionalSizing o-- Condition : cases.when
 ```
 
 #### FixedAmountSizing
