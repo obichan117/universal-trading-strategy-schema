@@ -78,6 +78,7 @@ nav:
   - Guide:
       - Architecture: architecture.md
       - Comparison: comparison.md
+      - Research: research.md
       - Examples: examples.md
   - Reference:
       - Specification: specification.md
