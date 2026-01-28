@@ -183,10 +183,16 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
 
 
+async def _run_server():
+    """Run the MCP server with stdio transport."""
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())
+
+
 def main():
     """Run the MCP server."""
     logger.info("Starting UTSS MCP server...")
-    asyncio.run(stdio_server(server))
+    asyncio.run(_run_server())
 
 
 if __name__ == "__main__":
