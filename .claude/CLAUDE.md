@@ -2,7 +2,7 @@
 
 ## Project Scope
 
-**This is a monorepo containing the UTSS schema and backtesting engine.**
+**This is a monorepo containing the UTSS schema, backtesting engine, and LLM integration tools.**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -18,6 +18,15 @@
 │  • Data providers (Yahoo Finance, J-Quants)                    │
 │  • Indicator calculations                                       │
 │  • Performance metrics                                          │
+│                                                                 │
+│  packages/utss-llm (pip install utss-llm)                      │
+│  • Conversational strategy builder                             │
+│  • Guided question flow                                         │
+│  • Natural language to UTSS parsing                            │
+│                                                                 │
+│  packages/utss-mcp (pip install utss-mcp)                      │
+│  • MCP server for Claude Code integration                      │
+│  • Tools: build, validate, backtest, revise strategies         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -27,11 +36,16 @@
 
 ```bash
 # Install
-pip install utss     # Schema only
-pip install pyutss   # With backtesting engine
+pip install utss       # Schema only
+pip install pyutss     # With backtesting engine
+pip install utss-llm   # With LLM/conversation features
+pip install utss-mcp   # MCP server for Claude Code
 
 # Validate a strategy file
 python -c "from utss import validate_yaml; print(validate_yaml(open('examples/rsi-reversal.yaml').read()))"
+
+# Run MCP server (for Claude Code integration)
+utss-mcp
 
 # Development
 uv sync              # Install all workspace packages
@@ -55,14 +69,32 @@ utss/
 │   │   │   └── capabilities.py     # Exported capabilities for engine sync
 │   │   └── tests/
 │   │
-│   └── pyutss/                     # Backtesting engine (pip install pyutss)
+│   ├── pyutss/                     # Backtesting engine (pip install pyutss)
+│   │   ├── pyproject.toml
+│   │   ├── src/pyutss/
+│   │   │   ├── data/               # Data providers
+│   │   │   │   └── providers/      # Yahoo, J-Quants, etc.
+│   │   │   ├── engine/             # Backtest execution
+│   │   │   ├── metrics/            # Performance metrics
+│   │   │   └── results/            # Result handling
+│   │   └── tests/
+│   │
+│   ├── utss-llm/                   # LLM integration (pip install utss-llm)
+│   │   ├── pyproject.toml
+│   │   ├── src/utss_llm/
+│   │   │   ├── conversation/       # Conversational strategy builder
+│   │   │   │   ├── session.py      # ConversationSession main class
+│   │   │   │   ├── builder.py      # StrategyBuilder guided flow
+│   │   │   │   ├── questions.py    # Predefined questions/options
+│   │   │   │   └── state.py        # State management
+│   │   │   └── parser.py           # Natural language parser
+│   │   └── tests/
+│   │
+│   └── utss-mcp/                   # MCP server (pip install utss-mcp)
 │       ├── pyproject.toml
-│       ├── src/pyutss/
-│       │   ├── data/               # Data providers
-│       │   │   └── providers/      # Yahoo, J-Quants, etc.
-│       │   ├── engine/             # Backtest execution
-│       │   ├── metrics/            # Performance metrics
-│       │   └── results/            # Result handling
+│       ├── src/utss_mcp/
+│       │   ├── server.py           # MCP server implementation
+│       │   └── tools.py            # Tool definitions
 │       └── tests/
 │
 ├── schema/v2/
@@ -152,6 +184,69 @@ from utss import (
    ```bash
    uv run pytest
    ```
+
+---
+
+## Conversational Strategy Building
+
+The `utss-llm` package provides a guided conversation flow for building strategies:
+
+```python
+from utss_llm.conversation import ConversationSession
+
+session = ConversationSession()
+
+# Start conversation
+response = await session.start("I want a mean reversion strategy")
+print(response.message)      # "What type of strategy..."
+print(response.question)     # Question with options
+
+# Answer with option id or number
+response = await session.answer("mean_reversion")  # or "1"
+
+# Continue until complete
+while not response.is_complete:
+    response = await session.answer(user_input)
+
+# Get final YAML
+print(response.strategy_yaml)
+```
+
+### Conversation Flow
+
+```
+strategy_type → universe_type → universe_details → entry_indicator
+     → entry_params → exit_params → position_size → stop_loss
+     → take_profit → max_positions → confirm → COMPLETE
+```
+
+---
+
+## MCP Server Integration
+
+The `utss-mcp` package provides an MCP server for Claude Code:
+
+```json
+// Add to Claude Code MCP config
+{
+  "mcpServers": {
+    "utss": {
+      "command": "utss-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `build_strategy` | Interactive strategy builder with guided questions |
+| `validate_strategy` | Validate UTSS YAML against schema |
+| `backtest_strategy` | Run backtest simulation with metrics |
+| `list_indicators` | List supported technical indicators |
+| `revise_strategy` | Modify strategy in active session |
 
 ---
 

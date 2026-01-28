@@ -1,31 +1,51 @@
 # Installation
 
-## Python Package
+## Python Packages
+
+UTSS provides multiple packages for different use cases:
+
+| Package | Description |
+|---------|-------------|
+| `utss` | Core schema and validation |
+| `pyutss` | Backtesting engine with indicators and metrics |
+| `utss-llm` | LLM integration and conversational strategy builder |
+| `utss-mcp` | MCP server for Claude Code integration |
 
 ### Using pip
 
 ```bash
-pip install utss
+pip install utss           # Schema only
+pip install pyutss         # With backtesting engine
+pip install utss-llm       # With LLM/conversation features
+pip install utss-mcp       # MCP server for Claude Code
 ```
 
 ### Using uv (recommended)
 
 ```bash
-uv add utss
+uv add utss           # Schema only
+uv add pyutss         # With backtesting engine
+uv add utss-llm       # With LLM features
+uv add utss-mcp       # MCP server
 ```
 
 ### Using poetry
 
 ```bash
 poetry add utss
+poetry add pyutss
+poetry add utss-llm
+poetry add utss-mcp
 ```
 
 ### From source
 
 ```bash
 git clone https://github.com/obichan117/universal-trading-strategy-schema.git
-cd universal-trading-strategy-schema/python
-pip install -e .
+cd universal-trading-strategy-schema
+
+# Install all packages in development mode
+uv sync
 ```
 
 ---
@@ -84,16 +104,16 @@ For contributing or running tests:
 
 ```bash
 git clone https://github.com/obichan117/universal-trading-strategy-schema.git
-cd universal-trading-strategy-schema/python
+cd universal-trading-strategy-schema
 
-# Install with dev dependencies
-uv sync --extra dev
+# Install all workspace packages with dev dependencies
+uv sync
 
-# Run tests
+# Run all tests (132 tests across all packages)
 uv run pytest
 
-# Run type checker
-uv run mypy utss --ignore-missing-imports
+# Run tests for specific package
+uv run pytest packages/utss-mcp/tests -v
 ```
 
 ---
@@ -114,3 +134,46 @@ uv run mkdocs build --strict
 ```
 
 Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+---
+
+## MCP Server Setup (Claude Code)
+
+To use UTSS with Claude Code:
+
+1. Install the MCP package:
+   ```bash
+   pip install utss-mcp
+   ```
+
+2. Add to your Claude Code MCP configuration (`~/.claude/mcp.json` or project config):
+   ```json
+   {
+     "mcpServers": {
+       "utss": {
+         "command": "utss-mcp",
+         "args": []
+       }
+     }
+   }
+   ```
+
+3. Use in Claude Code:
+   ```
+   You: Help me build a mean reversion strategy for tech stocks
+
+   Claude: [calls build_strategy tool]
+           What type of strategy would you like?
+           1. Mean Reversion
+           2. Trend Following
+           3. Breakout
+           ...
+   ```
+
+### Available MCP Tools
+
+- **build_strategy** - Interactive strategy builder with guided questions
+- **validate_strategy** - Validate UTSS YAML against schema
+- **backtest_strategy** - Run backtest with performance metrics
+- **list_indicators** - List supported technical indicators
+- **revise_strategy** - Modify strategy in active session

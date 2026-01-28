@@ -182,24 +182,39 @@ Signal → Condition → Rule → Strategy
 
 ---
 
+## Packages
+
+| Package | Description | Install |
+|---------|-------------|---------|
+| `utss` | Core schema and validation | `pip install utss` |
+| `pyutss` | Backtesting engine | `pip install pyutss` |
+| `utss-llm` | Conversational strategy builder | `pip install utss-llm` |
+| `utss-mcp` | Claude Code MCP server | `pip install utss-mcp` |
+
 ## Quick Installation
 
 === "pip"
 
     ```bash
-    pip install utss
+    pip install utss           # Schema only
+    pip install pyutss         # With backtesting
+    pip install utss-mcp       # For Claude Code
     ```
 
 === "uv"
 
     ```bash
     uv add utss
+    uv add pyutss
+    uv add utss-mcp
     ```
 
 === "poetry"
 
     ```bash
     poetry add utss
+    poetry add pyutss
+    poetry add utss-mcp
     ```
 
 ---
@@ -237,11 +252,47 @@ print(f"Loaded: {strategy.info.name}")
 
 ---
 
+## Claude Code Integration
+
+Build strategies interactively with Claude Code using the MCP server:
+
+```json
+// Add to ~/.claude/mcp.json
+{
+  "mcpServers": {
+    "utss": { "command": "utss-mcp" }
+  }
+}
+```
+
+Then in Claude Code:
+
+```
+You: Help me build a mean reversion RSI strategy
+
+Claude: [uses build_strategy tool]
+        What type of strategy? 1) Mean Reversion 2) Trend Following...
+
+You: 1
+
+Claude: [continues guided conversation...]
+```
+
+The MCP server provides:
+
+- **build_strategy** - Interactive guided builder
+- **validate_strategy** - Schema validation
+- **backtest_strategy** - Run simulations
+- **list_indicators** - Available indicators
+
+---
+
 ## Use Cases
 
 | Application | How UTSS Helps |
 |-------------|----------------|
 | **LLM Agents** | Natural language → validated strategy |
+| **Claude Code** | MCP server with interactive builder |
 | **Backtesting** | Load strategy, simulate on historical data |
 | **Parameter Optimization** | Extract parameters, run grid search |
 | **Live Trading** | Same strategy, real execution |

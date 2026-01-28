@@ -439,6 +439,23 @@ class ParameterType(str, Enum):
     STRING = "string"
 
 
+class SlippageType(str, Enum):
+    """Slippage model types."""
+
+    PERCENTAGE = "percentage"
+    FIXED = "fixed"
+    TIERED = "tiered"
+
+
+class CommissionType(str, Enum):
+    """Commission model types."""
+
+    PER_TRADE = "per_trade"
+    PER_SHARE = "per_share"
+    PERCENTAGE = "percentage"
+    TIERED = "tiered"
+
+
 # =============================================================================
 # EXTENSIBLE ENUM VALIDATORS
 # =============================================================================
@@ -1119,6 +1136,83 @@ class Parameter(BaseSchema):
 
 
 # =============================================================================
+# EXECUTION - Strategy execution assumptions
+# =============================================================================
+
+
+class SlippageTier(BaseSchema):
+    """A tier in tiered slippage model."""
+
+    up_to: float = Field(..., description="Order size threshold")
+    value: float = Field(..., description="Slippage for this tier")
+
+
+class SlippageModel(BaseSchema):
+    """Expected slippage model.
+
+    Slippage is a strategy design decision - the strategy author knows
+    what slippage to expect based on the markets/instruments traded.
+    """
+
+    type: SlippageType
+    value: float | None = Field(
+        None, ge=0, description="Slippage value (percentage as decimal, e.g., 0.001 = 0.1%)"
+    )
+    tiers: list[SlippageTier] | None = Field(
+        None, description="Tiered slippage based on order size"
+    )
+
+
+class CommissionTier(BaseSchema):
+    """A tier in tiered commission model."""
+
+    up_to: float = Field(..., description="Trade value threshold")
+    value: float = Field(..., description="Commission for this tier")
+
+
+class CommissionModel(BaseSchema):
+    """Expected commission model.
+
+    Commission is a strategy design decision - affects position sizing
+    and profitability calculations.
+    """
+
+    type: CommissionType
+    value: float | None = Field(None, ge=0, description="Commission value")
+    min: float | None = Field(None, ge=0, description="Minimum commission per trade")
+    max: float | None = Field(None, ge=0, description="Maximum commission per trade")
+    tiers: list[CommissionTier] | None = Field(
+        None, description="Tiered commission based on trade value"
+    )
+
+
+class Execution(BaseSchema):
+    """Strategy execution assumptions.
+
+    Defines the slippage, commission, and other execution parameters
+    that the strategy was designed for. These are part of the strategy
+    itself, not the backtest configuration.
+
+    The only things external to the strategy are:
+    - Data source (historical file vs real-time feed)
+    - Date range (for backtest) or real-time mode
+    - Actual capital amount
+    """
+
+    slippage: SlippageModel | None = None
+    commission: CommissionModel | None = None
+    min_capital: float | None = Field(
+        None, ge=0, description="Minimum capital required for this strategy"
+    )
+    min_history: int | None = Field(
+        None, ge=1, description="Minimum bars/days of history needed for indicator warmup"
+    )
+    timeframe: Timeframe | None = Field(
+        None, description="Expected data timeframe for the strategy"
+    )
+
+
+# =============================================================================
 # INFO - Strategy metadata
 # =============================================================================
 
@@ -1167,6 +1261,7 @@ class Strategy(BaseSchema):
     constraints: Constraints | None = None
     schedule: Schedule | None = None
     parameters: dict[str, Parameter] | None = None
+    execution: Execution | None = None
 
 
 # Update forward references

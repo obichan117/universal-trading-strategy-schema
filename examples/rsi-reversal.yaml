@@ -90,3 +90,14 @@ schedule:
   frequency: daily
   market_hours_only: true
   timezone: America/New_York
+
+# Execution assumptions (strategy design decisions)
+execution:
+  slippage:
+    type: percentage
+    value: 0.001  # 0.1% expected slippage
+  commission:
+    type: per_trade
+    value: 5  # $5 per trade
+  min_capital: 50000  # Minimum $50k for proper diversification
+  min_history: 200  # Need 200 days for RSI warmup and context

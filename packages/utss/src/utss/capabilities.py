@@ -10,6 +10,7 @@ from utss.models import (
     ArithmeticOperator,
     CalendarField,
     ChangeDirection,
+    CommissionType,
     ComparisonOperator,
     CrossDirection,
     EventType,
@@ -18,12 +19,13 @@ from utss.models import (
     PortfolioField,
     PriceField,
     RebalanceMethod,
+    SlippageType,
     TemporalModifier,
     TradeDirection,
 )
 
 # Schema version
-SCHEMA_VERSION = "2.1.0"
+SCHEMA_VERSION = "2.2.0"
 
 # All supported indicator types
 SUPPORTED_INDICATORS: list[str] = [e.value for e in IndicatorType]
@@ -120,6 +122,12 @@ SUPPORTED_UNIVERSE_TYPES: list[str] = [
     "dual",
 ]
 
+# Slippage model types
+SUPPORTED_SLIPPAGE_TYPES: list[str] = [e.value for e in SlippageType]
+
+# Commission model types
+SUPPORTED_COMMISSION_TYPES: list[str] = [e.value for e in CommissionType]
+
 __all__ = [
     "SCHEMA_VERSION",
     "SUPPORTED_INDICATORS",
@@ -140,4 +148,6 @@ __all__ = [
     "SUPPORTED_ACTION_TYPES",
     "SUPPORTED_SIZING_TYPES",
     "SUPPORTED_UNIVERSE_TYPES",
+    "SUPPORTED_SLIPPAGE_TYPES",
+    "SUPPORTED_COMMISSION_TYPES",
 ]

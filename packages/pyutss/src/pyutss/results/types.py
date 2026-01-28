@@ -149,3 +149,65 @@ class BacktestResult:
             return 0.0
         winners = sum(1 for t in closed if t.pnl > 0)
         return (winners / len(closed)) * 100
+
+    def plot(
+        self,
+        data: pd.DataFrame,
+        title: str | None = None,
+        show_equity: bool = True,
+        show_volume: bool = True,
+        figsize: tuple[int, int] = (14, 8),
+    ) -> None:
+        """Plot backtest results with entry/exit markers.
+
+        Displays a candlestick chart with buy/sell markers overlaid,
+        plus optional volume and equity curve subplots.
+
+        Args:
+            data: OHLCV DataFrame used in backtest (must have DatetimeIndex)
+            title: Chart title (default: symbol + return summary)
+            show_equity: Whether to show equity curve subplot
+            show_volume: Whether to show volume subplot
+            figsize: Figure size (width, height)
+
+        Raises:
+            ImportError: If mplfinance is not installed
+
+        Example:
+            >>> result = engine.run(strategy, data, "AAPL")
+            >>> result.plot(data)
+        """
+        from pyutss.results.plotting import plot_backtest
+
+        plot_backtest(
+            result=self,
+            data=data,
+            title=title,
+            show_equity=show_equity,
+            show_volume=show_volume,
+            figsize=figsize,
+        )
+
+    def summary(self, print_output: bool = True) -> str:
+        """Generate and optionally print a summary of backtest results.
+
+        Args:
+            print_output: Whether to print the summary (default: True)
+
+        Returns:
+            Formatted string with backtest statistics
+
+        Example:
+            >>> result = engine.run(strategy, data, "AAPL")
+            >>> result.summary()
+            ══════════════════════════════════════════════════
+             Backtest Results: AAPL
+            ══════════════════════════════════════════════════
+             ...
+        """
+        from pyutss.results.plotting import print_summary
+
+        output = print_summary(self)
+        if print_output:
+            print(output)
+        return output

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://utss.dev/schema/v2/strategy.json",
-  "title": "Universal Trading Strategy Schema (UTSS) v2.1",
+  "title": "Universal Trading Strategy Schema (UTSS) v2.2",
   "description": "A comprehensive, composable schema for expressing any trading strategy",
   "type": "object",
   "required": ["info", "universe", "rules"],
@@ -34,7 +34,8 @@
       "type": "object",
       "description": "Optimizable parameters",
       "additionalProperties": { "$ref": "#/definitions/Parameter" }
-    }
+    },
+    "execution": { "$ref": "#/definitions/Execution" }
   },
   "patternProperties": {
     "^x-": {
@@ -943,6 +944,99 @@
           "type": "number",
           "description": "Activate trailing stop after this profit %",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Execution": {
+      "type": "object",
+      "description": "Strategy execution assumptions (slippage, commission, requirements)",
+      "properties": {
+        "slippage": { "$ref": "#/definitions/SlippageModel" },
+        "commission": { "$ref": "#/definitions/CommissionModel" },
+        "min_capital": {
+          "type": "number",
+          "description": "Minimum capital required for this strategy",
+          "minimum": 0
+        },
+        "min_history": {
+          "type": "integer",
+          "description": "Minimum bars/days of history needed for indicator warmup",
+          "minimum": 1
+        },
+        "timeframe": { "$ref": "#/definitions/Timeframe" }
+      },
+      "additionalProperties": false
+    },
+
+    "SlippageModel": {
+      "type": "object",
+      "description": "Expected slippage model",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["percentage", "fixed", "tiered"],
+          "description": "Slippage model type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Slippage value (percentage as decimal, e.g., 0.001 = 0.1%)",
+          "minimum": 0
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Tiered slippage based on order size",
+          "items": {
+            "type": "object",
+            "required": ["up_to", "value"],
+            "properties": {
+              "up_to": { "type": "number", "description": "Order size threshold" },
+              "value": { "type": "number", "description": "Slippage for this tier" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CommissionModel": {
+      "type": "object",
+      "description": "Expected commission model",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["per_trade", "per_share", "percentage", "tiered"],
+          "description": "Commission model type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Commission value",
+          "minimum": 0
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum commission per trade",
+          "minimum": 0
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum commission per trade",
+          "minimum": 0
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Tiered commission based on trade value",
+          "items": {
+            "type": "object",
+            "required": ["up_to", "value"],
+            "properties": {
+              "up_to": { "type": "number", "description": "Trade value threshold" },
+              "value": { "type": "number", "description": "Commission for this tier" }
+            }
+          }
         }
       },
       "additionalProperties": false

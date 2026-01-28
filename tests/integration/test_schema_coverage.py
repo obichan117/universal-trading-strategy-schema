@@ -30,7 +30,7 @@ class TestSchemaVersion:
     def test_schema_version_defined(self):
         """Schema version should be defined."""
         assert SCHEMA_VERSION is not None
-        assert SCHEMA_VERSION == "2.1.0"
+        assert SCHEMA_VERSION == "2.2.0"
 
 
 class TestIndicatorCoverage:

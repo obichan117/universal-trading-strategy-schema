@@ -13,7 +13,7 @@ from utss import (
 
 def test_schema_version():
     """Test schema version is defined."""
-    assert SCHEMA_VERSION == "2.1.0"
+    assert SCHEMA_VERSION == "2.2.0"
 
 
 def test_supported_indicators():
@@ -172,3 +172,82 @@ rules:
 """
     with pytest.raises(ValidationError):
         validate_yaml(yaml_content)
+
+
+def test_execution_section():
+    """Test strategy with execution section."""
+    yaml_content = """
+info:
+  id: execution-test
+  name: Execution Test
+  version: "1.0"
+
+universe:
+  type: static
+  symbols: ["AAPL"]
+
+rules:
+  - name: test-rule
+    when:
+      type: always
+    then:
+      type: hold
+
+execution:
+  slippage:
+    type: percentage
+    value: 0.001
+  commission:
+    type: per_trade
+    value: 5
+  min_capital: 50000
+  min_history: 200
+"""
+    strategy = validate_yaml(yaml_content)
+    assert strategy.execution is not None
+    assert strategy.execution.slippage is not None
+    assert strategy.execution.slippage.type == "percentage"
+    assert strategy.execution.slippage.value == 0.001
+    assert strategy.execution.commission is not None
+    assert strategy.execution.commission.type == "per_trade"
+    assert strategy.execution.commission.value == 5
+    assert strategy.execution.min_capital == 50000
+    assert strategy.execution.min_history == 200
+
+
+def test_execution_tiered_slippage():
+    """Test strategy with tiered slippage model."""
+    yaml_content = """
+info:
+  id: tiered-slippage-test
+  name: Tiered Slippage Test
+  version: "1.0"
+
+universe:
+  type: static
+  symbols: ["AAPL"]
+
+rules:
+  - name: test-rule
+    when:
+      type: always
+    then:
+      type: hold
+
+execution:
+  slippage:
+    type: tiered
+    tiers:
+      - up_to: 10000
+        value: 0.0005
+      - up_to: 100000
+        value: 0.001
+      - up_to: 1000000
+        value: 0.002
+"""
+    strategy = validate_yaml(yaml_content)
+    assert strategy.execution is not None
+    assert strategy.execution.slippage.type == "tiered"
+    assert len(strategy.execution.slippage.tiers) == 3
+    assert strategy.execution.slippage.tiers[0].up_to == 10000
+    assert strategy.execution.slippage.tiers[0].value == 0.0005
