@@ -109,8 +109,13 @@ def _get_source_for_symbol(symbol: str) -> str:
     # Try preferred source first
     try:
         _import_source(preferred)
+        # For jquants, also check if API key is configured
+        if preferred == "jquants":
+            import os
+            if not os.environ.get("JQUANTS_API_KEY"):
+                raise ImportError("JQUANTS_API_KEY not set")
         return preferred
-    except ImportError:
+    except (ImportError, Exception):
         pass
 
     # Fall back if preferred unavailable

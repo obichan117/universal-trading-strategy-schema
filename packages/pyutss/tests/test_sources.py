@@ -143,6 +143,9 @@ class TestTickerClass:
 
     def test_ticker_normalize_jp_for_jquants(self):
         """Ticker should normalize JP symbols for J-Quants."""
+        import os
+        if not os.environ.get("JQUANTS_API_KEY"):
+            pytest.skip("JQUANTS_API_KEY not set")
         try:
             ticker = Ticker("7203.T", source="jquants")
             # pyjquants expects 4-digit code without suffix
