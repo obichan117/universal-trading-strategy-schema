@@ -7,14 +7,14 @@ from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
 from utss_mcp.tools import (
-    build_strategy,
     backtest_strategy,
-    validate_strategy,
+    build_strategy,
     list_indicators,
     revise_strategy,
+    validate_strategy,
 )
 
 # Configure logging

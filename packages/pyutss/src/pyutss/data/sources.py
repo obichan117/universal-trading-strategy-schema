@@ -20,12 +20,11 @@ Usage:
     print(ticker.info)
 """
 
-from datetime import date
 import os
+from datetime import date
 from typing import Any
 
 import pandas as pd
-
 
 # Available data sources and their import paths
 SOURCES = {

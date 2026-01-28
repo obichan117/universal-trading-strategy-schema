@@ -2,12 +2,11 @@
 
 import pytest
 from utss import (
-    Strategy,
-    validate_yaml,
-    ValidationError,
-    SUPPORTED_INDICATORS,
-    SUPPORTED_CONDITION_TYPES,
     SCHEMA_VERSION,
+    SUPPORTED_CONDITION_TYPES,
+    SUPPORTED_INDICATORS,
+    ValidationError,
+    validate_yaml,
 )
 
 

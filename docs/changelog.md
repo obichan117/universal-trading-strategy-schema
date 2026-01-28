@@ -6,92 +6,73 @@ All notable changes to the Universal Trading Strategy Schema.
 
 ## [1.0.0] - 2024-01
 
-### Added
+### Overview
 
-#### New Signal Types
-- **PortfolioSignal** - Access position and portfolio state
-  - `position_qty`, `position_value`, `position_side`
-  - `unrealized_pnl`, `unrealized_pnl_pct`, `realized_pnl`
-  - `days_in_position`, `bars_in_position`
-  - `equity`, `cash`, `buying_power`, `margin_used`
-  - `daily_pnl`, `daily_pnl_pct`
-- **ExpressionSignal** - Custom formula expressions
-- **ExternalSignal** - Runtime-resolved signals (webhook, file, provider)
+UTSS v1.0 is a **clean, minimal design** with 6 condition types and an `expr` escape hatch for complex patterns.
 
-#### New Condition Types
-- **SequenceCondition** - Detect ordered patterns (A then B within N bars)
-- **ChangeCondition** - Detect signal changes (increase/decrease over N bars)
-- **AlwaysCondition** - Always true (for scheduled actions)
+### Design Philosophy
 
-#### New Action Types
-- **AlertAction** - Send notifications
-  - Multiple channels: log, webhook, email, sms, telegram, discord, slack
-  - Severity levels: info, warning, critical
-  - Throttling support
+- **Minimal Primitives**: Only 6 condition types (comparison, and, or, not, expr, always)
+- **expr for Complexity**: Crossovers, ranges, temporal patterns via formula expressions
+- **No Sugar Bloat**: Avoids unbounded type additions
+- **LLM-Friendly**: Predictable structure, clear type discriminators
 
-#### New Sizing Types
-- **ConditionalSizing** - Different sizing based on conditions
+### Signal Types
 
-#### Parameters Section
-- Define optimizable parameters with `$param` references
-- Support for integer, number, boolean, string types
-- Min/max/step for numeric optimization
+| Type | Description |
+|------|-------------|
+| `price` | Raw OHLCV data |
+| `indicator` | 50+ technical indicators (SMA, RSI, MACD, etc.) |
+| `fundamental` | 30+ company metrics (PE_RATIO, ROE, etc.) |
+| `calendar` | Date patterns (day_of_week, is_month_end, etc.) |
+| `event` | Market events (EARNINGS_RELEASE, DIVIDEND_EX_DATE, etc.) |
+| `portfolio` | Position state (unrealized_pnl, days_in_position, etc.) |
+| `relative` | Benchmark comparisons (ratio, beta, correlation) |
+| `constant` | Fixed numeric values |
+| `arithmetic` | Math operations (add, subtract, multiply, etc.) |
+| `expr` | Custom formula expressions |
+| `external` | Runtime signals (webhook, file, provider) |
 
-#### Extended Enumerations
-- **Indicators**: 50+ indicators including KAMA, HULL, ROC, Aroon, Keltner Channels, Donchian Channels
-- **Fundamentals**: 30+ metrics including F_SCORE, ALTMAN_Z, INDEX_WEIGHT
-- **Indices**: 30+ indices with Japan focus (TSE_PRIME, TSE_STANDARD, TSE_GROWTH, etc.)
-- **Events**: SEC filings (10K, 10Q, 8K)
+### Condition Types (Minimal Primitives)
 
-#### Universe Enhancements
-- **DualUniverse** - Separate long and short universes for long-short strategies
-- **rank_by** and **order** for index/screener universes
+| Type | Description | Example |
+|------|-------------|---------|
+| `comparison` | Compare signals | `RSI < 30` |
+| `and` | All must be true | `RSI < 30 AND MACD > 0` |
+| `or` | Any must be true | `Monday OR Friday` |
+| `not` | Negate condition | `NOT in_position` |
+| `expr` | Formula expression | `"SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"` |
+| `always` | Unconditional | For scheduled rebalancing |
 
-#### Constraints Enhancements
-- `min_positions` for minimum diversification
-- `max_correlation` between positions
-- `time_stop` for time-based exits
-- `max_daily_turnover` limit
-- `min_holding_bars` minimum hold period
-- `trailing_stop.activation_percent` for activated trailing stops
+Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `expr` formulas.
+See `patterns/` directory for reusable formula library.
 
-#### Schedule Enhancements
-- `evaluate_at` for specific evaluation times
-- `frequency` enum includes `tick`
+### Action Types
 
-#### Extensibility
-- `x-` prefix pattern for platform-specific extensions
+- **TradeAction** - Buy, sell, short, cover with various sizing methods
+- **RebalanceAction** - Equal weight, risk parity, target weights
+- **AlertAction** - Notifications via log, webhook, email, telegram, etc.
+- **HoldAction** - Explicitly do nothing
 
-### Changed
+### Sizing Types
 
-- **Signals and Conditions** moved to top-level (previously nested under `components`)
-- **CalendarSignal** now uses `field` property instead of separate fields
-- **RebalanceAction** now uses `method` property
+- `fixed_amount`, `percent_of_equity`, `percent_of_position`
+- `risk_based`, `kelly`, `volatility_adjusted`, `conditional`
 
-### Removed
+### Universe Types
 
-- `components` section (replaced by top-level `signals` and `conditions`)
-- TypeScript package (Python-only distribution)
+- `static` - Fixed symbol list
+- `index` - Index members with filters/ranking
+- `screener` - Dynamic screening
+- `dual` - Separate long/short universes
 
----
+### Other Features
 
-## [1.0.0] - 2024-01
-
-### Added
-
-- Initial release of UTSS v2
-- Core type hierarchy: Signal → Condition → Rule → Strategy
-- Signal types: price, indicator, fundamental, calendar, event, constant, arithmetic, relative
-- Condition types: comparison, cross, range, and, or, not, temporal
-- Action types: trade, rebalance, hold
-- Sizing types: fixed_amount, percent_of_equity, percent_of_position, risk_based, kelly, volatility_adjusted
-- Universe types: static, index, screener
-- Constraints: position limits, stop loss, take profit, trailing stop, drawdown limits
-- Schedule: frequency, market hours, timezone, trading days
-- JSON Schema Draft-07 specification
-- Python package with Pydantic v2 models
-- TypeScript package with types and AJV validation
-- Example strategies
+- **Parameters** - Optimizable values with `$param` references
+- **Constraints** - Stop loss, take profit, trailing stop, position limits
+- **Schedule** - Evaluation frequency, market hours, timezone
+- **Execution** - Slippage/commission models as strategy design decisions
+- **Extensibility** - `custom:`, `talib:`, `platform:` prefixes for extensions
 
 ---
 

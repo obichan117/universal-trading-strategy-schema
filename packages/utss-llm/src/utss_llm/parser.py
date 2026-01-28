@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from utss import Strategy, validate_yaml, ValidationError
+from utss import Strategy
 
 from utss_llm.providers.base import LLMProvider
 

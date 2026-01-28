@@ -4,13 +4,12 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-
 from utss_mcp.tools import (
-    build_strategy,
-    validate_strategy,
     backtest_strategy,
+    build_strategy,
     list_indicators,
     revise_strategy,
+    validate_strategy,
 )
 
 

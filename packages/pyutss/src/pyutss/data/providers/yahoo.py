@@ -5,9 +5,9 @@ from datetime import date
 from typing import Any
 
 from pyutss.data.models import (
+    OHLCV,
     FundamentalMetrics,
     Market,
-    OHLCV,
     StockMetadata,
     Timeframe,
 )

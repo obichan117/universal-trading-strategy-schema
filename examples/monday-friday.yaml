@@ -37,7 +37,7 @@ rules:
       operator: "="
       right:
         type: constant
-        value: 1  # Monday = 1 (Mon=1, Tue=2, ..., Fri=5)
+        value: 0  # Monday = 0 (pandas: Mon=0, Tue=1, ..., Fri=4)
     then:
       type: trade
       direction: buy
@@ -54,7 +54,7 @@ rules:
       operator: "="
       right:
         type: constant
-        value: 5  # Friday = 5
+        value: 4  # Friday = 4
     then:
       type: trade
       direction: sell

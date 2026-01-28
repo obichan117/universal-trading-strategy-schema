@@ -1,16 +1,13 @@
 """Tests for unified data sources interface."""
 
 import pytest
-
 from pyutss.data.sources import (
-    Ticker,
-    fetch,
-    download,
-    available_sources,
-    SOURCES,
     DEFAULT_SOURCES,
+    SOURCES,
+    Ticker,
     _detect_market,
     _get_source_for_symbol,
+    available_sources,
 )
 
 

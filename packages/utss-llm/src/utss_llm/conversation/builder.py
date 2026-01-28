@@ -1,18 +1,10 @@
 """Strategy builder with guided flow logic."""
 
-from typing import Any
 
 import yaml
 
-from utss_llm.conversation.state import (
-    ConversationResponse,
-    ConversationState,
-    Option,
-    PartialStrategy,
-    Question,
-    ResponseType,
-)
 from utss_llm.conversation.questions import (
+    MOMENTUM_INDICATORS,
     QUESTION_CONFIRM,
     QUESTION_ENTRY_INDICATOR,
     QUESTION_INDEX,
@@ -27,8 +19,13 @@ from utss_llm.conversation.questions import (
     QUESTION_SYMBOLS,
     QUESTION_TAKE_PROFIT,
     QUESTION_UNIVERSE_TYPE,
-    MOMENTUM_INDICATORS,
     TREND_INDICATORS,
+)
+from utss_llm.conversation.state import (
+    ConversationResponse,
+    ConversationState,
+    Question,
+    ResponseType,
 )
 
 

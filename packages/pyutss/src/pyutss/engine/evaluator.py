@@ -411,6 +411,10 @@ class ConditionEvaluator:
         Returns:
             Boolean series where True indicates condition met
         """
+        # Check for $ref first (can appear without explicit type field)
+        if "$ref" in condition:
+            return self._eval_ref(condition, context)
+
         cond_type = condition.get("type", "comparison")
 
         if cond_type == "comparison":

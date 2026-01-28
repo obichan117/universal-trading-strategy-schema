@@ -4,13 +4,12 @@ from datetime import date
 
 import pandas as pd
 import pytest
-
+from pyutss.results.plotting import print_summary
 from pyutss.results.types import (
     BacktestResult,
-    Trade,
     PortfolioSnapshot,
+    Trade,
 )
-from pyutss.results.plotting import print_summary
 
 
 @pytest.fixture

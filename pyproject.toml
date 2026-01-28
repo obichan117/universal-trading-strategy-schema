@@ -58,3 +58,6 @@ strict = true
 testpaths = ["tests", "packages/utss/tests", "packages/pyutss/tests", "packages/utss-llm/tests", "packages/utss-mcp/tests"]
 addopts = "-v"
 asyncio_mode = "auto"
+markers = [
+    "real_data: marks tests that fetch real market data (may be slow, requires network)",
+]

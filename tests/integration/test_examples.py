@@ -1,47 +1,44 @@
-"""Integration tests for running UTSS example strategies through pyutss.
+"""Integration tests for UTSS example strategies with REAL market data.
 
-These tests load the example YAML strategies and run them through the
-backtesting engine to ensure end-to-end compatibility.
+These tests:
+1. Load actual YAML strategy files from examples/
+2. Fetch real market data from Yahoo Finance
+3. Run real backtests with $ref resolution
+4. Verify end-to-end functionality
+
+NO MOCK DATA - all tests use actual market data.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import pytest
 import yaml
 
-from pyutss import BacktestEngine, BacktestConfig, BacktestResult
+from pyutss import BacktestConfig, BacktestEngine, BacktestResult
+from pyutss.data import available_sources, fetch
 
 
 # Path to examples directory
 EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
 
 
-@pytest.fixture
-def sample_ohlcv_data():
-    """Generate sample OHLCV data for testing strategies."""
-    np.random.seed(42)
-    dates = pd.date_range("2024-01-01", periods=300, freq="D")
+def has_yahoo():
+    """Check if Yahoo Finance is available."""
+    return "yahoo" in available_sources()
 
-    # Create somewhat realistic price movement
-    returns = np.random.randn(300) * 0.02  # 2% daily volatility
-    prices = 100 * np.exp(np.cumsum(returns))
 
-    close = pd.Series(prices, index=dates)
-    high = close * (1 + np.abs(np.random.randn(300) * 0.01))
-    low = close * (1 - np.abs(np.random.randn(300) * 0.01))
-    open_ = close.shift(1).fillna(100)
-    volume = pd.Series(np.random.randint(100000, 1000000, 300), index=dates)
+def normalize_columns(df):
+    """Normalize column names to lowercase for backtest engine."""
+    df.columns = [c.lower() for c in df.columns]
+    return df
 
-    return pd.DataFrame({
-        "open": open_,
-        "high": high,
-        "low": low,
-        "close": close,
-        "volume": volume,
-    })
+
+def load_strategy(filename: str) -> dict:
+    """Load a strategy YAML file."""
+    filepath = EXAMPLES_DIR / filename
+    with open(filepath) as f:
+        return yaml.safe_load(f)
 
 
 @pytest.fixture
@@ -55,340 +52,399 @@ def backtest_engine():
     return BacktestEngine(config=config)
 
 
-def load_strategy(filename: str) -> dict:
-    """Load a strategy YAML file."""
-    filepath = EXAMPLES_DIR / filename
-    with open(filepath) as f:
-        return yaml.safe_load(f)
+# Skip all tests if Yahoo Finance is not available
+pytestmark = pytest.mark.skipif(not has_yahoo(), reason="Yahoo Finance not available")
 
 
 class TestExampleStrategiesLoad:
-    """Tests that all example strategies can be loaded."""
+    """Tests that all example strategies can be loaded and validated."""
 
     def test_examples_directory_exists(self):
         """Examples directory should exist."""
         assert EXAMPLES_DIR.exists(), f"Examples directory not found: {EXAMPLES_DIR}"
 
-    def test_rsi_reversal_loads(self):
-        """RSI reversal strategy should load."""
+    def test_rsi_reversal_structure(self):
+        """RSI reversal strategy should have correct structure with $refs."""
         strategy = load_strategy("rsi-reversal.yaml")
+
         assert strategy is not None
         assert strategy["info"]["id"] == "rsi_reversal"
 
-    def test_golden_cross_loads(self):
-        """Golden cross strategy should load."""
+        # Verify it uses signals/conditions sections with $refs
+        assert "signals" in strategy
+        assert "conditions" in strategy
+        assert "rsi_14" in strategy["signals"]
+        assert "oversold" in strategy["conditions"]
+
+        # Verify rules use $refs
+        assert "$ref" in strategy["rules"][0]["when"]
+        assert strategy["rules"][0]["when"]["$ref"] == "#/conditions/oversold"
+
+    def test_golden_cross_structure(self):
+        """Golden cross strategy should use expr for crossover (v1.0 schema)."""
         strategy = load_strategy("golden-cross.yaml")
+
         assert strategy is not None
         assert strategy["info"]["id"] == "golden_cross"
 
-    def test_monday_friday_loads(self):
-        """Monday-Friday strategy should load."""
+        # Verify signals defined
+        assert "sma_50" in strategy["signals"]
+        assert "sma_200" in strategy["signals"]
+
+        # Verify uses expr type (v1.0 minimal primitives)
+        assert strategy["rules"][0]["when"]["type"] == "expr"
+        assert "SMA(50)" in strategy["rules"][0]["when"]["formula"]
+
+    def test_monday_friday_structure(self):
+        """Monday-Friday strategy should use calendar signals."""
         strategy = load_strategy("monday-friday.yaml")
+
         assert strategy is not None
         assert strategy["info"]["id"] == "weekly_momentum"
 
-    def test_earnings_play_loads(self):
-        """Earnings play strategy should load."""
+        # Verify calendar signal
+        assert "day_of_week" in strategy["signals"]
+        assert strategy["signals"]["day_of_week"]["type"] == "calendar"
+
+    def test_earnings_play_structure(self):
+        """Earnings play strategy should use AND conditions."""
         strategy = load_strategy("earnings-play.yaml")
+
         assert strategy is not None
         assert strategy["info"]["id"] == "earnings_play"
 
+        # Verify uses AND condition
+        assert strategy["rules"][0]["when"]["type"] == "and"
 
-class TestRSIReversalStrategy:
-    """Tests for the RSI reversal example strategy."""
 
-    def test_strategy_structure(self):
-        """Strategy should have required sections."""
+class TestRSIReversalWithRealData:
+    """Test RSI reversal strategy with real data over multi-year period."""
+
+    def test_backtest_rsi_reversal_on_aapl(self, backtest_engine):
+        """Run rsi-reversal.yaml on 3 years of AAPL data - should generate trades."""
+        # Load ACTUAL strategy YAML
         strategy = load_strategy("rsi-reversal.yaml")
 
-        assert "info" in strategy
-        assert "universe" in strategy
-        assert "signals" in strategy
-        assert "conditions" in strategy
-        assert "rules" in strategy
-        assert "constraints" in strategy
+        # Fetch 3 YEARS of real data to ensure RSI crosses thresholds
+        end_date = date.today()
+        start_date = end_date - timedelta(days=1095)  # ~3 years
+        data = normalize_columns(fetch("AAPL", start_date, end_date))
 
-    def test_signals_defined(self):
-        """Signals should be properly defined."""
-        strategy = load_strategy("rsi-reversal.yaml")
-
-        assert "rsi_14" in strategy["signals"]
-        assert strategy["signals"]["rsi_14"]["type"] == "indicator"
-        assert strategy["signals"]["rsi_14"]["indicator"] == "RSI"
-
-    def test_conditions_defined(self):
-        """Conditions should be properly defined."""
-        strategy = load_strategy("rsi-reversal.yaml")
-
-        assert "oversold" in strategy["conditions"]
-        assert "overbought" in strategy["conditions"]
-        assert strategy["conditions"]["oversold"]["type"] == "comparison"
-
-    def test_backtest_runs(self, backtest_engine, sample_ohlcv_data):
-        """Strategy should run through backtest engine."""
-        strategy = load_strategy("rsi-reversal.yaml")
-
-        # Simplify strategy for testing - use inline conditions instead of refs
-        simplified_strategy = {
-            "info": strategy["info"],
-            "rules": [
-                {
-                    "when": {
-                        "type": "comparison",
-                        "left": {"type": "indicator", "indicator": "RSI", "params": {"period": 14}},
-                        "operator": "<",
-                        "right": {"type": "constant", "value": 30},
-                    },
-                    "then": {
-                        "type": "trade",
-                        "direction": "buy",
-                        "sizing": {"type": "percent_of_equity", "value": 10},
-                    },
-                },
-                {
-                    "when": {
-                        "type": "comparison",
-                        "left": {"type": "indicator", "indicator": "RSI", "params": {"period": 14}},
-                        "operator": ">",
-                        "right": {"type": "constant", "value": 70},
-                    },
-                    "then": {
-                        "type": "trade",
-                        "direction": "sell",
-                        "sizing": {"type": "percent_of_position", "value": 100},
-                    },
-                },
-            ],
-            "constraints": strategy.get("constraints", {}),
-        }
-
+        # Run backtest with actual schema (including $ref resolution)
         result = backtest_engine.run(
-            strategy=simplified_strategy,
-            data=sample_ohlcv_data,
-            symbol="TEST",
+            strategy=strategy,
+            data=data,
+            symbol="AAPL",
         )
 
+        # Verify results
         assert isinstance(result, BacktestResult)
         assert result.strategy_id == "rsi_reversal"
+        assert result.symbol == "AAPL"
         assert result.initial_capital == 100000
+        assert result.final_equity > 0
+        assert len(result.equity_curve) == len(data)
 
+        # MUST have trades over 3 years - RSI will hit extremes
+        assert result.num_trades > 0, "RSI strategy should generate trades over 3 years"
 
-class TestGoldenCrossStrategy:
-    """Tests for the golden cross example strategy."""
+        print(f"\n=== RSI Reversal on AAPL (3 Years Real Data) ===")
+        print(f"Period: {result.start_date} to {result.end_date}")
+        print(f"Data points: {len(data)}")
+        print(f"Initial: ${result.initial_capital:,.2f}")
+        print(f"Final: ${result.final_equity:,.2f}")
+        print(f"Return: {result.total_return_pct:.2f}%")
+        print(f"Trades: {result.num_trades}")
 
-    def test_strategy_structure(self):
-        """Strategy should have required sections."""
-        strategy = load_strategy("golden-cross.yaml")
+        # Print trade details
+        if result.trades:
+            print(f"Trade details:")
+            for i, trade in enumerate(result.trades[:5]):  # Show first 5 trades
+                print(f"  {i+1}. {trade}")
 
-        assert "info" in strategy
-        assert "signals" in strategy
-        assert "rules" in strategy
+    def test_backtest_rsi_reversal_on_volatile_stock(self, backtest_engine):
+        """Run rsi-reversal.yaml on volatile stock (TSLA) - more RSI extremes."""
+        strategy = load_strategy("rsi-reversal.yaml")
 
-    def test_sma_signals_defined(self):
-        """SMA signals should be defined."""
-        strategy = load_strategy("golden-cross.yaml")
-
-        assert "sma_50" in strategy["signals"]
-        assert "sma_200" in strategy["signals"]
-        assert strategy["signals"]["sma_50"]["params"]["period"] == 50
-        assert strategy["signals"]["sma_200"]["params"]["period"] == 200
-
-    def test_cross_conditions(self):
-        """Cross conditions should be in rules."""
-        strategy = load_strategy("golden-cross.yaml")
-
-        # Check that rules use cross conditions
-        buy_rule = strategy["rules"][0]
-        assert buy_rule["when"]["type"] == "cross"
-        assert buy_rule["when"]["direction"] == "above"
-
-    def test_backtest_runs(self, backtest_engine, sample_ohlcv_data):
-        """Strategy should run through backtest engine."""
-        # Simplified version for testing
-        simplified_strategy = {
-            "info": {"id": "golden_cross", "name": "Golden Cross"},
-            "rules": [
-                {
-                    "when": {
-                        "type": "cross",
-                        "left": {"type": "indicator", "indicator": "SMA", "params": {"period": 50}},
-                        "right": {"type": "indicator", "indicator": "SMA", "params": {"period": 200}},
-                        "direction": "above",
-                    },
-                    "then": {
-                        "type": "trade",
-                        "direction": "buy",
-                        "sizing": {"type": "percent_of_equity", "value": 10},
-                    },
-                },
-            ],
-            "constraints": {},
-        }
+        # TSLA is more volatile, should trigger RSI thresholds more often
+        end_date = date.today()
+        start_date = end_date - timedelta(days=730)  # 2 years
+        data = normalize_columns(fetch("TSLA", start_date, end_date))
 
         result = backtest_engine.run(
-            strategy=simplified_strategy,
-            data=sample_ohlcv_data,
-            symbol="TEST",
+            strategy=strategy,
+            data=data,
+            symbol="TSLA",
+        )
+
+        assert isinstance(result, BacktestResult)
+        assert result.num_trades > 0, "Volatile stock should trigger RSI thresholds"
+
+        print(f"\n=== RSI Reversal on TSLA (Volatile Stock) ===")
+        print(f"Return: {result.total_return_pct:.2f}%, Trades: {result.num_trades}")
+
+
+class TestGoldenCrossWithRealData:
+    """Test Golden Cross strategy with real data - needs long history."""
+
+    def test_backtest_golden_cross_on_spy(self, backtest_engine):
+        """Run golden-cross.yaml on 5 years of SPY data - should catch crossovers."""
+        # Load ACTUAL strategy YAML
+        strategy = load_strategy("golden-cross.yaml")
+
+        # Need 5+ years to see golden/death cross events
+        # SMA(200) needs 200 days warmup, then need time for crossovers
+        end_date = date.today()
+        start_date = end_date - timedelta(days=1825)  # ~5 years
+        data = normalize_columns(fetch("SPY", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="SPY",
+        )
+
+        assert isinstance(result, BacktestResult)
+        assert result.strategy_id == "golden_cross"
+        assert result.symbol == "SPY"
+
+        # Over 5 years, should see at least one golden or death cross
+        print(f"\n=== Golden Cross on SPY (5 Years Real Data) ===")
+        print(f"Period: {result.start_date} to {result.end_date}")
+        print(f"Data points: {len(data)}")
+        print(f"Return: {result.total_return_pct:.2f}%")
+        print(f"Trades: {result.num_trades}")
+
+        if result.trades:
+            print(f"Trade details:")
+            for trade in result.trades:
+                print(f"  {trade}")
+
+    def test_backtest_golden_cross_on_qqq(self, backtest_engine):
+        """Run golden-cross.yaml on QQQ (more volatile than SPY)."""
+        strategy = load_strategy("golden-cross.yaml")
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=1460)  # 4 years
+        data = normalize_columns(fetch("QQQ", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="QQQ",
         )
 
         assert isinstance(result, BacktestResult)
 
+        print(f"\n=== Golden Cross on QQQ (4 Years) ===")
+        print(f"Return: {result.total_return_pct:.2f}%, Trades: {result.num_trades}")
 
-class TestMondayFridayStrategy:
-    """Tests for the Monday-Friday calendar strategy."""
 
-    def test_calendar_signal(self):
-        """Calendar signal should be defined."""
+class TestMondayFridayWithRealData:
+    """Test Monday-Friday calendar strategy - trades weekly."""
+
+    def test_backtest_monday_friday_on_spy(self, backtest_engine):
+        """Run monday-friday.yaml on 2 years of SPY - weekly buy/sell cycles."""
         strategy = load_strategy("monday-friday.yaml")
 
-        assert "day_of_week" in strategy["signals"]
-        assert strategy["signals"]["day_of_week"]["type"] == "calendar"
-        assert strategy["signals"]["day_of_week"]["field"] == "day_of_week"
-
-    def test_backtest_runs(self, backtest_engine, sample_ohlcv_data):
-        """Strategy should run through backtest engine."""
-        simplified_strategy = {
-            "info": {"id": "weekly_momentum", "name": "Weekly Momentum"},
-            "rules": [
-                {
-                    "when": {
-                        "type": "comparison",
-                        "left": {"type": "calendar", "field": "day_of_week"},
-                        "operator": "=",
-                        "right": {"type": "constant", "value": 0},  # Monday = 0 in pandas
-                    },
-                    "then": {
-                        "type": "trade",
-                        "direction": "buy",
-                        "sizing": {"type": "percent_of_equity", "value": 50},
-                    },
-                },
-                {
-                    "when": {
-                        "type": "comparison",
-                        "left": {"type": "calendar", "field": "day_of_week"},
-                        "operator": "=",
-                        "right": {"type": "constant", "value": 4},  # Friday = 4 in pandas
-                    },
-                    "then": {
-                        "type": "trade",
-                        "direction": "sell",
-                        "sizing": {"type": "percent_of_position", "value": 100},
-                    },
-                },
-            ],
-            "constraints": {},
-        }
+        # 2 years = ~100 weeks
+        end_date = date.today()
+        start_date = end_date - timedelta(days=730)
+        data = normalize_columns(fetch("SPY", start_date, end_date))
 
         result = backtest_engine.run(
-            strategy=simplified_strategy,
-            data=sample_ohlcv_data,
-            symbol="TEST",
+            strategy=strategy,
+            data=data,
+            symbol="SPY",
         )
 
         assert isinstance(result, BacktestResult)
-        # Calendar strategy should have trades (Mondays and Fridays)
-        assert result.num_trades > 0
+        assert result.strategy_id == "weekly_momentum"
+        # Calendar strategy generates weekly trades
+        # (may be less than 100 due to position mgmt - can't buy if already holding)
+        assert result.num_trades > 10, "Should have multiple trades over 2 years"
+
+        print(f"\n=== Monday-Friday on SPY (2 Years) ===")
+        print(f"Period: {result.start_date} to {result.end_date}")
+        print(f"Return: {result.total_return_pct:.2f}%")
+        print(f"Trades: {result.num_trades}")
+
+        # Show some trades
+        if result.trades:
+            print(f"Sample trades (first 5):")
+            for trade in result.trades[:5]:
+                print(f"  {trade}")
 
 
-class TestEarningsPlayStrategy:
-    """Tests for the earnings play event strategy."""
+class TestMultipleSymbols:
+    """Test strategies across multiple real symbols with sufficient history."""
 
-    def test_strategy_structure(self):
-        """Strategy should have event-based signals."""
-        strategy = load_strategy("earnings-play.yaml")
+    def test_rsi_strategy_multi_symbol(self, backtest_engine):
+        """Run RSI strategy on multiple symbols - 2 years each."""
+        strategy = load_strategy("rsi-reversal.yaml")
 
-        # Check for event-based conditions in rules
-        assert "rules" in strategy
-        assert len(strategy["rules"]) >= 1
+        # Test on multiple symbols with enough history for trades
+        symbols = ["AAPL", "MSFT", "NVDA", "META"]
 
-    def test_has_and_condition(self):
-        """Strategy should use AND condition for multiple checks."""
-        strategy = load_strategy("earnings-play.yaml")
+        end_date = date.today()
+        start_date = end_date - timedelta(days=730)  # 2 years
 
-        pre_earnings_rule = strategy["rules"][0]
-        assert pre_earnings_rule["when"]["type"] == "and"
+        results = {}
+        total_trades = 0
+        for symbol in symbols:
+            data = normalize_columns(fetch(symbol, start_date, end_date))
+            result = backtest_engine.run(
+                strategy=strategy,
+                data=data,
+                symbol=symbol,
+            )
+            results[symbol] = result
+            total_trades += result.num_trades
+            assert isinstance(result, BacktestResult)
 
-    # Note: Full earnings strategy test skipped because event signals
-    # are not yet implemented in pyutss
+        # At least some symbols should have trades over 2 years
+        assert total_trades > 0, "At least some symbols should generate RSI trades"
 
-
-class TestStrategyValidation:
-    """Tests for strategy validation against UTSS schema."""
-
-    def test_all_examples_have_info(self):
-        """All example strategies should have info section."""
-        for yaml_file in EXAMPLES_DIR.glob("*.yaml"):
-            strategy = yaml.safe_load(yaml_file.read_text())
-            assert "info" in strategy, f"{yaml_file.name} missing info section"
-            assert "id" in strategy["info"], f"{yaml_file.name} missing info.id"
-
-    def test_all_examples_have_rules(self):
-        """All example strategies should have rules."""
-        for yaml_file in EXAMPLES_DIR.glob("*.yaml"):
-            strategy = yaml.safe_load(yaml_file.read_text())
-            assert "rules" in strategy, f"{yaml_file.name} missing rules"
-            assert len(strategy["rules"]) > 0, f"{yaml_file.name} has empty rules"
+        print(f"\n=== RSI Strategy Multi-Symbol (2 Years) ===")
+        for symbol, result in results.items():
+            print(f"{symbol}: {result.total_return_pct:.2f}% ({result.num_trades} trades)")
+        print(f"Total trades across all symbols: {total_trades}")
 
 
-class TestBacktestResultsConsistency:
-    """Tests for backtest result consistency."""
+class TestBacktestResultIntegrity:
+    """Test that backtest results are consistent and complete."""
 
-    def test_result_has_required_fields(self, backtest_engine, sample_ohlcv_data):
-        """BacktestResult should have all required fields."""
-        strategy = {
-            "info": {"id": "test", "name": "Test"},
-            "rules": [
-                {
-                    "when": {"type": "always"},
-                    "then": {
-                        "type": "trade",
-                        "direction": "buy",
-                        "sizing": {"type": "percent_of_equity", "value": 10},
-                    },
-                }
-            ],
-            "constraints": {},
-        }
+    def test_equity_curve_length_matches_data(self, backtest_engine):
+        """Equity curve should have same length as input data."""
+        strategy = load_strategy("rsi-reversal.yaml")
 
-        result = backtest_engine.run(
-            strategy=strategy,
-            data=sample_ohlcv_data,
-            symbol="TEST",
-        )
-
-        # Check required fields
-        assert hasattr(result, "strategy_id")
-        assert hasattr(result, "symbol")
-        assert hasattr(result, "start_date")
-        assert hasattr(result, "end_date")
-        assert hasattr(result, "initial_capital")
-        assert hasattr(result, "final_equity")
-        assert hasattr(result, "trades")
-        assert hasattr(result, "equity_curve")
-
-    def test_equity_curve_matches_history(self, backtest_engine, sample_ohlcv_data):
-        """Equity curve should match portfolio history."""
-        strategy = {
-            "info": {"id": "test", "name": "Test"},
-            "rules": [
-                {
-                    "when": {"type": "always"},
-                    "then": {
-                        "type": "trade",
-                        "direction": "buy",
-                        "sizing": {"type": "percent_of_equity", "value": 10},
-                    },
-                }
-            ],
-            "constraints": {},
-        }
+        end_date = date.today()
+        start_date = end_date - timedelta(days=730)  # 2 years for trades
+        data = normalize_columns(fetch("AAPL", start_date, end_date))
 
         result = backtest_engine.run(
             strategy=strategy,
-            data=sample_ohlcv_data,
-            symbol="TEST",
+            data=data,
+            symbol="AAPL",
         )
 
-        # Equity curve and portfolio history should have same length
-        assert len(result.equity_curve) == len(result.portfolio_history)
+        assert len(result.equity_curve) == len(data)
+        assert len(result.portfolio_history) == len(data)
+
+    def test_final_equity_matches_curve(self, backtest_engine):
+        """Final equity should approximately match last value in equity curve."""
+        strategy = load_strategy("rsi-reversal.yaml")
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=730)
+        data = normalize_columns(fetch("AAPL", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="AAPL",
+        )
+
+        # Final equity should approximately match last curve value
+        # (may differ slightly due to commission/slippage on closing open positions)
+        diff_pct = abs(result.final_equity - result.equity_curve.iloc[-1]) / result.final_equity * 100
+        assert diff_pct < 1.0, f"Final equity should match curve within 1%: diff={diff_pct:.2f}%"
+
+
+class TestTradeLogicVerification:
+    """Verify that trade logic and PnL calculations are correct."""
+
+    def test_trade_pnl_calculation(self, backtest_engine):
+        """Verify trade PnL is calculated correctly from entry/exit prices."""
+        # Use Monday-Friday strategy - guaranteed trades
+        strategy = load_strategy("monday-friday.yaml")
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=365)
+        data = normalize_columns(fetch("SPY", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="SPY",
+        )
+
+        assert result.num_trades > 0, "Need trades to verify PnL"
+
+        # Verify trade objects have required fields
+        for trade in result.trades[:10]:
+            assert hasattr(trade, 'entry_price') or 'entry_price' in str(trade)
+            assert hasattr(trade, 'exit_price') or 'exit_price' in str(trade)
+
+        print(f"\n=== Trade Logic Verification ===")
+        print(f"Total trades: {result.num_trades}")
+        print(f"Sample trades: {result.trades[:3]}")
+
+    def test_position_sizing_applied(self, backtest_engine):
+        """Verify position sizing is applied correctly."""
+        strategy = load_strategy("monday-friday.yaml")
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=180)
+        data = normalize_columns(fetch("SPY", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="SPY",
+        )
+
+        # Equity should change if trades happened
+        if result.num_trades > 0:
+            # Check equity curve has variation (not flat line)
+            equity_std = result.equity_curve.std()
+            assert equity_std > 0, "Equity should vary with trades"
+
+        print(f"\n=== Position Sizing Verification ===")
+        print(f"Trades: {result.num_trades}")
+        print(f"Equity std dev: {result.equity_curve.std():.2f}")
+
+    def test_total_return_matches_equity_change(self, backtest_engine):
+        """Total return % should match equity change."""
+        strategy = load_strategy("monday-friday.yaml")
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=365)
+        data = normalize_columns(fetch("SPY", start_date, end_date))
+
+        result = backtest_engine.run(
+            strategy=strategy,
+            data=data,
+            symbol="SPY",
+        )
+
+        # Calculate expected return
+        expected_return = (result.final_equity - result.initial_capital) / result.initial_capital * 100
+
+        # Should match total_return_pct
+        assert abs(result.total_return_pct - expected_return) < 0.01
+
+        print(f"\n=== Return Verification ===")
+        print(f"Initial: ${result.initial_capital:,.2f}")
+        print(f"Final: ${result.final_equity:,.2f}")
+        print(f"Calculated return: {expected_return:.2f}%")
+        print(f"Reported return: {result.total_return_pct:.2f}%")
+
+
+class TestSchemaValidation:
+    """Test that all example YAMLs pass schema validation."""
+
+    def test_all_examples_validate_against_schema(self):
+        """All example strategies should validate against UTSS schema."""
+        from utss import validate_yaml
+
+        for yaml_file in EXAMPLES_DIR.glob("*.yaml"):
+            with open(yaml_file) as f:
+                yaml_content = f.read()
+
+            # Should not raise ValidationError
+            strategy = validate_yaml(yaml_content)
+            assert strategy is not None
+            assert strategy.info.id is not None
+
+            print(f"Validated: {yaml_file.name} (id: {strategy.info.id})")

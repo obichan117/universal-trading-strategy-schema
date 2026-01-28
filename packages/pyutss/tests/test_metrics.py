@@ -4,7 +4,6 @@ from datetime import date
 
 import pandas as pd
 import pytest
-
 from pyutss import (
     BacktestResult,
     MetricsCalculator,

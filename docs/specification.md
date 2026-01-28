@@ -62,14 +62,10 @@ graph TB
         External["ExternalSignal"]
     end
 
-    subgraph ConditionTypes["✅ Condition Types"]
+    subgraph ConditionTypes["✅ Condition Types (v1.0 Minimal)"]
         Comparison["ComparisonCondition"]
-        Cross["CrossCondition"]
-        Range["RangeCondition"]
         Logical["And/Or/Not"]
-        Temporal["TemporalCondition"]
-        Sequence["SequenceCondition"]
-        Change["ChangeCondition"]
+        Expression["ExpressionCondition"]
         Always["AlwaysCondition"]
     end
 
@@ -96,8 +92,7 @@ graph TB
     Conditions --> ConditionTypes
     Trade --> SizingTypes
     Comparison --> SignalTypes
-    Cross --> SignalTypes
-    Range --> SignalTypes
+    Expression --> SignalTypes
 
     Parameters -.->|"$param"| SignalTypes
     Signals -.->|"$ref"| ConditionTypes
@@ -841,20 +836,18 @@ conditions:
 
 Produces a boolean value.
 
+**UTSS v1.0 uses minimal condition primitives.** Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `expr` formulas. See `patterns/` directory for reusable formulas.
+
 ```yaml
 Condition:
   oneOf:
-    - ComparisonCondition
-    - CrossCondition
-    - RangeCondition
-    - AndCondition
-    - OrCondition
-    - NotCondition
-    - TemporalCondition
-    - SequenceCondition
-    - ChangeCondition
-    - AlwaysCondition
-    - Reference
+    - ComparisonCondition   # Compare signals
+    - AndCondition          # All must be true
+    - OrCondition           # Any must be true
+    - NotCondition          # Negate condition
+    - ExpressionCondition   # Formula for complex patterns
+    - AlwaysCondition       # Unconditional (for scheduled actions)
+    - Reference             # $ref to named condition
 ```
 
 ```mermaid
@@ -868,19 +861,6 @@ classDiagram
         +operator: ComparisonOp
         +right: Signal
     }
-    class CrossCondition {
-        +type: "cross"
-        +signal: Signal
-        +threshold: Signal
-        +direction: "above" | "below"
-    }
-    class RangeCondition {
-        +type: "range"
-        +signal: Signal
-        +min: Signal
-        +max: Signal
-        +inclusive: boolean
-    }
     class AndCondition {
         +type: "and"
         +conditions: Condition[]
@@ -893,48 +873,25 @@ classDiagram
         +type: "not"
         +condition: Condition
     }
-    class TemporalCondition {
-        +type: "temporal"
-        +condition: Condition
-        +modifier: TemporalMod
-        +bars: integer
-    }
-    class SequenceCondition {
-        +type: "sequence"
-        +steps: SequenceStep[]
-        +reset_on: Condition
-        +expire_bars: integer
-    }
-    class ChangeCondition {
-        +type: "change"
-        +signal: Signal
-        +bars: integer
-        +direction: string
+    class ExpressionCondition {
+        +type: "expr"
+        +formula: string
     }
     class AlwaysCondition {
         +type: "always"
     }
 
     Condition <|-- ComparisonCondition
-    Condition <|-- CrossCondition
-    Condition <|-- RangeCondition
     Condition <|-- AndCondition
     Condition <|-- OrCondition
     Condition <|-- NotCondition
-    Condition <|-- TemporalCondition
-    Condition <|-- SequenceCondition
-    Condition <|-- ChangeCondition
+    Condition <|-- ExpressionCondition
     Condition <|-- AlwaysCondition
 
     ComparisonCondition o-- Signal : left, right
-    CrossCondition o-- Signal : signal, threshold
-    RangeCondition o-- Signal : signal, min, max
     AndCondition o-- Condition : conditions
     OrCondition o-- Condition : conditions
     NotCondition o-- Condition : condition
-    TemporalCondition o-- Condition : condition
-    SequenceCondition o-- Condition : steps, reset_on
-    ChangeCondition o-- Signal : signal
 ```
 
 #### ComparisonCondition
@@ -944,25 +901,6 @@ type: comparison
 left: Signal                # Required
 operator: ComparisonOp      # Required. <|<=|=|>=|>|!=
 right: Signal               # Required
-```
-
-#### CrossCondition
-
-```yaml
-type: cross
-signal: Signal              # Required. The crossing signal
-threshold: Signal           # Required. What it crosses
-direction: above | below    # Required
-```
-
-#### RangeCondition
-
-```yaml
-type: range
-signal: Signal              # Required
-min: Signal                 # Required
-max: Signal                 # Required
-inclusive: boolean          # Optional. Default: true
 ```
 
 #### AndCondition
@@ -986,47 +924,38 @@ type: not
 condition: Condition        # Required
 ```
 
-#### TemporalCondition
+#### ExpressionCondition
+
+For complex patterns not expressible with primitives. Use for crossovers, ranges, temporal conditions, sequences, etc.
 
 ```yaml
-type: temporal
-condition: Condition        # Required. Base condition
-modifier: TemporalMod       # Required
-bars: integer               # Required for most modifiers
-n: integer                  # For nth_time modifier
+type: expr
+formula: string             # Required. Boolean expression
 ```
 
-TemporalMod options:
-- `for_bars`: True if condition held for N consecutive bars
-- `within_bars`: True if condition was true at least once in last N bars
-- `since_bars`: True if N bars have passed since condition was last true
-- `first_time`: True only the first time condition becomes true
-- `nth_time`: True only the Nth time condition becomes true
-
-#### SequenceCondition
+**Example formulas** (see `patterns/` for more):
 
 ```yaml
-type: sequence
-steps:                      # Required. Min 2
-  - condition: Condition    # Required
-    within_bars: integer    # Optional. Max bars after previous step
-    min_bars: integer       # Optional. Min bars after previous step
-reset_on: Condition         # Optional. Resets sequence if true
-expire_bars: integer        # Optional. Sequence expires after N bars from step 1
+# Cross above: SMA(50) crosses above SMA(200)
+formula: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
+
+# Range: RSI between 30 and 70
+formula: "RSI(14) > 30 and RSI(14) < 70"
+
+# Temporal: RSI oversold for 3 consecutive bars
+formula: "all(RSI(14) < 30, bars=3)"
+
+# Sequence: RSI oversold then price bounce
+formula: "RSI(14)[-5:-1].min() < 30 and close > close[-1] * 1.02"
 ```
 
-#### ChangeCondition
-
-```yaml
-type: change
-signal: Signal              # Required
-bars: integer               # Required. Period to measure change
-direction: increase | decrease | any  # Optional. Default: any
-min_amount: number          # Optional. Min absolute change
-min_percent: number         # Optional. Min percent change
-max_amount: number          # Optional. Max absolute change
-max_percent: number         # Optional. Max percent change
-```
+Expression language supports:
+- Arithmetic: `+`, `-`, `*`, `/`, `^`
+- Comparisons: `<`, `>`, `<=`, `>=`, `==`, `!=`
+- Logical: `and`, `or`, `not`
+- Indexing: `signal[-1]` (1 bar ago), `signal[-5:-1]` (range)
+- Functions: `min()`, `max()`, `all()`, `any()`, `abs()`
+- Indicators: `SMA(period)`, `RSI(period)`, `ATR(period)`, etc.
 
 #### AlwaysCondition
 

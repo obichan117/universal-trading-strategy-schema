@@ -15,7 +15,6 @@ from typing import Annotated, Any, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
-
 # =============================================================================
 # ENUMS
 # =============================================================================

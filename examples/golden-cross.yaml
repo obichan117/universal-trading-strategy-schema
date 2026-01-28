@@ -38,12 +38,9 @@ rules:
   - name: Golden Cross - Buy
     description: Buy when SMA(50) crosses above SMA(200)
     when:
-      type: cross
-      signal:
-        $ref: "#/signals/sma_50"
-      threshold:
-        $ref: "#/signals/sma_200"
-      direction: above
+      # Cross above: was below or equal yesterday, is above today
+      type: expr
+      formula: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
     then:
       type: trade
       direction: buy
@@ -54,12 +51,9 @@ rules:
   - name: Death Cross - Sell
     description: Sell when SMA(50) crosses below SMA(200)
     when:
-      type: cross
-      signal:
-        $ref: "#/signals/sma_50"
-      threshold:
-        $ref: "#/signals/sma_200"
-      direction: below
+      # Cross below: was above or equal yesterday, is below today
+      type: expr
+      formula: "SMA(50)[-1] >= SMA(200)[-1] and SMA(50) < SMA(200)"
     then:
       type: trade
       direction: sell

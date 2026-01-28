@@ -9,8 +9,6 @@ from utss_llm.conversation.builder import StrategyBuilder
 from utss_llm.conversation.state import (
     ConversationResponse,
     ConversationState,
-    Option,
-    Question,
     ResponseType,
 )
 from utss_llm.parser import ParseMode

@@ -5,7 +5,7 @@ from datetime import date
 
 import pandas as pd
 
-from pyutss.data.models import Market, OHLCV, Timeframe
+from pyutss.data.models import OHLCV, Market, Timeframe
 from pyutss.data.providers.base import BaseDataProvider, DataProviderError
 
 logger = logging.getLogger(__name__)

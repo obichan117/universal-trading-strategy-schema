@@ -1,19 +1,18 @@
 """Tests for conversation session and builder."""
 
 import pytest
-
 from utss_llm.conversation import (
+    ConversationResponse,
     ConversationSession,
     ConversationState,
-    ConversationResponse,
     Option,
     PartialStrategy,
     Question,
     ResponseType,
     StrategyBuilder,
     create_session,
-    get_session,
     delete_session,
+    get_session,
 )
 
 
@@ -236,7 +235,7 @@ class TestConversationSession:
         session = ConversationSession()
         session.state.partial_strategy.entry_threshold = 30
 
-        response = await session.revise("change RSI entry to 25")
+        await session.revise("change RSI entry to 25")
 
         assert session.state.partial_strategy.entry_threshold == 25
 

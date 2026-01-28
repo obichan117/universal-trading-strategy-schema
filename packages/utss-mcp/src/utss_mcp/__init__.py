@@ -8,10 +8,10 @@ using Claude Code or other MCP-compatible clients.
 __version__ = "0.1.0"
 
 from utss_mcp.tools import (
-    build_strategy,
     backtest_strategy,
-    validate_strategy,
+    build_strategy,
     list_indicators,
+    validate_strategy,
 )
 
 __all__ = [

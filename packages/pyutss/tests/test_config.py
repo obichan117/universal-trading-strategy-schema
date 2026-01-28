@@ -5,18 +5,16 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from pyutss.data.config import (
+    API_KEY_DESCRIPTIONS,
+    API_KEY_ENV_VARS,
     _get_config_dir,
     _get_config_path,
     _load_config,
     _save_config,
     get_api_key,
-    set_api_key,
     remove_api_key,
-    API_KEY_ENV_VARS,
-    API_KEY_DESCRIPTIONS,
+    set_api_key,
 )
 
 

@@ -3,14 +3,11 @@
 from datetime import date
 
 import pytest
-
 from pyutss.data import (
+    OHLCV,
+    DataProviderRegistry,
     Market,
     Timeframe,
-    OHLCV,
-    BaseDataProvider,
-    DataProviderError,
-    DataProviderRegistry,
     get_default_registry,
     get_registry,
 )

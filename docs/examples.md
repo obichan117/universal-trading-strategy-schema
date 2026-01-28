@@ -32,7 +32,7 @@ A trend-following strategy using moving average crossovers.
 
 **Key Features:**
 
-- Uses `cross` condition type for MA crossovers
+- Uses `expr` condition type for MA crossover detection
 - Index-based universe (SP500)
 - Trailing stop for risk management
 

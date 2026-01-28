@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from datetime import date
 
 from pyutss.data.models import (
+    OHLCV,
     FundamentalMetrics,
     Market,
-    OHLCV,
     StockMetadata,
     Timeframe,
 )

@@ -27,15 +27,6 @@ Available Sources:
 """
 
 # Primary interface - simple and unified
-from pyutss.data.sources import (
-    Ticker,
-    fetch,
-    download,
-    available_sources,
-    SOURCES,
-    DEFAULT_SOURCES,
-)
-
 # Configuration
 from pyutss.data.config import (
     configure,
@@ -46,9 +37,9 @@ from pyutss.data.config import (
 
 # Data models
 from pyutss.data.models import (
+    OHLCV,
     FundamentalMetrics,
     Market,
-    OHLCV,
     StockMetadata,
     Timeframe,
 )
@@ -59,6 +50,14 @@ from pyutss.data.providers.registry import (
     DataProviderRegistry,
     get_default_registry,
     get_registry,
+)
+from pyutss.data.sources import (
+    DEFAULT_SOURCES,
+    SOURCES,
+    Ticker,
+    available_sources,
+    download,
+    fetch,
 )
 
 __all__ = [

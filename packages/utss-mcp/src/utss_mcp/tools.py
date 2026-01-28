@@ -4,15 +4,10 @@ from datetime import date
 from typing import Any
 
 import yaml
-
+from utss.capabilities import SUPPORTED_CONDITION_TYPES, SUPPORTED_INDICATORS
 from utss_llm.conversation import (
     ConversationSession,
-    create_session,
-    get_session,
-    delete_session,
 )
-from utss.capabilities import SUPPORTED_INDICATORS, SUPPORTED_CONDITION_TYPES
-
 
 # Session storage
 _sessions: dict[str, ConversationSession] = {}
@@ -153,7 +148,7 @@ async def backtest_strategy(
         - trades: List of trades executed
     """
     try:
-        from pyutss import BacktestEngine, BacktestConfig, MetricsCalculator
+        from pyutss import BacktestConfig, BacktestEngine, MetricsCalculator
         from pyutss.data import fetch
 
         # Parse strategy

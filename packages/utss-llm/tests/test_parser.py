@@ -1,7 +1,6 @@
 """Tests for utss-llm parser."""
 
-import pytest
-from utss_llm import StrategyParser, ParseResult, ParseMode
+from utss_llm import ParseMode, ParseResult, StrategyParser
 from utss_llm.providers.base import LLMProvider, LLMResponse
 
 

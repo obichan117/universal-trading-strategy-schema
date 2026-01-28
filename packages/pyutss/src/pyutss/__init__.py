@@ -22,9 +22,9 @@ __version__ = "0.1.0"
 
 # Data models
 from pyutss.data.models import (
+    OHLCV,
     FundamentalMetrics,
     Market,
-    OHLCV,
     StockMetadata,
     Timeframe,
 )
