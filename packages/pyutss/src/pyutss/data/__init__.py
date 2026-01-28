@@ -36,6 +36,14 @@ from pyutss.data.sources import (
     DEFAULT_SOURCES,
 )
 
+# Configuration
+from pyutss.data.config import (
+    configure,
+    get_api_key,
+    set_api_key,
+    show_config,
+)
+
 # Data models
 from pyutss.data.models import (
     FundamentalMetrics,
@@ -61,6 +69,11 @@ __all__ = [
     "available_sources",
     "SOURCES",
     "DEFAULT_SOURCES",
+    # Configuration
+    "configure",
+    "get_api_key",
+    "set_api_key",
+    "show_config",
     # Models
     "OHLCV",
     "StockMetadata",

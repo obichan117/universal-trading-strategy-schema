@@ -21,6 +21,7 @@ Usage:
 """
 
 from datetime import date
+import os
 from typing import Any
 
 import pandas as pd
@@ -94,11 +95,34 @@ def _detect_market(symbol: str) -> str:
     return "US"
 
 
-def _get_source_for_symbol(symbol: str) -> str:
+def _check_api_key(source: str, prompt: bool = True) -> bool:
+    """Check if API key is available for a source.
+
+    Args:
+        source: Source name
+        prompt: Whether to prompt for key if missing
+
+    Returns:
+        True if API key is available
+    """
+    if source == "jquants":
+        from pyutss.data.config import get_api_key
+        key = get_api_key("jquants", prompt_if_missing=prompt)
+        if key:
+            # Set environment variable for pyjquants
+            os.environ["JQUANTS_API_KEY"] = key
+            return True
+        return False
+    # Yahoo doesn't need API key
+    return True
+
+
+def _get_source_for_symbol(symbol: str, prompt_for_key: bool = True) -> str:
     """Get the best available source for a symbol.
 
     Args:
         symbol: Stock symbol
+        prompt_for_key: Whether to prompt for API key if missing
 
     Returns:
         Source name
@@ -109,12 +133,9 @@ def _get_source_for_symbol(symbol: str) -> str:
     # Try preferred source first
     try:
         _import_source(preferred)
-        # For jquants, also check if API key is configured
-        if preferred == "jquants":
-            import os
-            if not os.environ.get("JQUANTS_API_KEY"):
-                raise ImportError("JQUANTS_API_KEY not set")
-        return preferred
+        # Check if API key is configured (may prompt user)
+        if _check_api_key(preferred, prompt=prompt_for_key):
+            return preferred
     except (ImportError, Exception):
         pass
 
