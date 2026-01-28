@@ -137,12 +137,12 @@ class TestJQuantsProviderImport:
         """J-Quants provider raises ImportError if not installed."""
         try:
             from pyutss.data.providers import get_jquants_provider
-            # If we get here, jquants is installed
+            # If we get here, pyjquants is installed
             provider = get_jquants_provider()
             assert provider.name == "jquants"
             assert Market.JP in provider.supported_markets
         except ImportError as e:
-            assert "jquants-api-client" in str(e)
+            assert "pyjquants" in str(e)
 
 
 class TestYahooProviderNormalization:
@@ -179,9 +179,9 @@ class TestJQuantsProviderNormalization:
         """J-Quants provider removes .T suffix."""
         try:
             from pyutss.data.providers.jquants import JQuantsProvider
-            provider = JQuantsProvider(api_key="dummy")
+            provider = JQuantsProvider()
 
             assert provider._normalize_symbol("7203.T") == "7203"
             assert provider._normalize_symbol("7203") == "7203"
         except ImportError:
-            pytest.skip("jquants-api-client not installed")
+            pytest.skip("pyjquants not installed")

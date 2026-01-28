@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "utss": {
+      "command": "/Users/soshimizutani/dev/universal-trading-strategy-schema/.venv/bin/utss-mcp",
+      "args": []
+    }
+  }
+}

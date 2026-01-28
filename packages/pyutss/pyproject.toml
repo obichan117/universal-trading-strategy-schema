@@ -36,9 +36,9 @@ dependencies = [
 
 [project.optional-dependencies]
 yahoo = ["yfinance>=0.2.0"]
-jquants = ["jquants-api-client>=1.9.0"]
+jquants = ["pyjquants>=0.2.0"]
 viz = ["mplfinance>=0.12.10b0"]
-all = ["yfinance>=0.2.0", "jquants-api-client>=1.9.0", "mplfinance>=0.12.10b0"]
+all = ["yfinance>=0.2.0", "pyjquants>=0.2.0", "mplfinance>=0.12.10b0"]
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",

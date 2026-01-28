@@ -1,7 +1,7 @@
-"""J-Quants data provider implementation for Japanese stocks."""
+"""J-Quants data provider implementation using pyjquants."""
 
 import logging
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 
 from pyutss.data.models import (
@@ -16,79 +16,40 @@ from pyutss.data.providers.base import BaseDataProvider, DataProviderError
 logger = logging.getLogger(__name__)
 
 
-def _import_jquants() -> Any:
-    """Lazy import jquantsapi."""
+def _import_pyjquants() -> Any:
+    """Lazy import pyjquants."""
     try:
-        import jquantsapi
+        import pyjquants as pjq
 
-        return jquantsapi
+        return pjq
     except ImportError as e:
         raise ImportError(
-            "jquants-api-client is required for J-Quants provider. "
+            "pyjquants is required for J-Quants provider. "
             "Install it with: pip install pyutss[jquants]"
         ) from e
 
 
-def _import_dateutil_tz() -> Any:
-    """Lazy import dateutil.tz."""
-    try:
-        from dateutil import tz
-
-        return tz
-    except ImportError as e:
-        raise ImportError(
-            "python-dateutil is required for J-Quants provider. "
-            "It should be installed with jquants-api-client."
-        ) from e
-
-
 class JQuantsProvider(BaseDataProvider):
-    """J-Quants data provider for Japanese stocks.
+    """J-Quants data provider for Japanese stocks using pyjquants.
 
     Provides access to historical stock data for Japanese equities via
-    the J-Quants API. Requires an API key from J-Quants.
+    the pyjquants library (yfinance-style interface for J-Quants API).
 
     Example:
-        provider = JQuantsProvider(api_key="your_key")
-        # Or use JQUANTS_API_KEY environment variable
         provider = JQuantsProvider()
         ohlcv = await provider.get_ohlcv("7203", date(2024, 1, 1), date(2024, 12, 31))
     """
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize J-Quants provider.
-
-        Args:
-            api_key: J-Quants API key. If None, uses JQUANTS_API_KEY env var.
-        """
-        self._api_key = api_key
-        self._client: Any = None
-        self._jquants: Any = None
-        self._tz: Any = None
+    def __init__(self) -> None:
+        """Initialize J-Quants provider."""
+        self._pjq: Any = None
 
     @property
-    def jquants(self) -> Any:
-        """Lazy load jquantsapi module."""
-        if self._jquants is None:
-            self._jquants = _import_jquants()
-        return self._jquants
-
-    @property
-    def tz(self) -> Any:
-        """Lazy load dateutil.tz module."""
-        if self._tz is None:
-            self._tz = _import_dateutil_tz()
-        return self._tz
-
-    @property
-    def client(self) -> Any:
-        """Lazy load J-Quants client."""
-        if self._client is None:
-            if self._api_key:
-                self._client = self.jquants.ClientV2(api_key=self._api_key)
-            else:
-                self._client = self.jquants.ClientV2()
-        return self._client
+    def pjq(self) -> Any:
+        """Lazy load pyjquants module."""
+        if self._pjq is None:
+            self._pjq = _import_pyjquants()
+        return self._pjq
 
     @property
     def name(self) -> str:
@@ -101,9 +62,9 @@ class JQuantsProvider(BaseDataProvider):
         return [Market.JP]
 
     def _normalize_symbol(self, symbol: str) -> str:
-        """Normalize symbol for J-Quants API.
+        """Normalize symbol for pyjquants.
 
-        J-Quants uses 4-digit stock codes without suffix.
+        pyjquants uses 4-digit stock codes without suffix.
 
         Args:
             symbol: Stock symbol (e.g., "7203", "7203.T")
@@ -122,7 +83,7 @@ class JQuantsProvider(BaseDataProvider):
         end_date: date,
         timeframe: Timeframe = Timeframe.DAILY,
     ) -> list[OHLCV]:
-        """Fetch OHLCV data from J-Quants.
+        """Fetch OHLCV data from J-Quants via pyjquants.
 
         Args:
             symbol: Stock symbol (e.g., "7203" or "7203.T")
@@ -143,39 +104,19 @@ class JQuantsProvider(BaseDataProvider):
             )
 
         normalized_symbol = self._normalize_symbol(symbol)
-        tokyo_tz = self.tz.gettz("Asia/Tokyo")
 
         try:
-            start_dt = datetime(
-                start_date.year, start_date.month, start_date.day, tzinfo=tokyo_tz
-            )
-            end_dt = datetime(
-                end_date.year, end_date.month, end_date.day, tzinfo=tokyo_tz
-            )
-
-            df = self.client.get_prices_daily_quotes_range(
-                start_dt=start_dt, end_dt=end_dt
-            )
+            ticker = self.pjq.Ticker(normalized_symbol)
+            df = ticker.history(start=start_date, end=end_date)
 
             if df is None or df.empty:
-                logger.warning(f"No data returned from J-Quants for {normalized_symbol}")
-                return []
-
-            # Filter by symbol code
-            df = df[df["Code"] == normalized_symbol]
-
-            if df.empty:
-                logger.warning(f"No data found for symbol {normalized_symbol}")
+                logger.warning(f"No data returned from pyjquants for {normalized_symbol}")
                 return []
 
             result = []
-            for _, row in df.iterrows():
+            for idx, row in df.iterrows():
                 try:
-                    row_date = row["Date"]
-                    if isinstance(row_date, str):
-                        row_date = datetime.strptime(row_date, "%Y-%m-%d").date()
-                    elif hasattr(row_date, "date"):
-                        row_date = row_date.date()
+                    row_date = idx.date() if hasattr(idx, "date") else idx
 
                     result.append(
                         OHLCV(
@@ -186,7 +127,9 @@ class JQuantsProvider(BaseDataProvider):
                             low=float(row["Low"]),
                             close=float(row["Close"]),
                             volume=int(row["Volume"]),
-                            adjusted_close=float(row.get("AdjustmentClose", row["Close"])),
+                            adjusted_close=float(row.get("AdjustmentClose", row["Close"]))
+                            if "AdjustmentClose" in row
+                            else None,
                         )
                     )
                 except (KeyError, ValueError) as e:
@@ -197,10 +140,10 @@ class JQuantsProvider(BaseDataProvider):
             return result
 
         except Exception as e:
-            raise DataProviderError(f"J-Quants error for {symbol}: {e}") from e
+            raise DataProviderError(f"pyjquants error for {symbol}: {e}") from e
 
     async def get_stock_info(self, symbol: str) -> StockMetadata | None:
-        """Fetch stock information from J-Quants.
+        """Fetch stock information from J-Quants via pyjquants.
 
         Args:
             symbol: Stock symbol
@@ -211,25 +154,19 @@ class JQuantsProvider(BaseDataProvider):
         normalized_symbol = self._normalize_symbol(symbol)
 
         try:
-            df = self.client.get_listed_info()
+            ticker = self.pjq.Ticker(normalized_symbol)
+            info = ticker.info
 
-            if df is None or df.empty:
+            if info is None:
                 return None
-
-            stock_info = df[df["Code"] == normalized_symbol]
-
-            if stock_info.empty:
-                return None
-
-            row = stock_info.iloc[0]
 
             return StockMetadata(
                 symbol=symbol,
-                name=row.get("CompanyName", symbol),
+                name=getattr(info, "name", None) or getattr(info, "name_english", symbol),
                 market=Market.JP,
-                sector=row.get("Sector17CodeName") or row.get("Sector33CodeName"),
-                industry=row.get("Sector33CodeName"),
-                market_cap=None,
+                sector=getattr(info, "sector", None),
+                industry=getattr(info, "industry", None),
+                market_cap=getattr(info, "market_cap", None),
                 currency="JPY",
             )
 
@@ -238,7 +175,7 @@ class JQuantsProvider(BaseDataProvider):
             return None
 
     async def get_fundamentals(self, symbol: str) -> FundamentalMetrics | None:
-        """Fetch fundamental metrics from J-Quants.
+        """Fetch fundamental metrics from J-Quants via pyjquants.
 
         Args:
             symbol: Stock symbol
@@ -249,31 +186,21 @@ class JQuantsProvider(BaseDataProvider):
         normalized_symbol = self._normalize_symbol(symbol)
 
         try:
-            df = self.client.get_fins_statements()
+            ticker = self.pjq.Ticker(normalized_symbol)
+            info = ticker.info
 
-            if df is None or df.empty:
+            if info is None:
                 return None
-
-            # Filter by symbol and get latest
-            stock_fins = df[df["LocalCode"] == normalized_symbol]
-
-            if stock_fins.empty:
-                return None
-
-            # Get most recent statement
-            stock_fins = stock_fins.sort_values("DisclosedDate", ascending=False)
-            row = stock_fins.iloc[0]
 
             return FundamentalMetrics(
                 symbol=symbol,
                 date=date.today(),
-                pe_ratio=row.get("EarningsPerShare"),
-                pb_ratio=row.get("BookValuePerShare"),
-                roe=row.get("ReturnOnEquity"),
-                profit_margin=row.get("ProfitMargin"),
-                revenue=row.get("NetSales"),
-                net_income=row.get("Profit"),
-                eps=row.get("EarningsPerShare"),
+                pe_ratio=getattr(info, "pe_ratio", None),
+                pb_ratio=getattr(info, "pb_ratio", None),
+                roe=getattr(info, "roe", None),
+                dividend_yield=getattr(info, "dividend_yield", None),
+                market_cap=getattr(info, "market_cap", None),
+                eps=getattr(info, "eps", None),
             )
 
         except Exception as e:
@@ -281,10 +208,12 @@ class JQuantsProvider(BaseDataProvider):
             return None
 
     async def health_check(self) -> bool:
-        """Check if J-Quants API is accessible."""
+        """Check if pyjquants/J-Quants API is accessible."""
         try:
-            df = self.client.get_listed_info()
-            return df is not None and not df.empty
+            # Try to get Toyota as a health check
+            ticker = self.pjq.Ticker("7203")
+            info = ticker.info
+            return info is not None
         except Exception as e:
             logger.error(f"J-Quants health check failed: {e}")
             return False

@@ -30,18 +30,15 @@ def get_yahoo_provider():
     return YahooFinanceProvider()
 
 
-def get_jquants_provider(api_key: str | None = None):
+def get_jquants_provider():
     """Get J-Quants provider (lazy import).
-
-    Args:
-        api_key: J-Quants API key (uses JQUANTS_API_KEY env var if None)
 
     Returns:
         JQuantsProvider instance
 
     Raises:
-        ImportError: If jquants-api-client is not installed
+        ImportError: If pyjquants is not installed
     """
     from pyutss.data.providers.jquants import JQuantsProvider
 
-    return JQuantsProvider(api_key=api_key)
+    return JQuantsProvider()
