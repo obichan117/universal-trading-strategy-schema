@@ -73,7 +73,7 @@ API_KEY_ENV_VARS = {
 
 API_KEY_DESCRIPTIONS = {
     "jquants": {
-        "name": "J-Quants API",
+        "name": "J-Quants",
         "description": "Required for Japanese stock data via J-Quants",
         "signup_url": "https://jpx-jquants.com/",
         "instructions": "Sign up at J-Quants, go to Dashboard, and copy your API key.",
