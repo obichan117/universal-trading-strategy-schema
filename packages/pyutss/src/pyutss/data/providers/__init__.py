@@ -1,10 +1,18 @@
 """Data providers for pyutss."""
 
 from pyutss.data.providers.base import BaseDataProvider, DataProviderError
+from pyutss.data.providers.registry import (
+    DataProviderRegistry,
+    get_default_registry,
+    get_registry,
+)
 
 __all__ = [
     "BaseDataProvider",
     "DataProviderError",
+    "DataProviderRegistry",
+    "get_default_registry",
+    "get_registry",
 ]
 
 
@@ -20,3 +28,20 @@ def get_yahoo_provider():
     from pyutss.data.providers.yahoo import YahooFinanceProvider
 
     return YahooFinanceProvider()
+
+
+def get_jquants_provider(api_key: str | None = None):
+    """Get J-Quants provider (lazy import).
+
+    Args:
+        api_key: J-Quants API key (uses JQUANTS_API_KEY env var if None)
+
+    Returns:
+        JQuantsProvider instance
+
+    Raises:
+        ImportError: If jquants-api-client is not installed
+    """
+    from pyutss.data.providers.jquants import JQuantsProvider
+
+    return JQuantsProvider(api_key=api_key)

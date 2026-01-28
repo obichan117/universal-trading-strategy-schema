@@ -130,6 +130,7 @@ async def backtest_strategy(
     """Run a backtest on a UTSS strategy.
 
     Simulates the strategy against historical data and returns performance metrics.
+    Uses real market data from Yahoo Finance (US/JP) or J-Quants (JP only).
 
     Args:
         strategy_yaml: The UTSS strategy in YAML format
@@ -142,6 +143,7 @@ async def backtest_strategy(
         dict with:
         - success: True if backtest completed
         - error: Error message if failed
+        - data_source: Which data provider was used
         - metrics: Performance metrics including:
             - total_return_pct
             - sharpe_ratio
@@ -151,9 +153,8 @@ async def backtest_strategy(
         - trades: List of trades executed
     """
     try:
-        import pandas as pd
-
         from pyutss import BacktestEngine, BacktestConfig, MetricsCalculator
+        from pyutss.data import get_registry
 
         # Parse strategy
         strategy = yaml.safe_load(strategy_yaml)
@@ -162,31 +163,21 @@ async def backtest_strategy(
         start = date.fromisoformat(start_date)
         end = date.fromisoformat(end_date)
 
-        # For now, generate sample data (in production, use data provider)
-        # This is a placeholder - real implementation would fetch actual data
-        import numpy as np
+        # Fetch real market data using provider registry
+        registry = get_registry()
+        data = await registry.get_ohlcv_dataframe(symbol, start, end)
 
-        np.random.seed(42)
-        dates = pd.date_range(start, end, freq="D")
-        n = len(dates)
-
-        if n < 10:
+        if data.empty:
             return {
                 "success": False,
-                "error": "Date range too short for backtest",
+                "error": f"No data available for {symbol} in the specified date range",
             }
 
-        prices = 100 * np.exp(np.cumsum(np.random.randn(n) * 0.02))
-        data = pd.DataFrame(
-            {
-                "open": prices * (1 + np.random.randn(n) * 0.005),
-                "high": prices * (1 + np.abs(np.random.randn(n) * 0.01)),
-                "low": prices * (1 - np.abs(np.random.randn(n) * 0.01)),
-                "close": prices,
-                "volume": np.random.randint(100000, 1000000, n),
-            },
-            index=dates,
-        )
+        if len(data) < 10:
+            return {
+                "success": False,
+                "error": f"Insufficient data for backtest: only {len(data)} data points",
+            }
 
         # Run backtest
         config = BacktestConfig(initial_capital=initial_capital)
@@ -199,6 +190,8 @@ async def backtest_strategy(
 
         return {
             "success": True,
+            "data_source": "yahoo_finance",  # Registry uses Yahoo by default
+            "data_points": len(data),
             "metrics": {
                 "total_return_pct": round(metrics.total_return_pct, 2),
                 "annualized_return_pct": round(metrics.annualized_return_pct, 2),

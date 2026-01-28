@@ -1,5 +1,8 @@
 """Tests for MCP tools."""
 
+from unittest.mock import AsyncMock, patch
+
+import pandas as pd
 import pytest
 
 from utss_mcp.tools import (
@@ -103,6 +106,30 @@ rules:
         # Should have errors or be marked invalid
 
 
+def _create_mock_data(start_date: str, end_date: str) -> pd.DataFrame:
+    """Create mock OHLCV data for testing."""
+    import numpy as np
+
+    dates = pd.date_range(start_date, end_date, freq="D")
+    n = len(dates)
+
+    if n == 0:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+
+    np.random.seed(42)
+    prices = 100 * np.exp(np.cumsum(np.random.randn(n) * 0.02))
+    return pd.DataFrame(
+        {
+            "open": prices * (1 + np.random.randn(n) * 0.005),
+            "high": prices * (1 + np.abs(np.random.randn(n) * 0.01)),
+            "low": prices * (1 - np.abs(np.random.randn(n) * 0.01)),
+            "close": prices,
+            "volume": np.random.randint(100000, 1000000, n),
+        },
+        index=dates,
+    )
+
+
 class TestBacktestStrategy:
     """Tests for backtest_strategy tool."""
 
@@ -128,13 +155,21 @@ rules:
 
 constraints: {}
 """
-        result = await backtest_strategy(
-            strategy_yaml=yaml,
-            symbol="TEST",
-            start_date="2024-01-01",
-            end_date="2024-06-01",
-            initial_capital=100000,
-        )
+        # Mock the data provider to return test data
+        mock_data = _create_mock_data("2024-01-01", "2024-06-01")
+
+        with patch("pyutss.data.get_registry") as mock_get_registry:
+            mock_registry = AsyncMock()
+            mock_registry.get_ohlcv_dataframe = AsyncMock(return_value=mock_data)
+            mock_get_registry.return_value = mock_registry
+
+            result = await backtest_strategy(
+                strategy_yaml=yaml,
+                symbol="TEST",
+                start_date="2024-01-01",
+                end_date="2024-06-01",
+                initial_capital=100000,
+            )
 
         assert result["success"] is True
         assert "metrics" in result
@@ -151,14 +186,22 @@ info:
   version: "1.0"
 rules: []
 """
-        result = await backtest_strategy(
-            strategy_yaml=yaml,
-            symbol="TEST",
-            start_date="2024-01-01",
-            end_date="2024-01-03",
-        )
+        # Mock with insufficient data
+        mock_data = _create_mock_data("2024-01-01", "2024-01-03")
 
-        # Should either succeed with limited data or report error
+        with patch("pyutss.data.get_registry") as mock_get_registry:
+            mock_registry = AsyncMock()
+            mock_registry.get_ohlcv_dataframe = AsyncMock(return_value=mock_data)
+            mock_get_registry.return_value = mock_registry
+
+            result = await backtest_strategy(
+                strategy_yaml=yaml,
+                symbol="TEST",
+                start_date="2024-01-01",
+                end_date="2024-01-03",
+            )
+
+        # Should report error due to insufficient data
         assert "success" in result
 
 
