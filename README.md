@@ -33,7 +33,7 @@ pip install pyutss
 ### YAML Strategy Definition
 
 ```yaml
-$schema: https://utss.dev/schema/v2/strategy.json
+$schema: https://utss.dev/schema/v1/strategy.json
 
 info:
   id: rsi_reversal
@@ -145,15 +145,13 @@ Signal → Condition → Rule → Strategy
 | Type | Description | Example |
 |------|-------------|---------|
 | `comparison` | Compare two signals | RSI < 30 |
-| `cross` | Signal crossing threshold | SMA crosses above price |
-| `range` | Signal within bounds | 20 < RSI < 80 |
 | `and` | All conditions true | RSI < 30 AND MACD > 0 |
 | `or` | Any condition true | Monday OR Friday |
 | `not` | Negate condition | NOT (in position) |
-| `temporal` | Time-based | RSI < 30 for 3 bars |
-| `sequence` | Ordered pattern | A then B within 5 bars |
-| `change` | Delta detection | RSI increased 10 in 3 bars |
+| `expr` | Formula expression | "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)" |
 | `always` | Unconditional | For scheduled rebalancing |
+
+Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `expr` formulas. See [patterns/](./patterns/) for reusable formulas.
 
 ### Action Types
 
@@ -299,8 +297,16 @@ utss/
 │           ├── engine/          # Backtest execution
 │           └── metrics/         # Performance metrics
 │
-├── schema/v2/
+├── schema/v1/
 │   └── strategy.schema.json     # JSON Schema (source of truth)
+│
+├── patterns/                    # Reusable condition formulas
+│   ├── crossovers.yaml
+│   ├── ranges.yaml
+│   ├── temporal.yaml
+│   ├── price_action.yaml
+│   ├── chart_patterns.yaml
+│   └── momentum.yaml
 │
 ├── examples/                    # Example strategies
 │
@@ -337,6 +343,6 @@ MIT
 
 ## Links
 
-- [JSON Schema](./schema/v2/strategy.schema.json)
+- [JSON Schema](./schema/v1/strategy.schema.json)
 - [PyPI - utss](https://pypi.org/project/utss/)
 - [Documentation](https://obichan117.github.io/utss/)

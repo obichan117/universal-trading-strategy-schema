@@ -13,7 +13,7 @@ from utss import (
 
 def test_schema_version():
     """Test schema version is defined."""
-    assert SCHEMA_VERSION == "2.2.0"
+    assert SCHEMA_VERSION == "1.0.0"
 
 
 def test_supported_indicators():
@@ -25,11 +25,14 @@ def test_supported_indicators():
 
 
 def test_supported_condition_types():
-    """Test supported condition types are exported."""
+    """Test supported condition types are exported (v1.0 minimal primitives)."""
     assert "comparison" in SUPPORTED_CONDITION_TYPES
-    assert "cross" in SUPPORTED_CONDITION_TYPES
     assert "and" in SUPPORTED_CONDITION_TYPES
-    assert len(SUPPORTED_CONDITION_TYPES) == 10
+    assert "or" in SUPPORTED_CONDITION_TYPES
+    assert "not" in SUPPORTED_CONDITION_TYPES
+    assert "expr" in SUPPORTED_CONDITION_TYPES
+    assert "always" in SUPPORTED_CONDITION_TYPES
+    assert len(SUPPORTED_CONDITION_TYPES) == 6  # v1.0: comparison, and, or, not, expr, always
 
 
 def test_validate_simple_strategy():

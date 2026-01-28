@@ -12,12 +12,10 @@ from utss.capabilities import (
     SUPPORTED_CALENDAR_FIELDS,
     SUPPORTED_COMPARISON_OPERATORS,
     SUPPORTED_CONDITION_TYPES,
-    SUPPORTED_CROSS_DIRECTIONS,
     SUPPORTED_INDICATORS,
     SUPPORTED_PRICE_FIELDS,
     SUPPORTED_SIGNAL_TYPES,
     SUPPORTED_SIZING_TYPES,
-    SUPPORTED_TEMPORAL_MODIFIERS,
     SUPPORTED_TRADE_DIRECTIONS,
 )
 from pyutss.engine.indicators import IndicatorService
@@ -30,7 +28,7 @@ class TestSchemaVersion:
     def test_schema_version_defined(self):
         """Schema version should be defined."""
         assert SCHEMA_VERSION is not None
-        assert SCHEMA_VERSION == "2.2.0"
+        assert SCHEMA_VERSION == "1.0.0"
 
 
 class TestIndicatorCoverage:
@@ -93,14 +91,13 @@ class TestIndicatorCoverage:
 class TestConditionTypeCoverage:
     """Tests for condition type implementation coverage."""
 
-    # Condition types implemented in pyutss
+    # Condition types implemented in pyutss (v1.0: minimal primitives + expr)
     IMPLEMENTED_CONDITIONS = {
-        "comparison", "cross", "range", "and", "or", "not",
-        "temporal", "always",
+        "comparison", "and", "or", "not", "always",
     }
 
     # Not yet implemented
-    NOT_YET_IMPLEMENTED = {"sequence", "change"}
+    NOT_YET_IMPLEMENTED = {"expr"}  # Expression parser needed
 
     def test_core_conditions_implemented(self):
         """Core condition types should be implemented."""
@@ -191,14 +188,6 @@ class TestComparisonOperatorCoverage:
                 assert utss_to_impl[utss_op] in self.IMPLEMENTED_OPERATORS
 
 
-class TestCrossDirectionCoverage:
-    """Tests for cross direction coverage."""
-
-    def test_cross_directions(self):
-        """Both cross directions should be supported."""
-        assert "above" in SUPPORTED_CROSS_DIRECTIONS or "crosses_above" in str(SUPPORTED_CROSS_DIRECTIONS)
-
-
 class TestSizingTypeCoverage:
     """Tests for sizing type coverage."""
 
@@ -238,7 +227,7 @@ class TestOverallCoverage:
     def test_print_coverage_summary(self):
         """Print overall coverage summary."""
         print("\n" + "=" * 50)
-        print("UTSS Schema Coverage Summary")
+        print("UTSS Schema Coverage Summary (v1.0)")
         print("=" * 50)
 
         # Indicators
@@ -247,7 +236,7 @@ class TestOverallCoverage:
         print(f"Indicators:  {ind_impl}/{ind_total} ({ind_impl/ind_total*100:.0f}%)")
 
         # Conditions
-        cond_impl = len(TestConditionTypeCoverage.IMPLEMENTED_CONDITIONS)
+        cond_impl = len(TestConditionTypeCoverage.IMPLEMENTED_CONDITIONS & set(SUPPORTED_CONDITION_TYPES))
         cond_total = len(SUPPORTED_CONDITION_TYPES)
         print(f"Conditions:  {cond_impl}/{cond_total} ({cond_impl/cond_total*100:.0f}%)")
 

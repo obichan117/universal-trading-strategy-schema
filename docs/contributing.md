@@ -44,7 +44,7 @@ uv run mkdocs serve
 
 ```
 universal-trading-strategy-schema/
-├── schema/v2/
+├── schema/v1/
 │   └── strategy.schema.json    # JSON Schema (SOURCE OF TRUTH)
 ├── python/utss/
 │   ├── models.py               # Pydantic models
@@ -63,7 +63,7 @@ universal-trading-strategy-schema/
 
 The JSON Schema is the **source of truth**. When making schema changes:
 
-1. **Update JSON Schema first** (`schema/v2/strategy.schema.json`)
+1. **Update JSON Schema first** (`schema/v1/strategy.schema.json`)
 2. **Update Python models** (`python/utss/models.py`)
 3. **Add/update examples** (`examples/`)
 4. **Update documentation** (`docs/`)

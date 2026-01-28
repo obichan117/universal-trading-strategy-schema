@@ -1,5 +1,5 @@
 """
-Universal Trading Strategy Schema (UTSS) v2.1 - Pydantic Models
+Universal Trading Strategy Schema (UTSS) v1.0 - Pydantic Models
 
 A comprehensive, composable schema for expressing any trading strategy.
 Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
@@ -285,31 +285,6 @@ class ComparisonOperator(str, Enum):
     GTE = ">="
     GT = ">"
     NE = "!="
-
-
-class CrossDirection(str, Enum):
-    """Cross direction."""
-
-    ABOVE = "above"
-    BELOW = "below"
-
-
-class TemporalModifier(str, Enum):
-    """Temporal condition modifiers."""
-
-    FOR_BARS = "for_bars"
-    WITHIN_BARS = "within_bars"
-    SINCE_BARS = "since_bars"
-    FIRST_TIME = "first_time"
-    NTH_TIME = "nth_time"
-
-
-class ChangeDirection(str, Enum):
-    """Change condition direction."""
-
-    INCREASE = "increase"
-    DECREASE = "decrease"
-    ANY = "any"
 
 
 class TradeDirection(str, Enum):
@@ -734,32 +709,6 @@ class ComparisonCondition(BaseSchema):
     right: Signal
 
 
-class CrossCondition(BaseSchema):
-    """Detect when one signal crosses another."""
-
-    type: Literal["cross"]
-    signal: Signal
-    threshold: Signal
-    direction: CrossDirection
-
-
-class RangeCondition(BaseSchema):
-    """Check if signal is within a range."""
-
-    type: Literal["range"]
-    signal: Signal
-    min: Signal
-    max: Signal
-    inclusive: bool = True
-
-
-class NotCondition(BaseSchema):
-    """Negate a condition."""
-
-    type: Literal["not"]
-    condition: "Condition"
-
-
 class AndCondition(BaseSchema):
     """All conditions must be true."""
 
@@ -774,44 +723,27 @@ class OrCondition(BaseSchema):
     conditions: list["Condition"] = Field(..., min_length=2)
 
 
-class TemporalCondition(BaseSchema):
-    """Time-based condition modifiers."""
+class NotCondition(BaseSchema):
+    """Negate a condition."""
 
-    type: Literal["temporal"]
+    type: Literal["not"]
     condition: "Condition"
-    modifier: TemporalModifier
-    bars: int | None = Field(None, ge=1)
-    n: int | None = Field(None, ge=1)
 
 
-class SequenceStep(BaseSchema):
-    """A step in a sequence condition."""
+class ExpressionCondition(BaseSchema):
+    """Boolean expression for complex patterns.
 
-    condition: "Condition"
-    within_bars: int | None = Field(None, ge=1)
-    min_bars: int | None = Field(None, ge=0)
+    Use for crossovers, ranges, temporal conditions, sequences, etc.
+    See patterns/ directory for reusable pattern formulas.
 
+    Examples:
+        - Cross above: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
+        - Range: "RSI(14) > 20 and RSI(14) < 80"
+        - Temporal: "all(RSI(14) < 30, bars=3)"
+    """
 
-class SequenceCondition(BaseSchema):
-    """Detect ordered sequence of conditions."""
-
-    type: Literal["sequence"]
-    steps: list[SequenceStep] = Field(..., min_length=2)
-    reset_on: "Condition | None" = None
-    expire_bars: int | None = Field(None, ge=1)
-
-
-class ChangeCondition(BaseSchema):
-    """Detect signal change over time."""
-
-    type: Literal["change"]
-    signal: Signal
-    bars: int = Field(..., ge=1)
-    direction: ChangeDirection = ChangeDirection.ANY
-    min_amount: float | None = None
-    min_percent: float | None = None
-    max_amount: float | None = None
-    max_percent: float | None = None
+    type: Literal["expr"]
+    formula: str
 
 
 class AlwaysCondition(BaseSchema):
@@ -820,17 +752,14 @@ class AlwaysCondition(BaseSchema):
     type: Literal["always"]
 
 
-# Condition union (no discriminator due to Reference not having type field)
+# Condition union - minimal primitives + expr escape hatch
+# Use primitives (comparison, and/or/not) for simple cases, expr for complex patterns
 Condition = Union[
     ComparisonCondition,
-    CrossCondition,
-    RangeCondition,
     AndCondition,
     OrCondition,
     NotCondition,
-    TemporalCondition,
-    SequenceCondition,
-    ChangeCondition,
+    ExpressionCondition,
     AlwaysCondition,
     Reference,
 ]
@@ -1268,15 +1197,10 @@ class Strategy(BaseSchema):
 RelativeSignal.model_rebuild()
 ArithmeticSignal.model_rebuild()
 ComparisonCondition.model_rebuild()
-CrossCondition.model_rebuild()
-RangeCondition.model_rebuild()
 AndCondition.model_rebuild()
 OrCondition.model_rebuild()
 NotCondition.model_rebuild()
-TemporalCondition.model_rebuild()
-SequenceStep.model_rebuild()
-SequenceCondition.model_rebuild()
-ChangeCondition.model_rebuild()
+ExpressionCondition.model_rebuild()
 RiskBasedSizing.model_rebuild()
 ConditionalSizingCase.model_rebuild()
 ConditionalSizing.model_rebuild()

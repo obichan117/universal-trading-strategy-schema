@@ -53,7 +53,7 @@ uv sync
 ## Requirements
 
 - Python 3.10 or higher
-- pydantic >= 2.0.0
+- pydantic >= 1.0.0
 - pyyaml >= 6.0
 
 ---
@@ -92,7 +92,7 @@ print(f"Strategy loaded: {strategy.info.name}")
 Expected output:
 
 ```
-UTSS version: 2.1.0
+UTSS version: 1.0.0
 Strategy loaded: Test
 ```
 

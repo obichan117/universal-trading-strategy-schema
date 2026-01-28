@@ -97,8 +97,16 @@ utss/
 │       │   └── tools.py            # Tool definitions
 │       └── tests/
 │
-├── schema/v2/
+├── schema/v1/
 │   └── strategy.schema.json        # JSON Schema (SOURCE OF TRUTH)
+│
+├── patterns/                       # Reusable condition formulas
+│   ├── crossovers.yaml             # cross_above, cross_below
+│   ├── ranges.yaml                 # in_range, overbought, oversold
+│   ├── temporal.yaml               # for_n_bars, within_n_bars
+│   ├── price_action.yaml           # higher_high, consecutive_up
+│   ├── chart_patterns.yaml         # double_bottom, breakout
+│   └── momentum.yaml               # divergences, rsi_reversal
 │
 ├── examples/                       # Example strategy files
 │   ├── rsi-reversal.yaml
@@ -168,7 +176,7 @@ from utss import (
 
 ### When Modifying the Schema
 
-1. **Update JSON Schema first** (`schema/v2/strategy.schema.json`)
+1. **Update JSON Schema first** (`schema/v1/strategy.schema.json`)
    - This is the source of truth
 
 2. **Update Python models** (`packages/utss/src/utss/models.py`)
@@ -184,69 +192,6 @@ from utss import (
    ```bash
    uv run pytest
    ```
-
----
-
-## Conversational Strategy Building
-
-The `utss-llm` package provides a guided conversation flow for building strategies:
-
-```python
-from utss_llm.conversation import ConversationSession
-
-session = ConversationSession()
-
-# Start conversation
-response = await session.start("I want a mean reversion strategy")
-print(response.message)      # "What type of strategy..."
-print(response.question)     # Question with options
-
-# Answer with option id or number
-response = await session.answer("mean_reversion")  # or "1"
-
-# Continue until complete
-while not response.is_complete:
-    response = await session.answer(user_input)
-
-# Get final YAML
-print(response.strategy_yaml)
-```
-
-### Conversation Flow
-
-```
-strategy_type → universe_type → universe_details → entry_indicator
-     → entry_params → exit_params → position_size → stop_loss
-     → take_profit → max_positions → confirm → COMPLETE
-```
-
----
-
-## MCP Server Integration
-
-The `utss-mcp` package provides an MCP server for Claude Code:
-
-```json
-// Add to Claude Code MCP config
-{
-  "mcpServers": {
-    "utss": {
-      "command": "utss-mcp",
-      "args": []
-    }
-  }
-}
-```
-
-### Available MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `build_strategy` | Interactive strategy builder with guided questions |
-| `validate_strategy` | Validate UTSS YAML against schema |
-| `backtest_strategy` | Run backtest simulation with metrics |
-| `list_indicators` | List supported technical indicators |
-| `revise_strategy` | Modify strategy in active session |
 
 ---
 
@@ -268,17 +213,15 @@ The `utss-mcp` package provides an MCP server for Claude Code:
 | `$ref` | Reference | `"#/signals/rsi_14"` |
 | `$param` | Parameter ref | `"rsi_period"` |
 
-### Condition Types
+### Condition Types (v1.0 - Minimal Primitives)
 | Type | Description | Example |
 |------|-------------|---------|
 | `comparison` | Compare signals | `RSI < 30` |
-| `cross` | Crossover detection | `SMA(50) crosses above SMA(200)` |
-| `range` | Between bounds | `20 < RSI < 80` |
 | `and`/`or`/`not` | Logical operators | `RSI < 30 AND MACD > 0` |
-| `temporal` | Time-based | `RSI < 30 for 3 bars` |
-| `sequence` | Ordered pattern | `A then B within 5 bars` |
-| `change` | Delta detection | `RSI increased 10 in 3 bars` |
+| `expr` | Formula expression | `"SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"` |
 | `always` | Unconditional | For scheduled rebalancing |
+
+Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `expr` formulas. See `patterns/` for reusable formulas.
 
 ---
 
@@ -287,18 +230,23 @@ The `utss-mcp` package provides an MCP server for Claude Code:
 ### 1. Schema as Contract
 The schema is a contract between strategy authors and execution engines. Any valid UTSS document should be executable by any compliant engine.
 
-### 2. LLM-Friendly
+### 2. Minimal Primitives
+- Only 6 condition types: comparison, and, or, not, expr, always
+- Complex patterns via expr formulas (see patterns/)
+- Avoids "sugar bloat" - no unbounded type additions
+
+### 3. LLM-Friendly
 - Predictable structure (consistent patterns)
 - Clear type discriminators (`type` field)
 - Self-documenting enums (readable values)
 - Reasonable defaults
 
-### 3. Composition Over Inheritance
+### 4. Composition Over Inheritance
 - Strategies compose signals, conditions, rules
 - Reusable components via `$ref`
 - No inheritance hierarchy
 
-### 4. Execution-Agnostic
+### 5. Execution-Agnostic
 - Schema defines WHAT, not HOW
 - Indicator formulas computed by execution engine
 - Slippage/commission models are engine concerns
@@ -309,8 +257,7 @@ The schema is a contract between strategy authors and execution engines. Any val
 
 | Version | Status | Changes |
 |---------|--------|---------|
-| v2.0 | Released | Initial schema with signals, conditions, rules |
-| v2.1 | Current | Portfolio signals, expressions, parameters, extended indicators/indices |
+| v1.0 | Current | Clean design with minimal condition types + expr |
 
 ---
 

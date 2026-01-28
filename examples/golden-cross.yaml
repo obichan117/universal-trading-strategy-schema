@@ -1,7 +1,7 @@
 # Golden Cross Strategy
 # Classic moving average crossover strategy
 
-$schema: https://utss.dev/schema/v2/strategy.json
+$schema: https://utss.dev/schema/v1/strategy.json
 
 info:
   id: golden_cross

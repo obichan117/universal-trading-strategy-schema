@@ -9,10 +9,8 @@ implement all required features.
 from utss.models import (
     ArithmeticOperator,
     CalendarField,
-    ChangeDirection,
     CommissionType,
     ComparisonOperator,
-    CrossDirection,
     EventType,
     FundamentalMetric,
     IndicatorType,
@@ -20,12 +18,11 @@ from utss.models import (
     PriceField,
     RebalanceMethod,
     SlippageType,
-    TemporalModifier,
     TradeDirection,
 )
 
 # Schema version
-SCHEMA_VERSION = "2.2.0"
+SCHEMA_VERSION = "1.0.0"
 
 # All supported indicator types
 SUPPORTED_INDICATORS: list[str] = [e.value for e in IndicatorType]
@@ -51,32 +48,19 @@ SUPPORTED_COMPARISON_OPERATORS: list[str] = [e.value for e in ComparisonOperator
 # All supported arithmetic operators
 SUPPORTED_ARITHMETIC_OPERATORS: list[str] = [e.value for e in ArithmeticOperator]
 
-# All supported cross directions
-SUPPORTED_CROSS_DIRECTIONS: list[str] = [e.value for e in CrossDirection]
-
-# All supported temporal modifiers
-SUPPORTED_TEMPORAL_MODIFIERS: list[str] = [e.value for e in TemporalModifier]
-
-# All supported change directions
-SUPPORTED_CHANGE_DIRECTIONS: list[str] = [e.value for e in ChangeDirection]
-
 # All supported trade directions
 SUPPORTED_TRADE_DIRECTIONS: list[str] = [e.value for e in TradeDirection]
 
 # All supported rebalance methods
 SUPPORTED_REBALANCE_METHODS: list[str] = [e.value for e in RebalanceMethod]
 
-# Condition types that engines must support
+# Condition types that engines must support (minimal primitives + expr)
 SUPPORTED_CONDITION_TYPES: list[str] = [
     "comparison",
-    "cross",
-    "range",
     "and",
     "or",
     "not",
-    "temporal",
-    "sequence",
-    "change",
+    "expr",
     "always",
 ]
 
@@ -138,9 +122,6 @@ __all__ = [
     "SUPPORTED_PORTFOLIO_FIELDS",
     "SUPPORTED_COMPARISON_OPERATORS",
     "SUPPORTED_ARITHMETIC_OPERATORS",
-    "SUPPORTED_CROSS_DIRECTIONS",
-    "SUPPORTED_TEMPORAL_MODIFIERS",
-    "SUPPORTED_CHANGE_DIRECTIONS",
     "SUPPORTED_TRADE_DIRECTIONS",
     "SUPPORTED_REBALANCE_METHODS",
     "SUPPORTED_CONDITION_TYPES",

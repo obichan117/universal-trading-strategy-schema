@@ -1,0 +1,79 @@
+# Temporal Patterns (time-based conditions)
+# Usage: $ref: "utss://patterns/temporal#for_n_bars"
+
+for_n_bars:
+  description: "Condition has been true for N consecutive bars"
+  formula: "all({condition}, bars={n})"
+  params:
+    condition: "Boolean condition to check"
+    n: "Number of consecutive bars"
+  examples:
+    - name: "RSI oversold for 3 bars"
+      condition: "RSI(14) < 30"
+      n: "3"
+      result: "all(RSI(14) < 30, bars=3)"
+    - name: "Price above SMA for 5 bars"
+      condition: "close > SMA(20)"
+      n: "5"
+      result: "all(close > SMA(20), bars=5)"
+
+within_n_bars:
+  description: "Condition was true at least once in N bars"
+  formula: "any({condition}, bars={n})"
+  params:
+    condition: "Boolean condition to check"
+    n: "Lookback period in bars"
+  examples:
+    - name: "RSI touched oversold within 5 bars"
+      condition: "RSI(14) < 30"
+      n: "5"
+      result: "any(RSI(14) < 30, bars=5)"
+
+count_in_n_bars:
+  description: "Condition was true exactly/at least K times in N bars"
+  formula: "count({condition}, bars={n}) >= {min_count}"
+  params:
+    condition: "Boolean condition"
+    n: "Lookback period"
+    min_count: "Minimum occurrences"
+  examples:
+    - name: "At least 3 up days in last 5 bars"
+      condition: "close > close[-1]"
+      n: "5"
+      min_count: "3"
+      result: "count(close > close[-1], bars=5) >= 3"
+
+first_time:
+  description: "Condition just became true (was false before)"
+  formula: "not {condition}[-1] and {condition}"
+  params:
+    condition: "Boolean condition"
+  examples:
+    - name: "First time RSI enters oversold"
+      condition: "RSI(14) < 30"
+      result: "not (RSI(14)[-1] < 30) and RSI(14) < 30"
+
+held_for:
+  description: "Position has been held for N bars (for exit conditions)"
+  formula: "bars_in_position >= {n}"
+  params:
+    n: "Minimum bars in position"
+
+new_high:
+  description: "Signal made new high in N bars"
+  formula: "{signal} >= highest({signal}, bars={n})"
+  params:
+    signal: "Signal to check"
+    n: "Lookback period"
+  examples:
+    - name: "New 20-day high"
+      signal: "high"
+      n: "20"
+      result: "high >= highest(high, bars=20)"
+
+new_low:
+  description: "Signal made new low in N bars"
+  formula: "{signal} <= lowest({signal}, bars={n})"
+  params:
+    signal: "Signal to check"
+    n: "Lookback period"

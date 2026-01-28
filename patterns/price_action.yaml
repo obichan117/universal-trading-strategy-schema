@@ -1,0 +1,122 @@
+# Price Action Patterns
+# Usage: $ref: "utss://patterns/price_action#higher_high"
+
+higher_high:
+  description: "Current high is higher than previous high"
+  formula: "high > high[-1]"
+  params: {}
+
+higher_low:
+  description: "Current low is higher than previous low"
+  formula: "low > low[-1]"
+  params: {}
+
+lower_high:
+  description: "Current high is lower than previous high"
+  formula: "high < high[-1]"
+  params: {}
+
+lower_low:
+  description: "Current low is lower than previous low"
+  formula: "low < low[-1]"
+  params: {}
+
+consecutive_higher_highs:
+  description: "N consecutive bars with higher highs (uptrend confirmation)"
+  formula: "all(high > high[-1], bars={n})"
+  params:
+    n: "Number of consecutive bars"
+  examples:
+    - name: "3 consecutive higher highs"
+      n: "3"
+      result: "all(high > high[-1], bars=3)"
+
+consecutive_lower_lows:
+  description: "N consecutive bars with lower lows (downtrend confirmation)"
+  formula: "all(low < low[-1], bars={n})"
+  params:
+    n: "Number of consecutive bars"
+
+consecutive_up_days:
+  description: "N consecutive up days (close > previous close)"
+  formula: "all(close > close[-1], bars={n})"
+  params:
+    n: "Number of consecutive bars"
+  examples:
+    - name: "5 consecutive up days"
+      n: "5"
+      result: "all(close > close[-1], bars=5)"
+
+consecutive_down_days:
+  description: "N consecutive down days"
+  formula: "all(close < close[-1], bars={n})"
+  params:
+    n: "Number of consecutive bars"
+
+bullish_engulfing:
+  description: "Bullish engulfing candlestick pattern"
+  formula: "close[-1] < open[-1] and close > open and open <= close[-1] and close >= open[-1]"
+  params: {}
+
+bearish_engulfing:
+  description: "Bearish engulfing candlestick pattern"
+  formula: "close[-1] > open[-1] and close < open and open >= close[-1] and close <= open[-1]"
+  params: {}
+
+doji:
+  description: "Doji candlestick (open ~= close)"
+  formula: "abs(close - open) / (high - low) < {threshold}"
+  params:
+    threshold: "Body/range ratio threshold (default 0.1)"
+  examples:
+    - name: "Doji with 10% threshold"
+      threshold: "0.1"
+      result: "abs(close - open) / (high - low) < 0.1"
+
+hammer:
+  description: "Hammer candlestick (bullish reversal)"
+  formula: "(min(open, close) - low) > 2 * abs(close - open) and (high - max(open, close)) < abs(close - open)"
+  params: {}
+
+shooting_star:
+  description: "Shooting star candlestick (bearish reversal)"
+  formula: "(high - max(open, close)) > 2 * abs(close - open) and (min(open, close) - low) < abs(close - open)"
+  params: {}
+
+inside_bar:
+  description: "Current bar is contained within previous bar's range"
+  formula: "high < high[-1] and low > low[-1]"
+  params: {}
+
+outside_bar:
+  description: "Current bar engulfs previous bar's range"
+  formula: "high > high[-1] and low < low[-1]"
+  params: {}
+
+gap_up:
+  description: "Price gapped up (current low > previous high)"
+  formula: "low > high[-1]"
+  params: {}
+
+gap_down:
+  description: "Price gapped down (current high < previous low)"
+  formula: "high < low[-1]"
+  params: {}
+
+gap_up_percent:
+  description: "Price gapped up by at least N%"
+  formula: "(open - close[-1]) / close[-1] >= {percent}"
+  params:
+    percent: "Minimum gap percentage as decimal (e.g., 0.02 for 2%)"
+
+volume_spike:
+  description: "Volume is N times higher than average"
+  formula: "volume > SMA(volume, {period}) * {multiplier}"
+  params:
+    period: "Average volume period (e.g., 20)"
+    multiplier: "Volume multiplier (e.g., 2)"
+  examples:
+    - name: "Volume 2x above 20-day average"
+      period: "20"
+      multiplier: "2"
+      result: "volume > SMA(volume, 20) * 2"

@@ -1,4 +1,4 @@
-# UTSS v2.1 Schema Specification
+# UTSS v1.0 Schema Specification
 
 **Universal Trading Strategy Schema - Complete Reference**
 
@@ -311,7 +311,7 @@ flowchart LR
 ### Top-Level Document
 
 ```yaml
-$schema: https://utss.dev/schema/v2/strategy.json  # Optional
+$schema: https://utss.dev/schema/v1/strategy.json  # Optional
 
 info:          # Required - Strategy metadata
 universe:      # Required - Asset selection
@@ -1784,8 +1784,8 @@ schedule:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.0 | 2024-01 | Initial release with signals, conditions, rules |
-| 2.1.0 | 2024-01 | Portfolio signals, expressions, parameters, extended indicators/indices, alerts |
+| 1.0.0 | 2024-01 | Initial release with signals, conditions, rules |
+| 1.0.0 | 2024-01 | Portfolio signals, expressions, parameters, extended indicators/indices, alerts |
 
 ---
 

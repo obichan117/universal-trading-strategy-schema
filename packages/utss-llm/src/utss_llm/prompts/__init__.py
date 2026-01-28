@@ -23,11 +23,11 @@ SYSTEM_PROMPT = """You are a trading strategy expert that converts natural langu
 
 UTSS is a composable schema for expressing trading strategies with:
 - Signals: Numeric values (price, indicators, fundamentals)
-- Conditions: Boolean expressions (comparisons, crosses, ranges)
+- Conditions: Boolean expressions (comparison, and/or/not, expr)
 - Rules: When (condition) → Then (action)
 - Sizing: Position sizing methods
 
-Always output valid YAML that conforms to the UTSS v2.1 schema.
+Always output valid YAML that conforms to the UTSS v1.0 schema.
 Be specific about indicator parameters and use sensible defaults when not specified.
 """
 

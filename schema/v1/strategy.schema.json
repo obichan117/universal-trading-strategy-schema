@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://utss.dev/schema/v2/strategy.json",
-  "title": "Universal Trading Strategy Schema (UTSS) v2.2",
+  "$id": "https://utss.dev/schema/v1/strategy.json",
+  "title": "Universal Trading Strategy Schema (UTSS) v1.0",
   "description": "A comprehensive, composable schema for expressing any trading strategy",
   "type": "object",
   "required": ["info", "universe", "rules"],
@@ -343,17 +343,13 @@
     },
 
     "Condition": {
-      "description": "Produces a boolean from signals",
+      "description": "Produces a boolean from signals. Use primitives (comparison, and/or/not) for simple cases, expr for complex patterns.",
       "oneOf": [
         { "$ref": "#/definitions/ComparisonCondition" },
-        { "$ref": "#/definitions/CrossCondition" },
-        { "$ref": "#/definitions/RangeCondition" },
         { "$ref": "#/definitions/AndCondition" },
         { "$ref": "#/definitions/OrCondition" },
         { "$ref": "#/definitions/NotCondition" },
-        { "$ref": "#/definitions/TemporalCondition" },
-        { "$ref": "#/definitions/SequenceCondition" },
-        { "$ref": "#/definitions/ChangeCondition" },
+        { "$ref": "#/definitions/ExpressionCondition" },
         { "$ref": "#/definitions/AlwaysCondition" },
         { "$ref": "#/definitions/Reference" }
       ]
@@ -371,36 +367,6 @@
           "enum": ["<", "<=", "=", ">=", ">", "!="]
         },
         "right": { "$ref": "#/definitions/Signal" }
-      },
-      "additionalProperties": false
-    },
-
-    "CrossCondition": {
-      "type": "object",
-      "description": "Detect when one signal crosses another",
-      "required": ["type", "signal", "threshold", "direction"],
-      "properties": {
-        "type": { "const": "cross" },
-        "signal": { "$ref": "#/definitions/Signal" },
-        "threshold": { "$ref": "#/definitions/Signal" },
-        "direction": {
-          "type": "string",
-          "enum": ["above", "below"]
-        }
-      },
-      "additionalProperties": false
-    },
-
-    "RangeCondition": {
-      "type": "object",
-      "description": "Check if signal is within a range",
-      "required": ["type", "signal", "min", "max"],
-      "properties": {
-        "type": { "const": "range" },
-        "signal": { "$ref": "#/definitions/Signal" },
-        "min": { "$ref": "#/definitions/Signal" },
-        "max": { "$ref": "#/definitions/Signal" },
-        "inclusive": { "type": "boolean", "default": true }
       },
       "additionalProperties": false
     },
@@ -446,65 +412,16 @@
       "additionalProperties": false
     },
 
-    "TemporalCondition": {
+    "ExpressionCondition": {
       "type": "object",
-      "description": "Time-based condition modifiers",
-      "required": ["type", "condition", "modifier"],
+      "description": "Boolean expression for complex patterns. Use for crossovers, ranges, temporal, sequences, etc.",
+      "required": ["type", "formula"],
       "properties": {
-        "type": { "const": "temporal" },
-        "condition": { "$ref": "#/definitions/Condition" },
-        "modifier": {
+        "type": { "const": "expr" },
+        "formula": {
           "type": "string",
-          "enum": ["for_bars", "within_bars", "since_bars", "first_time", "nth_time"]
-        },
-        "bars": { "type": "integer", "minimum": 1 },
-        "n": { "type": "integer", "minimum": 1 }
-      },
-      "additionalProperties": false
-    },
-
-    "SequenceCondition": {
-      "type": "object",
-      "description": "Detect ordered sequence of conditions",
-      "required": ["type", "steps"],
-      "properties": {
-        "type": { "const": "sequence" },
-        "steps": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["condition"],
-            "properties": {
-              "condition": { "$ref": "#/definitions/Condition" },
-              "within_bars": { "type": "integer", "minimum": 1 },
-              "min_bars": { "type": "integer", "minimum": 0 }
-            }
-          },
-          "minItems": 2
-        },
-        "reset_on": { "$ref": "#/definitions/Condition" },
-        "expire_bars": { "type": "integer", "minimum": 1 }
-      },
-      "additionalProperties": false
-    },
-
-    "ChangeCondition": {
-      "type": "object",
-      "description": "Detect signal change over time",
-      "required": ["type", "signal", "bars"],
-      "properties": {
-        "type": { "const": "change" },
-        "signal": { "$ref": "#/definitions/Signal" },
-        "bars": { "type": "integer", "minimum": 1 },
-        "direction": {
-          "type": "string",
-          "enum": ["increase", "decrease", "any"],
-          "default": "any"
-        },
-        "min_amount": { "type": "number" },
-        "min_percent": { "type": "number" },
-        "max_amount": { "type": "number" },
-        "max_percent": { "type": "number" }
+          "description": "Boolean expression, e.g., 'SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)' for cross above"
+        }
       },
       "additionalProperties": false
     },

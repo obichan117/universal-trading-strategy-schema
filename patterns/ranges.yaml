@@ -1,0 +1,80 @@
+# Range Patterns
+# Usage: $ref: "utss://patterns/ranges#in_range"
+
+in_range:
+  description: "Signal is within a range (inclusive)"
+  formula: "{signal} >= {min} and {signal} <= {max}"
+  params:
+    signal: "Signal to check"
+    min: "Lower bound"
+    max: "Upper bound"
+  examples:
+    - name: "RSI neutral zone"
+      signal: "RSI(14)"
+      min: "30"
+      max: "70"
+      result: "RSI(14) >= 30 and RSI(14) <= 70"
+
+out_of_range:
+  description: "Signal is outside a range"
+  formula: "{signal} < {min} or {signal} > {max}"
+  params:
+    signal: "Signal to check"
+    min: "Lower bound"
+    max: "Upper bound"
+
+overbought:
+  description: "Momentum indicator in overbought territory"
+  formula: "{indicator} > {threshold}"
+  params:
+    indicator: "Momentum indicator (e.g., RSI(14))"
+    threshold: "Overbought level (e.g., 70)"
+  examples:
+    - name: "RSI overbought"
+      indicator: "RSI(14)"
+      threshold: "70"
+      result: "RSI(14) > 70"
+    - name: "Stochastic overbought"
+      indicator: "STOCH_K(14)"
+      threshold: "80"
+      result: "STOCH_K(14) > 80"
+
+oversold:
+  description: "Momentum indicator in oversold territory"
+  formula: "{indicator} < {threshold}"
+  params:
+    indicator: "Momentum indicator"
+    threshold: "Oversold level (e.g., 30)"
+  examples:
+    - name: "RSI oversold"
+      indicator: "RSI(14)"
+      threshold: "30"
+      result: "RSI(14) < 30"
+
+bollinger_squeeze:
+  description: "Bollinger Bands width below threshold (low volatility)"
+  formula: "BB_WIDTH({period}) < {threshold}"
+  params:
+    period: "Bollinger period (default 20)"
+    threshold: "Width threshold"
+
+bollinger_expansion:
+  description: "Bollinger Bands width above threshold (high volatility)"
+  formula: "BB_WIDTH({period}) > {threshold}"
+  params:
+    period: "Bollinger period"
+    threshold: "Width threshold"
+
+price_near_support:
+  description: "Price is within N% of support level"
+  formula: "close <= {support} * (1 + {tolerance}) and close >= {support} * (1 - {tolerance})"
+  params:
+    support: "Support level signal"
+    tolerance: "Tolerance as decimal (e.g., 0.02 for 2%)"
+
+price_near_resistance:
+  description: "Price is within N% of resistance level"
+  formula: "close <= {resistance} * (1 + {tolerance}) and close >= {resistance} * (1 - {tolerance})"
+  params:
+    resistance: "Resistance level signal"
+    tolerance: "Tolerance as decimal"

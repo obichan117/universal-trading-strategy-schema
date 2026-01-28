@@ -1,0 +1,98 @@
+# Chart Patterns
+# Usage: $ref: "utss://patterns/chart_patterns#double_bottom"
+# Note: Complex patterns like head & shoulders are better suited for ML/external signals
+
+double_bottom:
+  description: |
+    Double bottom pattern: Two lows at similar level with rally between.
+    Simplified detection - for production use, consider ML-based pattern recognition.
+  formula: |
+    low <= lowest(low, bars={lookback}) * (1 + {tolerance})
+    and any(low <= lowest(low, bars={lookback}) * (1 + {tolerance}), bars={lookback})
+    and highest(high, bars={lookback}) > lowest(low, bars={lookback}) * (1 + {rally_pct})
+  params:
+    lookback: "Lookback period for pattern (e.g., 20)"
+    tolerance: "Price tolerance for matching lows (e.g., 0.02 for 2%)"
+    rally_pct: "Minimum rally between bottoms (e.g., 0.05 for 5%)"
+  note: "This is a simplified heuristic. Real double bottoms require visual confirmation."
+
+double_top:
+  description: "Double top pattern: Two highs at similar level with pullback between"
+  formula: |
+    high >= highest(high, bars={lookback}) * (1 - {tolerance})
+    and any(high >= highest(high, bars={lookback}) * (1 - {tolerance}), bars={lookback})
+    and lowest(low, bars={lookback}) < highest(high, bars={lookback}) * (1 - {pullback_pct})
+  params:
+    lookback: "Lookback period"
+    tolerance: "Price tolerance"
+    pullback_pct: "Minimum pullback between tops"
+
+breakout_above:
+  description: "Price breaks above resistance level (N-bar high)"
+  formula: "close > highest(high, bars={lookback})[-1]"
+  params:
+    lookback: "Lookback period for resistance"
+  examples:
+    - name: "20-day breakout"
+      lookback: "20"
+      result: "close > highest(high, bars=20)[-1]"
+
+breakout_below:
+  description: "Price breaks below support level (N-bar low)"
+  formula: "close < lowest(low, bars={lookback})[-1]"
+  params:
+    lookback: "Lookback period for support"
+
+donchian_breakout_long:
+  description: "Price breaks above Donchian channel (Turtle Trading style)"
+  formula: "high >= DC_UPPER({period})"
+  params:
+    period: "Donchian period"
+
+donchian_breakout_short:
+  description: "Price breaks below Donchian channel"
+  formula: "low <= DC_LOWER({period})"
+  params:
+    period: "Donchian period"
+
+bollinger_breakout_upper:
+  description: "Price closes above upper Bollinger Band"
+  formula: "close > BB_UPPER({period})"
+  params:
+    period: "Bollinger period (default 20)"
+
+bollinger_breakout_lower:
+  description: "Price closes below lower Bollinger Band"
+  formula: "close < BB_LOWER({period})"
+  params:
+    period: "Bollinger period"
+
+mean_reversion_entry:
+  description: "Price extended below mean, setup for reversion"
+  formula: "close < BB_LOWER({period}) and RSI({rsi_period}) < {rsi_threshold}"
+  params:
+    period: "Bollinger period"
+    rsi_period: "RSI period"
+    rsi_threshold: "RSI oversold level"
+  examples:
+    - name: "BB + RSI mean reversion"
+      period: "20"
+      rsi_period: "14"
+      rsi_threshold: "30"
+      result: "close < BB_LOWER(20) and RSI(14) < 30"
+
+trend_following_entry:
+  description: "Multi-timeframe trend confirmation"
+  formula: "close > SMA({short_ma}) and SMA({short_ma}) > SMA({long_ma}) and ADX({adx_period}) > {adx_threshold}"
+  params:
+    short_ma: "Short MA period"
+    long_ma: "Long MA period"
+    adx_period: "ADX period"
+    adx_threshold: "Minimum ADX for trend strength"
+  examples:
+    - name: "Standard trend setup"
+      short_ma: "20"
+      long_ma: "50"
+      adx_period: "14"
+      adx_threshold: "25"
+      result: "close > SMA(20) and SMA(20) > SMA(50) and ADX(14) > 25"

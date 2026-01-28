@@ -82,6 +82,10 @@ class SignalEvaluator:
         Returns:
             Series of signal values
         """
+        # Check for $ref first (can appear without explicit type)
+        if "$ref" in signal:
+            return self._eval_ref_signal(signal, context)
+
         signal_type = signal.get("type", "price")
 
         if signal_type == "price":
@@ -362,12 +366,10 @@ class SignalEvaluator:
 class ConditionEvaluator:
     """Evaluates UTSS conditions against signals.
 
-    Supports all UTSS condition types:
+    UTSS v1.0 Condition Types:
     - comparison: Compare signal to value (>, <, =, etc.)
-    - cross: Crossover detection (crosses_above, crosses_below)
-    - range: Value within bounds
     - and/or/not: Logical combinations
-    - temporal: Time-based conditions
+    - expr: Formula expressions for complex patterns
     - always: Always true
 
     Example:
@@ -375,6 +377,7 @@ class ConditionEvaluator:
         cond_eval = ConditionEvaluator(signal_eval)
         context = EvaluationContext(primary_data=ohlcv_df)
 
+        # Simple comparison
         condition = {
             "type": "comparison",
             "left": {"type": "indicator", "indicator": "RSI", "params": {"period": 14}},
@@ -382,6 +385,12 @@ class ConditionEvaluator:
             "right": {"type": "constant", "value": 30}
         }
         result = cond_eval.evaluate_condition(condition, context)
+
+        # Expression (cross above)
+        condition = {
+            "type": "expr",
+            "formula": "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
+        }
     """
 
     def __init__(self, signal_evaluator: SignalEvaluator) -> None:
@@ -406,18 +415,14 @@ class ConditionEvaluator:
 
         if cond_type == "comparison":
             return self._eval_comparison(condition, context)
-        elif cond_type == "cross":
-            return self._eval_cross(condition, context)
-        elif cond_type == "range":
-            return self._eval_range(condition, context)
         elif cond_type == "and":
             return self._eval_and(condition, context)
         elif cond_type == "or":
             return self._eval_or(condition, context)
         elif cond_type == "not":
             return self._eval_not(condition, context)
-        elif cond_type == "temporal":
-            return self._eval_temporal(condition, context)
+        elif cond_type == "expr":
+            return self._eval_expr(condition, context)
         elif cond_type == "always":
             return pd.Series(True, index=context.get_data().index)
         elif cond_type == "$ref":
@@ -447,31 +452,6 @@ class ConditionEvaluator:
             return left != right
         else:
             raise EvaluationError(f"Unknown comparison operator: {operator}")
-
-    def _eval_cross(
-        self, condition: dict[str, Any], context: EvaluationContext
-    ) -> pd.Series:
-        """Evaluate cross condition."""
-        left = self.signal_eval.evaluate_signal(condition["left"], context)
-        right = self.signal_eval.evaluate_signal(condition["right"], context)
-        direction = condition.get("direction", "above")
-
-        prev_left = left.shift(1)
-        prev_right = right.shift(1)
-
-        if direction == "above":
-            return (left > right) & (prev_left <= prev_right)
-        else:  # below
-            return (left < right) & (prev_left >= prev_right)
-
-    def _eval_range(
-        self, condition: dict[str, Any], context: EvaluationContext
-    ) -> pd.Series:
-        """Evaluate range condition."""
-        signal = self.signal_eval.evaluate_signal(condition["signal"], context)
-        low = self.signal_eval.evaluate_signal(condition["low"], context)
-        high = self.signal_eval.evaluate_signal(condition["high"], context)
-        return (signal >= low) & (signal <= high)
 
     def _eval_and(
         self, condition: dict[str, Any], context: EvaluationContext
@@ -506,29 +486,34 @@ class ConditionEvaluator:
         inner = condition.get("condition", {})
         return ~self.evaluate_condition(inner, context)
 
-    def _eval_temporal(
+    def _eval_expr(
         self, condition: dict[str, Any], context: EvaluationContext
     ) -> pd.Series:
-        """Evaluate temporal condition."""
-        inner = self.evaluate_condition(condition["condition"], context)
-        modifier = condition.get("modifier", "for")
-        bars = condition.get("bars", 1)
+        """Evaluate expression condition.
 
-        if modifier == "for":
-            # Condition true for N consecutive bars
-            return inner.rolling(window=bars).sum() == bars
-        elif modifier == "within":
-            # Condition true at least once in last N bars
-            return inner.rolling(window=bars).max() == 1
-        elif modifier == "since":
-            # Bars since condition was true
-            # Returns boolean: true if bars since last true >= N
-            cumsum = (~inner).cumsum()
-            last_true = cumsum.where(inner).ffill()
-            bars_since = cumsum - last_true
-            return bars_since >= bars
-        else:
-            raise EvaluationError(f"Unknown temporal modifier: {modifier}")
+        Supports basic formula expressions for common patterns.
+        For complex patterns, see patterns/ library.
+
+        Currently supported:
+        - Simple comparisons: "RSI(14) < 30", "close > SMA(20)"
+        - Logical operators: "and", "or"
+        - Offset access: "close[-1]", "SMA(20)[-1]"
+
+        Not yet supported:
+        - Function calls within expressions (all, any, count, highest, lowest)
+        - Complex nested expressions
+        """
+        formula = condition.get("formula", "")
+        if not formula:
+            raise EvaluationError("Expression condition requires 'formula' field")
+
+        # For now, raise NotImplementedError for expr conditions
+        # A full expression parser is needed for complete support
+        raise EvaluationError(
+            f"Expression conditions not yet fully implemented. "
+            f"Formula: '{formula}'. "
+            f"Use comparison/and/or/not conditions, or see patterns/ for examples."
+        )
 
     def _eval_ref(
         self, condition: dict[str, Any], context: EvaluationContext

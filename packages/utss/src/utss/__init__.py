@@ -1,8 +1,13 @@
 """
-Universal Trading Strategy Schema (UTSS) v2.1
+Universal Trading Strategy Schema (UTSS) v1.0
 
 A comprehensive, composable schema for expressing any trading strategy.
 Follows the Signal -> Condition -> Rule -> Strategy hierarchy.
+
+Design:
+- Minimal condition types: comparison, and/or/not, expr, always
+- Complex patterns via expr formulas (see patterns/ library)
+- Extensible via x-extensions
 """
 
 from utss.models import (
@@ -19,9 +24,6 @@ from utss.models import (
     RelativeMeasure,
     ArithmeticOperator,
     ComparisonOperator,
-    CrossDirection,
-    TemporalModifier,
-    ChangeDirection,
     TradeDirection,
     OrderType,
     TimeInForce,
@@ -49,17 +51,12 @@ from utss.models import (
     ExternalSignal,
     Reference,
     Signal,
-    # Conditions
+    # Conditions (minimal primitives + expr)
     ComparisonCondition,
-    CrossCondition,
-    RangeCondition,
     AndCondition,
     OrCondition,
     NotCondition,
-    TemporalCondition,
-    SequenceStep,
-    SequenceCondition,
-    ChangeCondition,
+    ExpressionCondition,
     AlwaysCondition,
     Condition,
     # Sizing
@@ -114,9 +111,6 @@ from utss.capabilities import (
     SUPPORTED_PORTFOLIO_FIELDS,
     SUPPORTED_COMPARISON_OPERATORS,
     SUPPORTED_ARITHMETIC_OPERATORS,
-    SUPPORTED_CROSS_DIRECTIONS,
-    SUPPORTED_TEMPORAL_MODIFIERS,
-    SUPPORTED_CHANGE_DIRECTIONS,
     SUPPORTED_TRADE_DIRECTIONS,
     SUPPORTED_REBALANCE_METHODS,
     SUPPORTED_CONDITION_TYPES,
@@ -126,7 +120,7 @@ from utss.capabilities import (
     SUPPORTED_UNIVERSE_TYPES,
 )
 
-__version__ = "2.1.0"
+__version__ = "1.0.0"
 __all__ = [
     # Enums
     "Timeframe",
@@ -141,9 +135,6 @@ __all__ = [
     "RelativeMeasure",
     "ArithmeticOperator",
     "ComparisonOperator",
-    "CrossDirection",
-    "TemporalModifier",
-    "ChangeDirection",
     "TradeDirection",
     "OrderType",
     "TimeInForce",
@@ -171,17 +162,12 @@ __all__ = [
     "ExternalSignal",
     "Reference",
     "Signal",
-    # Conditions
+    # Conditions (minimal primitives + expr)
     "ComparisonCondition",
-    "CrossCondition",
-    "RangeCondition",
     "AndCondition",
     "OrCondition",
     "NotCondition",
-    "TemporalCondition",
-    "SequenceStep",
-    "SequenceCondition",
-    "ChangeCondition",
+    "ExpressionCondition",
     "AlwaysCondition",
     "Condition",
     # Sizing
@@ -238,9 +224,6 @@ __all__ = [
     "SUPPORTED_PORTFOLIO_FIELDS",
     "SUPPORTED_COMPARISON_OPERATORS",
     "SUPPORTED_ARITHMETIC_OPERATORS",
-    "SUPPORTED_CROSS_DIRECTIONS",
-    "SUPPORTED_TEMPORAL_MODIFIERS",
-    "SUPPORTED_CHANGE_DIRECTIONS",
     "SUPPORTED_TRADE_DIRECTIONS",
     "SUPPORTED_REBALANCE_METHODS",
     "SUPPORTED_CONDITION_TYPES",

@@ -190,16 +190,5 @@ class TestConditionEvaluator:
         result = cond_eval.evaluate_condition(condition, context)
         assert result.all()
 
-    def test_range_condition(self, context):
-        """Test range condition."""
-        signal_eval = SignalEvaluator()
-        cond_eval = ConditionEvaluator(signal_eval)
-
-        condition = {
-            "type": "range",
-            "signal": {"type": "constant", "value": 50},
-            "low": {"type": "constant", "value": 30},
-            "high": {"type": "constant", "value": 70},
-        }
-        result = cond_eval.evaluate_condition(condition, context)
-        assert result.all()  # 50 is between 30 and 70
+    # Note: range, cross, temporal conditions removed in v1.0
+    # Use expr formulas for complex patterns instead

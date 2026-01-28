@@ -1,0 +1,124 @@
+# Momentum Patterns
+# Usage: $ref: "utss://patterns/momentum#bullish_divergence"
+
+bullish_divergence:
+  description: |
+    Bullish divergence: Price makes lower low but indicator makes higher low.
+    Simplified detection using recent lows.
+  formula: "low < lowest(low, bars={lookback})[-1] and {indicator} > lowest({indicator}, bars={lookback})[-1]"
+  params:
+    indicator: "Momentum indicator (e.g., RSI(14))"
+    lookback: "Lookback period"
+  examples:
+    - name: "RSI bullish divergence"
+      indicator: "RSI(14)"
+      lookback: "10"
+      result: "low < lowest(low, bars=10)[-1] and RSI(14) > lowest(RSI(14), bars=10)[-1]"
+
+bearish_divergence:
+  description: "Bearish divergence: Price makes higher high but indicator makes lower high"
+  formula: "high > highest(high, bars={lookback})[-1] and {indicator} < highest({indicator}, bars={lookback})[-1]"
+  params:
+    indicator: "Momentum indicator"
+    lookback: "Lookback period"
+
+momentum_thrust:
+  description: "Strong momentum thrust (RSI or other indicator spike)"
+  formula: "{indicator} - {indicator}[-{bars}] > {threshold}"
+  params:
+    indicator: "Momentum indicator"
+    bars: "Comparison period"
+    threshold: "Minimum change"
+  examples:
+    - name: "RSI thrust of 20 points in 3 bars"
+      indicator: "RSI(14)"
+      bars: "3"
+      threshold: "20"
+      result: "RSI(14) - RSI(14)[-3] > 20"
+
+momentum_collapse:
+  description: "Momentum collapse (rapid decline in indicator)"
+  formula: "{indicator}[-{bars}] - {indicator} > {threshold}"
+  params:
+    indicator: "Momentum indicator"
+    bars: "Comparison period"
+    threshold: "Minimum decline"
+
+rsi_reversal_buy:
+  description: "RSI reversal buy: Oversold and turning up"
+  formula: "RSI({period}) < {oversold} and RSI({period}) > RSI({period})[-1]"
+  params:
+    period: "RSI period"
+    oversold: "Oversold level"
+  examples:
+    - name: "RSI(14) oversold reversal"
+      period: "14"
+      oversold: "30"
+      result: "RSI(14) < 30 and RSI(14) > RSI(14)[-1]"
+
+rsi_reversal_sell:
+  description: "RSI reversal sell: Overbought and turning down"
+  formula: "RSI({period}) > {overbought} and RSI({period}) < RSI({period})[-1]"
+  params:
+    period: "RSI period"
+    overbought: "Overbought level"
+
+macd_histogram_turn:
+  description: "MACD histogram turns positive/negative"
+  formula: "MACD_HIST[-1] < 0 and MACD_HIST >= 0"
+  params: {}
+  variants:
+    bullish: "MACD_HIST[-1] < 0 and MACD_HIST >= 0"
+    bearish: "MACD_HIST[-1] > 0 and MACD_HIST <= 0"
+
+stochastic_oversold_crossover:
+  description: "Stochastic %K crosses above %D in oversold territory"
+  formula: "STOCH_K({period}) < {oversold} and STOCH_K({period})[-1] <= STOCH_D({period})[-1] and STOCH_K({period}) > STOCH_D({period})"
+  params:
+    period: "Stochastic period"
+    oversold: "Oversold level"
+
+stochastic_overbought_crossover:
+  description: "Stochastic %K crosses below %D in overbought territory"
+  formula: "STOCH_K({period}) > {overbought} and STOCH_K({period})[-1] >= STOCH_D({period})[-1] and STOCH_K({period}) < STOCH_D({period})"
+  params:
+    period: "Stochastic period"
+    overbought: "Overbought level"
+
+adx_trend_strength:
+  description: "ADX indicates strong trend"
+  formula: "ADX({period}) > {threshold}"
+  params:
+    period: "ADX period"
+    threshold: "Minimum ADX for strong trend (typically 25)"
+
+adx_trend_weakening:
+  description: "ADX declining (trend losing strength)"
+  formula: "ADX({period}) < ADX({period})[-{bars}]"
+  params:
+    period: "ADX period"
+    bars: "Comparison period"
+
+positive_momentum:
+  description: "Upward momentum (price change over N bars)"
+  formula: "close > close[-{bars}]"
+  params:
+    bars: "Lookback period"
+
+negative_momentum:
+  description: "Downward momentum"
+  formula: "close < close[-{bars}]"
+  params:
+    bars: "Lookback period"
+
+accelerating_momentum:
+  description: "Momentum is accelerating (ROC increasing)"
+  formula: "ROC({period}) > ROC({period})[-1]"
+  params:
+    period: "ROC period"
+
+decelerating_momentum:
+  description: "Momentum is decelerating (ROC decreasing)"
+  formula: "ROC({period}) < ROC({period})[-1]"
+  params:
+    period: "ROC period"

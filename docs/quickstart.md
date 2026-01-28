@@ -444,9 +444,9 @@ when:
 
 ```yaml
 # Wrong
-$ref: "#/components/signals/rsi"  # Old v2.0 path
+$ref: "#/components/signals/rsi"  # Old v1.0 path
 
-# Correct (v2.1)
+# Correct (v1.0)
 $ref: "#/signals/rsi"  # Direct path
 ```
 

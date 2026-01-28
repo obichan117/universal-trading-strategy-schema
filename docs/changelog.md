@@ -4,7 +4,7 @@ All notable changes to the Universal Trading Strategy Schema.
 
 ---
 
-## [2.1.0] - 2024-01
+## [1.0.0] - 2024-01
 
 ### Added
 
@@ -75,7 +75,7 @@ All notable changes to the Universal Trading Strategy Schema.
 
 ---
 
-## [2.0.0] - 2024-01
+## [1.0.0] - 2024-01
 
 ### Added
 
@@ -106,5 +106,5 @@ This project uses [Semantic Versioning](https://semver.org/):
 Schema version is specified in strategy documents:
 
 ```yaml
-$schema: https://utss.dev/schema/v2/strategy.json
+$schema: https://utss.dev/schema/v1/strategy.json
 ```

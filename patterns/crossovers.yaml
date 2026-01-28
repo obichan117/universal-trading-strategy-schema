@@ -1,0 +1,52 @@
+# Crossover Patterns
+# Usage: $ref: "utss://patterns/crossovers#cross_above"
+
+cross_above:
+  description: "Signal crosses above threshold (e.g., golden cross)"
+  formula: "{fast}[-1] <= {slow}[-1] and {fast} > {slow}"
+  params:
+    fast: "Fast signal (e.g., SMA(50))"
+    slow: "Slow signal (e.g., SMA(200))"
+  examples:
+    - name: "Golden Cross"
+      fast: "SMA(50)"
+      slow: "SMA(200)"
+      result: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
+    - name: "RSI crosses above 30"
+      fast: "RSI(14)"
+      slow: "30"
+      result: "RSI(14)[-1] <= 30 and RSI(14) > 30"
+
+cross_below:
+  description: "Signal crosses below threshold (e.g., death cross)"
+  formula: "{fast}[-1] >= {slow}[-1] and {fast} < {slow}"
+  params:
+    fast: "Fast signal"
+    slow: "Slow signal"
+  examples:
+    - name: "Death Cross"
+      fast: "SMA(50)"
+      slow: "SMA(200)"
+      result: "SMA(50)[-1] >= SMA(200)[-1] and SMA(50) < SMA(200)"
+
+macd_cross_above:
+  description: "MACD line crosses above signal line"
+  formula: "MACD[-1] <= MACD_SIGNAL[-1] and MACD > MACD_SIGNAL"
+  params: {}
+
+macd_cross_below:
+  description: "MACD line crosses below signal line"
+  formula: "MACD[-1] >= MACD_SIGNAL[-1] and MACD < MACD_SIGNAL"
+  params: {}
+
+price_cross_above_ma:
+  description: "Price closes above moving average"
+  formula: "close[-1] <= {ma}[-1] and close > {ma}"
+  params:
+    ma: "Moving average (e.g., SMA(20), EMA(50))"
+
+price_cross_below_ma:
+  description: "Price closes below moving average"
+  formula: "close[-1] >= {ma}[-1] and close < {ma}"
+  params:
+    ma: "Moving average"
