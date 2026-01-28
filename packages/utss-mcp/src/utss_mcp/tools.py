@@ -154,7 +154,7 @@ async def backtest_strategy(
     """
     try:
         from pyutss import BacktestEngine, BacktestConfig, MetricsCalculator
-        from pyutss.data import get_registry
+        from pyutss.data import fetch
 
         # Parse strategy
         strategy = yaml.safe_load(strategy_yaml)
@@ -163,9 +163,8 @@ async def backtest_strategy(
         start = date.fromisoformat(start_date)
         end = date.fromisoformat(end_date)
 
-        # Fetch real market data using provider registry
-        registry = get_registry()
-        data = await registry.get_ohlcv_dataframe(symbol, start, end)
+        # Fetch real market data (auto-detects source based on symbol)
+        data = fetch(symbol, start, end)
 
         if data.empty:
             return {

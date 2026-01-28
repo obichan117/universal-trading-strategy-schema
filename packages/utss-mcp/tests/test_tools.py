@@ -1,6 +1,6 @@
 """Tests for MCP tools."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -158,11 +158,7 @@ constraints: {}
         # Mock the data provider to return test data
         mock_data = _create_mock_data("2024-01-01", "2024-06-01")
 
-        with patch("pyutss.data.get_registry") as mock_get_registry:
-            mock_registry = AsyncMock()
-            mock_registry.get_ohlcv_dataframe = AsyncMock(return_value=mock_data)
-            mock_get_registry.return_value = mock_registry
-
+        with patch("pyutss.data.fetch", return_value=mock_data):
             result = await backtest_strategy(
                 strategy_yaml=yaml,
                 symbol="TEST",
@@ -189,11 +185,7 @@ rules: []
         # Mock with insufficient data
         mock_data = _create_mock_data("2024-01-01", "2024-01-03")
 
-        with patch("pyutss.data.get_registry") as mock_get_registry:
-            mock_registry = AsyncMock()
-            mock_registry.get_ohlcv_dataframe = AsyncMock(return_value=mock_data)
-            mock_get_registry.return_value = mock_registry
-
+        with patch("pyutss.data.fetch", return_value=mock_data):
             result = await backtest_strategy(
                 strategy_yaml=yaml,
                 symbol="TEST",
