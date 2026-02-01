@@ -77,12 +77,17 @@ nav:
       - Installation: installation.md
   - Guide:
       - Architecture: architecture.md
-      - Comparison: comparison.md
-      - Research: research.md
+      - Formula Reference: formula-reference.md
       - Examples: examples.md
+  - Packages:
+      - utss (Schema): api.md
+      - pyutss (Backtesting): api-pyutss.md
+      - utss-llm (LLM): llm-guide.md
+      - utss-mcp (MCP): mcp-guide.md
   - Reference:
       - Specification: specification.md
-      - Python API: api.md
+      - Comparison: comparison.md
+      - Research: research.md
   - About:
       - Changelog: changelog.md
       - Contributing: contributing.md

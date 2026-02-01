@@ -1,0 +1,178 @@
+# Market Monitoring Strategy
+# Demonstrates condition monitoring with trade actions
+
+$schema: https://utss.dev/schema/v1/strategy.json
+
+info:
+  id: market_monitor
+  name: Market Monitoring Strategy
+  version: "1.0"
+  description: |
+    Monitoring strategy that triggers small position entries when
+    significant market conditions are detected. Designed for
+    opportunistic trading on extreme conditions.
+  tags:
+    - monitoring
+    - extreme-conditions
+    - opportunistic
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - SPY
+    - QQQ
+    - AAPL
+    - TSLA
+    - NVDA
+
+signals:
+  # RSI for overbought/oversold
+  rsi_14:
+    type: indicator
+    indicator: RSI
+    params:
+      period: 14
+
+conditions:
+  # Extreme RSI conditions
+  extremely_oversold:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi_14"
+    operator: "<"
+    right:
+      type: constant
+      value: 20
+
+  extremely_overbought:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi_14"
+    operator: ">"
+    right:
+      type: constant
+      value: 80
+
+  # Volume spike (3x average)
+  volume_spike:
+    type: expr
+    formula: "volume > SMA(volume, 20) * 3"
+
+  # Bollinger Band breakout
+  bb_breakout_up:
+    type: expr
+    formula: "close > BB(20, 2).upper and close[-1] <= BB(20, 2).upper[-1]"
+
+  bb_breakout_down:
+    type: expr
+    formula: "close < BB(20, 2).lower and close[-1] >= BB(20, 2).lower[-1]"
+
+  # Large daily move (>3%)
+  big_move_up:
+    type: expr
+    formula: "(close - close[-1]) / close[-1] > 0.03"
+
+  big_move_down:
+    type: expr
+    formula: "(close - close[-1]) / close[-1] < -0.03"
+
+  # Combined buy signal: oversold + volume spike
+  buy_signal:
+    type: and
+    conditions:
+      - $ref: "#/conditions/extremely_oversold"
+      - $ref: "#/conditions/volume_spike"
+
+  # Sell signal: overbought
+  sell_signal:
+    $ref: "#/conditions/extremely_overbought"
+
+rules:
+  - name: Buy extreme oversold with volume
+    description: Enter small position when extremely oversold with volume spike
+    when:
+      $ref: "#/conditions/buy_signal"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 5
+    priority: 1
+
+  - name: Sell extreme overbought
+    description: Exit position when extremely overbought
+    when:
+      $ref: "#/conditions/sell_signal"
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+    priority: 2
+
+  - name: Buy Bollinger breakout up
+    description: Enter on upper BB breakout (momentum)
+    when:
+      $ref: "#/conditions/bb_breakout_up"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 5
+    priority: 3
+
+  - name: Buy Bollinger breakout down
+    description: Enter on lower BB breakdown (mean reversion)
+    when:
+      $ref: "#/conditions/bb_breakout_down"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 5
+    priority: 4
+
+constraints:
+  max_positions: 10
+  max_position_size: 10
+  stop_loss:
+    percent: 5
+  take_profit:
+    percent: 10
+  no_shorting: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
+
+parameters:
+  rsi_oversold_threshold:
+    type: number
+    default: 20
+    min: 10
+    max: 30
+    description: RSI level for oversold detection
+  rsi_overbought_threshold:
+    type: number
+    default: 80
+    min: 70
+    max: 90
+    description: RSI level for overbought detection
+  volume_spike_multiple:
+    type: number
+    default: 3
+    min: 2
+    max: 5
+    description: Volume multiple to trigger entry
+  position_size_pct:
+    type: number
+    default: 5
+    min: 2
+    max: 10
+    description: Position size as % of equity

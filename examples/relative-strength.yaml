@@ -1,0 +1,118 @@
+# Relative Strength Strategy
+# Buy stocks showing momentum, sell when momentum fades
+
+$schema: https://utss.dev/schema/v1/strategy.json
+
+info:
+  id: relative_strength
+  name: Relative Strength Strategy
+  version: "1.0"
+  description: |
+    Momentum strategy that buys stocks showing positive momentum
+    (price > SMA and positive ROC). Exits when momentum weakens.
+  tags:
+    - momentum
+    - relative-strength
+    - trend
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - NVDA
+
+signals:
+  # Stock's 20-day rate of change
+  roc_20:
+    type: indicator
+    indicator: ROC
+    params:
+      period: 20
+
+  # RSI for timing
+  rsi_14:
+    type: indicator
+    indicator: RSI
+    params:
+      period: 14
+
+conditions:
+  # Strong momentum: positive ROC and price above SMA
+  strong_momentum:
+    type: expr
+    formula: "ROC(20) > 0 and close > SMA(50)"
+
+  # Weak momentum: negative ROC or price below SMA
+  weak_momentum:
+    type: expr
+    formula: "ROC(20) < 0 or close < SMA(50)"
+
+  # Not overbought
+  not_overbought:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi_14"
+    operator: "<"
+    right:
+      type: constant
+      value: 70
+
+rules:
+  - name: Buy momentum leaders
+    description: Enter when stock shows strong momentum and not overbought
+    when:
+      type: and
+      conditions:
+        - $ref: "#/conditions/strong_momentum"
+        - $ref: "#/conditions/not_overbought"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 10
+    priority: 1
+
+  - name: Exit on weakness
+    description: Sell when momentum weakens
+    when:
+      $ref: "#/conditions/weak_momentum"
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+    priority: 2
+
+constraints:
+  max_positions: 5
+  max_position_size: 20
+  stop_loss:
+    percent: 8
+  trailing_stop:
+    percent: 12
+  no_shorting: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
+
+parameters:
+  lookback_period:
+    type: integer
+    default: 20
+    min: 5
+    max: 60
+    description: Period for ROC calculation
+  rsi_threshold:
+    type: number
+    default: 70
+    min: 50
+    max: 90
+    description: RSI level to avoid overbought entries

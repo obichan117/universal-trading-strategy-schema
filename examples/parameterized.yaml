@@ -1,0 +1,184 @@
+# Parameterized RSI Strategy
+# Demonstrates $param references for optimization
+
+$schema: https://utss.dev/schema/v1/strategy.json
+
+info:
+  id: parameterized_rsi
+  name: Parameterized RSI Strategy
+  version: "1.0"
+  description: |
+    RSI mean-reversion strategy with all key values exposed as
+    parameters for walk-forward optimization. Use pyutss.optimization
+    to find optimal parameter combinations.
+  tags:
+    - parameterized
+    - optimization
+    - RSI
+    - mean-reversion
+  visibility: public
+
+# Define optimizable parameters
+parameters:
+  rsi_period:
+    type: integer
+    default: 14
+    min: 5
+    max: 30
+    step: 1
+    description: RSI calculation period
+
+  entry_threshold:
+    type: number
+    default: 30
+    min: 15
+    max: 40
+    step: 5
+    description: RSI level to enter (oversold)
+
+  exit_threshold:
+    type: number
+    default: 70
+    min: 60
+    max: 85
+    step: 5
+    description: RSI level to exit (overbought)
+
+  position_pct:
+    type: number
+    default: 10
+    min: 5
+    max: 25
+    step: 5
+    description: Position size as % of equity
+
+  stop_loss_pct:
+    type: number
+    default: 5
+    min: 2
+    max: 10
+    step: 1
+    description: Stop loss percentage
+
+  atr_filter_period:
+    type: integer
+    default: 20
+    min: 10
+    max: 50
+    step: 5
+    description: ATR period for volatility filter
+
+  min_atr_multiple:
+    type: number
+    default: 1.0
+    min: 0.5
+    max: 2.0
+    step: 0.25
+    description: Minimum ATR multiple for entry (volatility filter)
+
+universe:
+  type: static
+  symbols:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - META
+
+signals:
+  # RSI for oversold/overbought detection
+  rsi:
+    type: indicator
+    indicator: RSI
+    params:
+      period: 14  # Default RSI period
+
+  # ATR for volatility filter
+  atr:
+    type: indicator
+    indicator: ATR
+    params:
+      period: 20  # Default ATR period
+
+conditions:
+  # Oversold condition (RSI < 30)
+  oversold:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi"
+    operator: "<"
+    right:
+      type: constant
+      value: 30
+
+  # Overbought condition (RSI > 70)
+  overbought:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi"
+    operator: ">"
+    right:
+      type: constant
+      value: 70
+
+  # Volatility filter: only trade when ATR is elevated
+  volatility_sufficient:
+    type: expr
+    formula: "ATR(20) > ATR(20)[-20] * 1.2"
+
+  # Combined entry condition
+  entry_valid:
+    type: and
+    conditions:
+      - $ref: "#/conditions/oversold"
+      - $ref: "#/conditions/volatility_sufficient"
+
+rules:
+  - name: Buy oversold with volatility
+    description: Enter when RSI oversold and volatility filter passes
+    when:
+      $ref: "#/conditions/entry_valid"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 10
+    priority: 1
+
+  - name: Sell overbought
+    description: Exit when RSI becomes overbought
+    when:
+      $ref: "#/conditions/overbought"
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+    priority: 2
+
+constraints:
+  max_positions: 5
+  max_position_size: 25
+  stop_loss:
+    percent: 5
+  no_shorting: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
+
+# Optimization hints for walk-forward
+optimization:
+  objective: sharpe_ratio  # Optimize for risk-adjusted returns
+  method: grid_search
+  cross_validation:
+    type: walk_forward
+    train_period: 252  # 1 year training
+    test_period: 63    # 3 months testing
+    step: 21           # Step by 1 month
+  constraints:
+    min_trades: 10     # Require at least 10 trades per period
+    max_drawdown: 0.20 # Reject parameters with >20% drawdown

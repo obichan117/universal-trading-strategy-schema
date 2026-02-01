@@ -1,0 +1,125 @@
+# Portfolio Rebalance Strategy
+# Periodic rebalancing with risk-parity weights
+
+$schema: https://utss.dev/schema/v1/strategy.json
+
+info:
+  id: portfolio_rebalance
+  name: Portfolio Rebalance Strategy
+  version: "1.0"
+  description: |
+    Monthly portfolio rebalancing strategy using inverse volatility
+    weighting (risk parity lite). Rebalances on the first trading
+    day of each month to maintain target allocations.
+  tags:
+    - rebalancing
+    - risk-parity
+    - portfolio
+    - monthly
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - SPY   # US Large Cap
+    - QQQ   # US Tech
+    - IWM   # US Small Cap
+    - EFA   # International Developed
+    - EEM   # Emerging Markets
+    - TLT   # Long-term Treasuries
+    - GLD   # Gold
+
+signals:
+  # Volatility for each asset (20-day)
+  volatility_20:
+    type: indicator
+    indicator: ATR
+    params:
+      period: 20
+
+  # Monthly rebalance trigger
+  is_month_start:
+    type: calendar
+    field: is_month_start
+
+conditions:
+  # Rebalance on first day of month
+  rebalance_day:
+    type: comparison
+    left:
+      $ref: "#/signals/is_month_start"
+    operator: "="
+    right:
+      type: constant
+      value: 1
+
+  # Always true - for unconditional rebalance
+  always:
+    type: always
+
+rules:
+  - name: Monthly rebalance buy
+    description: Buy underweight positions on first trading day of month
+    when:
+      $ref: "#/conditions/rebalance_day"
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 14  # Roughly equal weight for 7 assets
+    priority: 1
+
+  - name: Monthly rebalance sell
+    description: Trim overweight positions
+    when:
+      type: expr
+      formula: "position_qty > 0 and RSI(14) > 70"
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 20
+    priority: 2
+
+constraints:
+  max_positions: 7
+  max_position_size: 30
+  no_shorting: true
+  no_leverage: true
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
+  trading_days:
+    - monday
+    - tuesday
+    - wednesday
+    - thursday
+    - friday
+
+execution:
+  slippage:
+    type: percentage
+    value: 0.0005  # 0.05% for liquid ETFs
+  commission:
+    type: per_share
+    value: 0.005  # $0.005 per share
+  min_capital: 100000
+  min_history: 60  # Need 60 days for volatility calculation
+
+parameters:
+  volatility_lookback:
+    type: integer
+    default: 60
+    min: 20
+    max: 252
+    description: Days for volatility calculation
+  drift_threshold:
+    type: number
+    default: 0.05
+    min: 0.01
+    max: 0.20
+    description: Drift threshold to trigger rebalance

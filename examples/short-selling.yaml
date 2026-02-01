@@ -1,0 +1,209 @@
+# Short Selling Strategy
+# Demonstrates short positions and cover actions
+
+$schema: https://utss.dev/schema/v1/strategy.json
+
+info:
+  id: short_selling
+  name: Short Selling Strategy
+  version: "1.0"
+  description: |
+    Bearish strategy that shorts overbought stocks showing weakness.
+    Uses RSI for overbought detection and price action for confirmation.
+    Includes both short entry and cover (exit) rules.
+  tags:
+    - short-selling
+    - bearish
+    - RSI
+    - mean-reversion
+  visibility: public
+
+universe:
+  type: static
+  symbols:
+    - SPY
+    - QQQ
+    - AAPL
+    - MSFT
+    - NVDA
+
+signals:
+  # RSI for overbought detection
+  rsi_14:
+    type: indicator
+    indicator: RSI
+    params:
+      period: 14
+
+  # Moving averages for trend
+  sma_20:
+    type: indicator
+    indicator: SMA
+    params:
+      period: 20
+
+  sma_50:
+    type: indicator
+    indicator: SMA
+    params:
+      period: 50
+
+  # ATR for volatility-based stops
+  atr_14:
+    type: indicator
+    indicator: ATR
+    params:
+      period: 14
+
+  # Price position relative to SMA
+  price_vs_sma:
+    type: expr
+    formula: "(close - SMA(20)) / SMA(20)"
+
+conditions:
+  # Overbought on RSI
+  overbought:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi_14"
+    operator: ">"
+    right:
+      type: constant
+      value: 75
+
+  # Price extended above SMA20 (>3%)
+  price_extended:
+    type: expr
+    formula: "(close - SMA(20)) / SMA(20) > 0.03"
+
+  # Bearish reversal candle (close near low)
+  bearish_candle:
+    type: expr
+    formula: "(close - low) / (high - low) < 0.3"
+
+  # Combined short entry
+  short_entry_valid:
+    type: and
+    conditions:
+      - $ref: "#/conditions/overbought"
+      - $ref: "#/conditions/price_extended"
+      - $ref: "#/conditions/bearish_candle"
+
+  # Oversold for cover (RSI < 35)
+  oversold:
+    type: comparison
+    left:
+      $ref: "#/signals/rsi_14"
+    operator: "<"
+    right:
+      type: constant
+      value: 35
+
+  # Price reached target (back to SMA)
+  price_target_reached:
+    type: expr
+    formula: "close <= SMA(20)"
+
+  # Cover conditions
+  cover_on_target:
+    type: or
+    conditions:
+      - $ref: "#/conditions/oversold"
+      - $ref: "#/conditions/price_target_reached"
+
+  # Trend filter - only short in weak markets
+  weak_trend:
+    type: expr
+    formula: "SMA(20) < SMA(50)"
+
+rules:
+  - name: Short overbought reversal
+    description: Enter short when overbought with bearish reversal
+    when:
+      type: and
+      conditions:
+        - $ref: "#/conditions/short_entry_valid"
+        - $ref: "#/conditions/weak_trend"
+    then:
+      type: trade
+      direction: short
+      sizing:
+        type: percent_of_equity
+        percent: 8
+    priority: 1
+
+  - name: Cover on target
+    description: Cover short when target reached or oversold
+    when:
+      $ref: "#/conditions/cover_on_target"
+    then:
+      type: trade
+      direction: cover
+      sizing:
+        type: percent_of_position
+        percent: 100
+    priority: 2
+
+  - name: Partial cover on profit
+    description: Take partial profits at 50% of target
+    when:
+      type: expr
+      formula: "unrealized_pnl_pct > 2"  # 2% profit
+    then:
+      type: trade
+      direction: cover
+      sizing:
+        type: percent_of_position
+        percent: 50
+    priority: 3
+
+constraints:
+  max_positions: 3
+  max_position_size: 15
+  stop_loss:
+    percent: 5
+  take_profit:
+    percent: 8
+  # Allow shorting (override default)
+  no_shorting: false
+
+schedule:
+  frequency: daily
+  market_hours_only: true
+  timezone: America/New_York
+
+execution:
+  slippage:
+    type: percentage
+    value: 0.002  # Higher slippage for shorts
+  commission:
+    type: per_trade
+    value: 5
+  min_capital: 100000  # Margin account minimum
+  min_history: 50
+
+parameters:
+  rsi_overbought:
+    type: number
+    default: 75
+    min: 70
+    max: 85
+    description: RSI level for overbought detection
+  rsi_oversold:
+    type: number
+    default: 35
+    min: 25
+    max: 45
+    description: RSI level to cover shorts
+  extension_threshold:
+    type: number
+    default: 0.03
+    min: 0.02
+    max: 0.05
+    description: Price extension above SMA for entry
+  position_size_pct:
+    type: number
+    default: 8
+    min: 5
+    max: 15
+    description: Position size as % of equity

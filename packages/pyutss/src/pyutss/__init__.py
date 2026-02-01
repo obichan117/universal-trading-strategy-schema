@@ -24,6 +24,9 @@ Advanced features:
     # Walk-forward optimization
     from pyutss.optimization import WalkForwardOptimizer
 
+    # Monte Carlo analysis
+    from pyutss.analysis import MonteCarloSimulator
+
     # Performance visualization
     from pyutss.visualization import TearSheet
 """
@@ -59,6 +62,10 @@ from pyutss.engine.indicators import (
 )
 
 # Metrics
+from pyutss.metrics.benchmark import (
+    BenchmarkMetrics,
+    calculate_benchmark_metrics,
+)
 from pyutss.metrics.calculator import (
     MetricsCalculator,
     PerformanceMetrics,
@@ -72,6 +79,12 @@ from pyutss.results.types import (
     PortfolioSnapshot,
     Position,
     Trade,
+)
+
+# Analysis
+from pyutss.analysis.monte_carlo import (
+    MonteCarloResult,
+    MonteCarloSimulator,
 )
 
 # Note: Portfolio, optimization, and visualization modules are imported
@@ -113,4 +126,9 @@ __all__ = [
     "MetricsCalculator",
     "PerformanceMetrics",
     "PeriodBreakdown",
+    "BenchmarkMetrics",
+    "calculate_benchmark_metrics",
+    # Analysis
+    "MonteCarloSimulator",
+    "MonteCarloResult",
 ]
