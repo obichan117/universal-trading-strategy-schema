@@ -1,5 +1,7 @@
 # Universal Trading Strategy Schema (UTSS)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/obichan117/utss/blob/main/examples/quickstart.ipynb)
+
 A comprehensive, composable schema for expressing any trading strategy. Define your strategies in YAML/JSON and use them across different trading platforms, backtesting engines, and execution systems.
 
 ## Packages
