@@ -261,6 +261,27 @@ The schema is a contract between strategy authors and execution engines. Any val
 
 ---
 
+## Notebook Quality Assurance
+
+**Before publishing or committing any Jupyter notebook:**
+
+1. **Test all cells locally** - Run every cell in sequence and verify no errors
+2. **Test with fresh install** - Simulate Colab environment:
+   ```bash
+   # Create temp venv and test
+   python -m venv /tmp/nb-test && source /tmp/nb-test/bin/activate
+   pip install utss pyutss  # Install from PyPI, not local
+   # Then run notebook cells
+   ```
+3. **Check data type compatibility** - Watch for:
+   - Timezone-aware vs naive datetime indices
+   - `datetime.date` vs `pd.Timestamp` mismatches
+   - Index alignment issues between DataFrames/Series
+4. **Verify PyPI packages are published** before adding Colab badge
+5. **Test the actual Colab link** after pushing
+
+---
+
 ## References
 
 - JSON Schema: https://json-schema.org/
