@@ -495,29 +495,30 @@ class ConditionEvaluator:
     ) -> pd.Series:
         """Evaluate expression condition.
 
-        Supports basic formula expressions for common patterns.
-        For complex patterns, see patterns/ library.
-
-        Currently supported:
+        Supports formula expressions for common patterns:
         - Simple comparisons: "RSI(14) < 30", "close > SMA(20)"
-        - Logical operators: "and", "or"
+        - Logical operators: "and", "or", "not"
         - Offset access: "close[-1]", "SMA(20)[-1]"
+        - Crossover detection: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
 
-        Not yet supported:
-        - Function calls within expressions (all, any, count, highest, lowest)
-        - Complex nested expressions
+        Example formulas:
+        - "RSI(14) < 30"                                    # RSI oversold
+        - "close > SMA(200)"                                # Price above 200 SMA
+        - "SMA(50) > SMA(200)"                              # Golden cross state
+        - "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"  # Golden cross event
+        - "not (RSI(14) > 70)"                              # Not overbought
         """
         formula = condition.get("formula", "")
         if not formula:
             raise EvaluationError("Expression condition requires 'formula' field")
 
-        # For now, raise NotImplementedError for expr conditions
-        # A full expression parser is needed for complete support
-        raise EvaluationError(
-            f"Expression conditions not yet fully implemented. "
-            f"Formula: '{formula}'. "
-            f"Use comparison/and/or/not conditions, or see patterns/ for examples."
-        )
+        from pyutss.engine.expr_parser import ExpressionError, ExpressionParser
+
+        parser = ExpressionParser()
+        try:
+            return parser.evaluate(formula, context.get_data(), self.signal_eval)
+        except ExpressionError as e:
+            raise EvaluationError(f"Expression evaluation error: {e}") from e
 
     def _eval_ref(
         self, condition: dict[str, Any], context: EvaluationContext
