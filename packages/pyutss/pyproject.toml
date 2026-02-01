@@ -37,14 +37,31 @@ dependencies = [
 [project.optional-dependencies]
 yahoo = ["yfinance>=0.2.0"]
 jquants = ["pyjquants>=0.2.0"]
-viz = ["mplfinance>=0.12.10b0"]
-all = ["yfinance>=0.2.0", "pyjquants>=0.2.0", "mplfinance>=0.12.10b0"]
+viz = [
+    "matplotlib>=3.7.0",
+    "mplfinance>=0.12.10b0",
+    "seaborn>=0.12.0",
+    "scipy>=1.10.0",
+    "jinja2>=3.0.0",
+]
+all = [
+    "yfinance>=0.2.0",
+    "pyjquants>=0.2.0",
+    "matplotlib>=3.7.0",
+    "mplfinance>=0.12.10b0",
+    "seaborn>=0.12.0",
+    "scipy>=1.10.0",
+    "jinja2>=3.0.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "scipy>=1.10.0",
 ]
 
 [project.urls]

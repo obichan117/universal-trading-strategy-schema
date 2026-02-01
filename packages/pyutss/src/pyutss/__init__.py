@@ -16,6 +16,16 @@ Example:
     result = engine.run(strategy, data=ohlcv_df, symbol="AAPL")
 
     print(f"Total return: {result.total_return_pct:.2f}%")
+
+Advanced features:
+    # Multi-symbol portfolio backtesting
+    from pyutss.portfolio import PortfolioBacktester, PortfolioConfig
+
+    # Walk-forward optimization
+    from pyutss.optimization import WalkForwardOptimizer
+
+    # Performance visualization
+    from pyutss.visualization import TearSheet
 """
 
 __version__ = "0.1.0"
@@ -63,6 +73,12 @@ from pyutss.results.types import (
     Position,
     Trade,
 )
+
+# Note: Portfolio, optimization, and visualization modules are imported
+# from their subpackages to avoid loading heavy dependencies at import time.
+# Use: from pyutss.portfolio import PortfolioBacktester
+#      from pyutss.optimization import WalkForwardOptimizer
+#      from pyutss.visualization import TearSheet
 
 __all__ = [
     # Version

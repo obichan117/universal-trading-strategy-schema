@@ -407,6 +407,65 @@ schedule:
 
 ---
 
+## Backtesting with pyutss
+
+Once you have a strategy, run it against historical data:
+
+```bash
+pip install pyutss[yahoo]  # Include Yahoo Finance data provider
+```
+
+```python
+from pyutss import BacktestEngine, BacktestConfig
+from pyutss.data import fetch
+from utss import load_yaml
+
+# Load strategy
+strategy = load_yaml(open("my_strategy.yaml").read())
+
+# Fetch data
+data = fetch("AAPL", start="2023-01-01", end="2024-01-01")
+
+# Run backtest
+engine = BacktestEngine(config=BacktestConfig(initial_capital=100000))
+result = engine.run(strategy, data=data, symbol="AAPL")
+
+# View results
+result.summary()
+```
+
+### Advanced Features
+
+```python
+# Portfolio backtesting (multiple symbols with shared capital)
+from pyutss.portfolio import PortfolioBacktester, PortfolioConfig
+
+config = PortfolioConfig(initial_capital=100000, rebalance="monthly")
+backtester = PortfolioBacktester(config)
+result = backtester.run(strategy, data={"AAPL": aapl_df, "MSFT": msft_df}, weights="equal")
+
+# Walk-forward optimization
+from pyutss.optimization import WalkForwardOptimizer
+
+optimizer = WalkForwardOptimizer(
+    strategy=strategy,
+    param_grid={"rsi_period": [10, 14, 20], "rsi_oversold": [25, 30, 35]},
+    n_splits=5,
+)
+result = optimizer.run(data, symbol="AAPL")
+print(f"Best params: {result.best_params}")
+
+# Performance visualization (tear sheets)
+from pyutss.visualization import TearSheet
+
+sheet = TearSheet(result)
+sheet.full_report("report.html")  # Generate HTML tear sheet
+sheet.plot_equity()               # Interactive equity curve
+sheet.plot_monthly_heatmap()      # Calendar heatmap
+```
+
+---
+
 ## Next Steps
 
 1. **Read the [Architecture Guide](architecture.md)** - Understand design philosophy
