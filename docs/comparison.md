@@ -548,10 +548,8 @@ signals:
 rules:
   - name: Golden Cross
     when:
-      type: cross
-      signal: { $ref: "#/signals/sma_fast" }
-      threshold: { $ref: "#/signals/sma_slow" }
-      direction: above
+      type: expr
+      formula: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
     then:
       type: trade
       direction: buy
@@ -559,10 +557,8 @@ rules:
 
   - name: Death Cross
     when:
-      type: cross
-      signal: { $ref: "#/signals/sma_fast" }
-      threshold: { $ref: "#/signals/sma_slow" }
-      direction: below
+      type: expr
+      formula: "SMA(50)[-1] >= SMA(200)[-1] and SMA(50) < SMA(200)"
     then:
       type: trade
       direction: sell

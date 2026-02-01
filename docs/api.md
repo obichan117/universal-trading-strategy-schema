@@ -264,33 +264,6 @@ condition = ComparisonCondition(
 )
 ```
 
-### CrossCondition
-
-```python
-from utss import CrossCondition, CrossDirection
-
-condition = CrossCondition(
-    type="cross",
-    signal=sma_50_signal,
-    threshold=sma_200_signal,
-    direction=CrossDirection.ABOVE  # above | below
-)
-```
-
-### RangeCondition
-
-```python
-from utss import RangeCondition
-
-condition = RangeCondition(
-    type="range",
-    signal=rsi_signal,
-    min=ConstantSignal(type="constant", value=40),
-    max=ConstantSignal(type="constant", value=60),
-    inclusive=True
-)
-```
-
 ### AndCondition / OrCondition
 
 ```python
@@ -307,34 +280,48 @@ or_cond = OrCondition(
 )
 ```
 
-### TemporalCondition
+### NotCondition
 
 ```python
-from utss import TemporalCondition, TemporalModifier
+from utss import NotCondition
 
-condition = TemporalCondition(
-    type="temporal",
-    condition=oversold_condition,
-    modifier=TemporalModifier.FOR_BARS,  # for_bars|within_bars|since_bars|first_time|nth_time
-    bars=3
+condition = NotCondition(
+    type="not",
+    condition=overbought_condition
 )
 ```
 
-### SequenceCondition
+### ExpressionCondition
+
+For complex patterns like crossovers, ranges, and temporal conditions, use the `expr` type
+with a formula string. This provides maximum flexibility with minimal primitives.
 
 ```python
-from utss import SequenceCondition, SequenceStep
+from utss import ExpressionCondition
 
-condition = SequenceCondition(
-    type="sequence",
-    steps=[
-        SequenceStep(condition=step1_condition, within_bars=5),
-        SequenceStep(condition=step2_condition, min_bars=1)
-    ],
-    reset_on=None,
-    expire_bars=20
+# Golden cross: SMA(50) crosses above SMA(200)
+condition = ExpressionCondition(
+    type="expr",
+    formula="SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
+)
+
+# RSI in range
+condition = ExpressionCondition(
+    type="expr",
+    formula="RSI(14) >= 40 and RSI(14) <= 60"
+)
+
+# Price breakout
+condition = ExpressionCondition(
+    type="expr",
+    formula="close > BB(20, 2).upper"
 )
 ```
+
+See `patterns/` directory for reusable formula templates for common patterns like:
+- Crossovers: `patterns/crossovers.yaml`
+- Ranges: `patterns/ranges.yaml`
+- Temporal: `patterns/temporal.yaml`
 
 ### AlwaysCondition
 

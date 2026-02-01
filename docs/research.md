@@ -409,7 +409,7 @@ Pine Script Source
 | Pine Script | UTSS Equivalent |
 |-------------|-----------------|
 | `ta.rsi(close, 14)` | `{ type: indicator, indicator: RSI, params: { period: 14 } }` |
-| `ta.crossover(a, b)` | `{ type: cross, signal: a, threshold: b, direction: above }` |
+| `ta.crossover(a, b)` | `{ type: expr, formula: "a[-1] <= b[-1] and a > b" }` |
 | `strategy.entry("Buy", strategy.long)` | `{ type: trade, direction: buy }` |
 | `if cond` | `{ when: cond, then: action }` |
 

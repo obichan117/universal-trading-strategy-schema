@@ -114,19 +114,15 @@ oversold:
   operator: "<"
   right: { type: constant, value: 30 }
 
-# Crossover
+# Crossover (using expr formula)
 golden_cross:
-  type: cross
-  signal: { type: indicator, indicator: SMA, params: { period: 50 } }
-  threshold: { type: indicator, indicator: SMA, params: { period: 200 } }
-  direction: above
+  type: expr
+  formula: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
 
-# Range
+# Range (using expr formula)
 neutral_zone:
-  type: range
-  signal: { $ref: "#/signals/rsi_14" }
-  min: { type: constant, value: 40 }
-  max: { type: constant, value: 60 }
+  type: expr
+  formula: "RSI(14) >= 40 and RSI(14) <= 60"
 
 # Logical AND
 buy_setup:
@@ -239,10 +235,8 @@ signals:
 rules:
   - name: Buy on golden cross
     when:
-      type: cross
-      signal: { $ref: "#/signals/sma_fast" }
-      threshold: { $ref: "#/signals/sma_slow" }
-      direction: above
+      type: expr
+      formula: "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"
     then:
       type: trade
       direction: buy
@@ -250,10 +244,8 @@ rules:
 
   - name: Sell on death cross
     when:
-      type: cross
-      signal: { $ref: "#/signals/sma_fast" }
-      threshold: { $ref: "#/signals/sma_slow" }
-      direction: below
+      type: expr
+      formula: "SMA(50)[-1] >= SMA(200)[-1] and SMA(50) < SMA(200)"
     then:
       type: trade
       direction: sell
