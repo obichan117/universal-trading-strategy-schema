@@ -38,6 +38,7 @@ from pyutss.engine.evaluator import (
     ConditionEvaluator,
     EvaluationContext,
     EvaluationError,
+    PortfolioState,
     SignalEvaluator,
 )
 from pyutss.engine.indicators import (
@@ -82,6 +83,7 @@ __all__ = [
     "ConditionEvaluator",
     "EvaluationContext",
     "EvaluationError",
+    "PortfolioState",
     "IndicatorService",
     "MACDResult",
     "BollingerBandsResult",

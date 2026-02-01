@@ -18,11 +18,32 @@ class EvaluationError(Exception):
 
 
 @dataclass
+class PortfolioState:
+    """Current portfolio state for signal evaluation.
+
+    Updated by the backtest engine on each bar.
+    """
+
+    cash: float = 0.0
+    equity: float = 0.0
+    positions: dict[str, Any] = None  # symbol -> Position
+    unrealized_pnl: float = 0.0
+    realized_pnl: float = 0.0
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+
+    def __post_init__(self):
+        if self.positions is None:
+            self.positions = {}
+
+
+@dataclass
 class EvaluationContext:
     """Context for evaluating signals and conditions.
 
     Contains all data needed to evaluate signals, including
-    primary and optional secondary timeframe data.
+    primary and optional secondary timeframe data, and portfolio state.
     """
 
     primary_data: pd.DataFrame
@@ -30,6 +51,8 @@ class EvaluationContext:
     signal_library: dict[str, Any] | None = None
     condition_library: dict[str, Any] | None = None
     parameters: dict[str, float] | None = None
+    portfolio_state: PortfolioState | None = None
+    current_bar_idx: int = 0  # Current bar index for portfolio lookups
 
     def get_data(self, timeframe: str | None = None) -> pd.DataFrame:
         """Get data for specified timeframe."""
@@ -98,6 +121,8 @@ class SignalEvaluator:
             return self._eval_calendar_signal(signal, context)
         elif signal_type == "arithmetic":
             return self._eval_arithmetic_signal(signal, context)
+        elif signal_type == "portfolio":
+            return self._eval_portfolio_signal(signal, context)
         elif signal_type == "$ref":
             return self._eval_ref_signal(signal, context)
         else:
@@ -303,6 +328,98 @@ class SignalEvaluator:
                 raise EvaluationError(f"Unknown arithmetic operator: {operator}")
 
         return result
+
+    def _eval_portfolio_signal(
+        self, signal: dict[str, Any], context: EvaluationContext
+    ) -> pd.Series:
+        """Evaluate portfolio signal.
+
+        Portfolio signals provide access to current portfolio state:
+        - unrealized_pnl: Unrealized profit/loss of current positions
+        - realized_pnl: Total realized profit/loss
+        - position_size: Current position size (shares)
+        - position_value: Current position value (dollars)
+        - days_in_position: Days since position entry
+        - cash: Available cash
+        - equity: Total portfolio equity
+        - exposure: Position value as % of equity
+        - win_rate: Win rate of closed trades
+
+        Note: During backtesting, these return the state at each bar.
+        For static analysis without backtest context, returns zeros.
+        """
+        data = context.get_data()
+        field = signal.get("field", "unrealized_pnl")
+        symbol = signal.get("symbol")  # Optional: specific symbol
+
+        # If no portfolio state, return zeros (for static analysis)
+        if context.portfolio_state is None:
+            return pd.Series(0.0, index=data.index)
+
+        ps = context.portfolio_state
+
+        # Build series - for now, return current state as constant
+        # During actual backtest, the engine updates this per bar
+        if field == "unrealized_pnl":
+            value = ps.unrealized_pnl
+        elif field == "realized_pnl":
+            value = ps.realized_pnl
+        elif field == "cash":
+            value = ps.cash
+        elif field == "equity":
+            value = ps.equity
+        elif field == "position_size":
+            if symbol and symbol in ps.positions:
+                value = ps.positions[symbol].quantity
+            elif ps.positions:
+                # Sum all positions
+                value = sum(p.quantity for p in ps.positions.values())
+            else:
+                value = 0.0
+        elif field == "position_value":
+            if symbol and symbol in ps.positions:
+                pos = ps.positions[symbol]
+                value = pos.quantity * pos.avg_price
+            elif ps.positions:
+                value = sum(p.quantity * p.avg_price for p in ps.positions.values())
+            else:
+                value = 0.0
+        elif field == "days_in_position":
+            if symbol and symbol in ps.positions:
+                pos = ps.positions[symbol]
+                value = pos.days_held if hasattr(pos, 'days_held') else 0
+            elif ps.positions:
+                # Max days held across all positions
+                value = max(
+                    (p.days_held if hasattr(p, 'days_held') else 0)
+                    for p in ps.positions.values()
+                )
+            else:
+                value = 0
+        elif field == "exposure":
+            if ps.equity > 0:
+                position_value = sum(
+                    p.quantity * p.avg_price for p in ps.positions.values()
+                )
+                value = (position_value / ps.equity) * 100
+            else:
+                value = 0.0
+        elif field == "win_rate":
+            if ps.total_trades > 0:
+                value = (ps.winning_trades / ps.total_trades) * 100
+            else:
+                value = 0.0
+        elif field == "total_trades":
+            value = ps.total_trades
+        elif field == "has_position":
+            if symbol:
+                value = 1.0 if symbol in ps.positions else 0.0
+            else:
+                value = 1.0 if ps.positions else 0.0
+        else:
+            raise EvaluationError(f"Unknown portfolio field: {field}")
+
+        return pd.Series(float(value), index=data.index)
 
     def _eval_ref_signal(
         self, signal: dict[str, Any], context: EvaluationContext
