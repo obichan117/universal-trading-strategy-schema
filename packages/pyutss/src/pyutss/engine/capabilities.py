@@ -6,36 +6,27 @@ schema defines. Used for honest capability validation and gap analysis.
 
 from __future__ import annotations
 
-# Indicators implemented in IndicatorService
-IMPLEMENTED_INDICATORS: set[str] = {
-    # Moving Averages
-    "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA",
-    # Momentum
-    "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
-    "STOCH_K", "STOCH_D", "STOCH_RSI", "ROC", "MOMENTUM",
-    "WILLIAMS_R", "CCI", "MFI", "CMO", "TSI",
-    # Trend
-    "ADX", "PLUS_DI", "MINUS_DI", "SUPERTREND", "PSAR",
-    "AROON_UP", "AROON_DOWN", "AROON_OSC",
-    # Volatility
-    "ATR", "STDDEV", "VARIANCE",
-    "BB_UPPER", "BB_MIDDLE", "BB_LOWER", "BB_WIDTH", "BB_PERCENT",
-    "DC_UPPER", "DC_MIDDLE", "DC_LOWER",
-    "KC_UPPER", "KC_MIDDLE", "KC_LOWER",
-    # Volume
-    "OBV", "VWAP", "AD", "CMF", "KLINGER",
-    # Statistical
-    "HIGHEST", "LOWEST", "PERCENTILE", "RANK", "ZSCORE",
-    "BETA", "CORRELATION", "RETURN", "DRAWDOWN",
-    # Ichimoku
-    "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN",
-    "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B", "ICHIMOKU_CHIKOU",
-}
+from pyutss.engine.indicators.dispatcher import (
+    INDICATOR_REGISTRY,
+    _COMPONENT_SHORTCUTS,
+)
+
+# Indicators implemented in IndicatorService — derived from the registry
+# so this can never drift out of sync with the actual dispatch code.
+IMPLEMENTED_INDICATORS: set[str] = (
+    set(INDICATOR_REGISTRY.keys()) | set(_COMPONENT_SHORTCUTS.keys())
+)
 
 # Signal types implemented in SignalEvaluator
 IMPLEMENTED_SIGNAL_TYPES: set[str] = {
     "price", "indicator", "constant", "calendar",
     "portfolio", "$ref", "$param", "expr",
+}
+
+# Signal types defined in the schema but intentionally not yet implemented.
+# These are tracked here so the sync test can distinguish "not yet" from "forgot".
+DEFERRED_SIGNAL_TYPES: set[str] = {
+    "fundamental", "event", "relative", "external",
 }
 
 # Condition types implemented in ConditionEvaluator
@@ -72,10 +63,10 @@ def validate_engine_capabilities() -> dict[str, dict]:
     """
     try:
         from utss.capabilities import (
+            SUPPORTED_ACTION_TYPES,
+            SUPPORTED_CONDITION_TYPES,
             SUPPORTED_INDICATORS,
             SUPPORTED_SIGNAL_TYPES,
-            SUPPORTED_CONDITION_TYPES,
-            SUPPORTED_ACTION_TYPES,
             SUPPORTED_SIZING_TYPES,
             SUPPORTED_UNIVERSE_TYPES,
         )

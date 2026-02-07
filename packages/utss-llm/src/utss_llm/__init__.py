@@ -13,6 +13,7 @@ from utss_llm.conversation import (
     Option,
     Question,
     ResponseType,
+    SessionManager,
     create_session,
     get_session,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "ConversationSession",
     "ConversationResponse",
     "ConversationState",
+    "SessionManager",
     "Question",
     "Option",
     "ResponseType",

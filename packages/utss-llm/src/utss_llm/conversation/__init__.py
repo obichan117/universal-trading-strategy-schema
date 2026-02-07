@@ -3,6 +3,7 @@
 from utss_llm.conversation.builder import StrategyBuilder
 from utss_llm.conversation.session import (
     ConversationSession,
+    SessionManager,
     create_session,
     delete_session,
     get_session,
@@ -20,6 +21,7 @@ from utss_llm.conversation.state import (
 __all__ = [
     # Session
     "ConversationSession",
+    "SessionManager",
     "create_session",
     "get_session",
     "delete_session",

@@ -1,19 +1,28 @@
-"""Integration tests for UTSS schema coverage in pyutss.
+"""Integration tests for UTSS schema-engine capability sync.
 
 Validates that pyutss implements all capabilities defined in the UTSS schema.
-This ensures the engine stays in sync with the schema as both evolve.
+Uses strict subset assertions — if the schema adds a new capability and the
+engine doesn't implement it, these tests fail immediately.
 """
 
 from utss.capabilities import (
     SCHEMA_VERSION,
-    SUPPORTED_COMPARISON_OPERATORS,
+    SUPPORTED_ACTION_TYPES,
     SUPPORTED_CONDITION_TYPES,
     SUPPORTED_INDICATORS,
     SUPPORTED_SIGNAL_TYPES,
     SUPPORTED_SIZING_TYPES,
+    SUPPORTED_UNIVERSE_TYPES,
 )
-from pyutss.engine.indicators import IndicatorService
-from pyutss.engine.evaluator import SignalEvaluator, ConditionEvaluator
+from pyutss.engine.capabilities import (
+    DEFERRED_SIGNAL_TYPES,
+    IMPLEMENTED_ACTION_TYPES,
+    IMPLEMENTED_CONDITION_TYPES,
+    IMPLEMENTED_INDICATORS,
+    IMPLEMENTED_SIGNAL_TYPES,
+    IMPLEMENTED_SIZING_TYPES,
+    IMPLEMENTED_UNIVERSE_TYPES,
+)
 
 
 class TestSchemaVersion:
@@ -25,223 +34,77 @@ class TestSchemaVersion:
         assert SCHEMA_VERSION == "1.0.0"
 
 
-class TestIndicatorCoverage:
-    """Tests for indicator implementation coverage."""
+class TestIndicatorSync:
+    """Every schema-defined indicator must be in the engine registry."""
 
-    # Indicators implemented in pyutss
-    IMPLEMENTED_INDICATORS = {
-        "SMA", "EMA", "WMA", "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
-        "STOCH_K", "STOCH_D", "ATR", "BB_UPPER", "BB_LOWER", "BB_MIDDLE",
-        "BB_WIDTH", "BB_PERCENT_B", "ADX", "CCI", "WILLIAMS_R", "MFI",
-        "OBV", "VWAP",
-    }
-
-    # Indicators that are not yet implemented (tracked for future work)
-    NOT_YET_IMPLEMENTED = {
-        "DEMA", "TEMA", "KAMA", "HULL", "VWMA",  # Advanced MAs
-        "STOCH_RSI", "ROC", "MOMENTUM", "CMO", "TSI",  # Momentum
-        "PLUS_DI", "MINUS_DI", "AROON_UP", "AROON_DOWN", "AROON_OSC",  # Trend
-        "SUPERTREND", "PSAR",  # Trend
-        "STDDEV", "VARIANCE", "NATR", "KELTNER_UPPER", "KELTNER_LOWER",  # Volatility
-        "DONCHIAN_UPPER", "DONCHIAN_LOWER", "DONCHIAN_MIDDLE",  # Volatility
-        "CMF", "AD", "ADL", "VOLUME_OSC", "VOLUME_ROC",  # Volume
-        "VWAP_UPPER", "VWAP_LOWER", "PVI", "NVI",  # Volume
-        "PPO", "PPO_SIGNAL", "PPO_HIST", "TRIX", "UO", "DPO", "KST",  # Misc
-        "ICH_TENKAN", "ICH_KIJUN", "ICH_SENKOU_A", "ICH_SENKOU_B", "ICH_CHIKOU",  # Ichimoku
-        "PIVOT", "PIVOT_R1", "PIVOT_R2", "PIVOT_R3",  # Pivots
-        "PIVOT_S1", "PIVOT_S2", "PIVOT_S3",
-    }
-
-    def test_indicator_service_has_methods(self):
-        """IndicatorService should have static methods for calculations."""
-        assert hasattr(IndicatorService, "sma")
-        assert hasattr(IndicatorService, "ema")
-        assert hasattr(IndicatorService, "rsi")
-        assert hasattr(IndicatorService, "macd")
-        assert hasattr(IndicatorService, "bollinger_bands")
-        assert hasattr(IndicatorService, "atr")
-        assert hasattr(IndicatorService, "stochastic")
-
-    def test_core_indicators_implemented(self):
-        """Core indicators should be implemented."""
-        core_indicators = {"SMA", "EMA", "RSI", "MACD", "ATR"}
-        for indicator in core_indicators:
-            assert indicator in self.IMPLEMENTED_INDICATORS, f"{indicator} should be implemented"
-
-    def test_indicator_coverage_report(self):
-        """Report on indicator coverage percentage."""
-        total = len(SUPPORTED_INDICATORS)
-        implemented = len(self.IMPLEMENTED_INDICATORS & set(SUPPORTED_INDICATORS))
-        coverage = (implemented / total) * 100 if total > 0 else 0
-
-        print(f"\nIndicator Coverage: {implemented}/{total} ({coverage:.1f}%)")
-        print(f"Implemented: {sorted(self.IMPLEMENTED_INDICATORS & set(SUPPORTED_INDICATORS))}")
-
-        # We don't fail on coverage, just report
-        # In the future, we may want to require 100% coverage
-        assert coverage >= 20, f"Indicator coverage too low: {coverage:.1f}%"
+    def test_all_schema_indicators_implemented(self):
+        schema_set = set(SUPPORTED_INDICATORS)
+        missing = schema_set - IMPLEMENTED_INDICATORS
+        assert not missing, (
+            f"Schema defines indicators not in engine registry: {sorted(missing)}"
+        )
 
 
-class TestConditionTypeCoverage:
-    """Tests for condition type implementation coverage."""
+class TestConditionTypeSync:
+    """Every schema-defined condition type must be implemented."""
 
-    # Condition types implemented in pyutss (v1.0: minimal primitives + expr)
-    IMPLEMENTED_CONDITIONS = {
-        "comparison", "and", "or", "not", "always",
-    }
-
-    # Not yet implemented
-    NOT_YET_IMPLEMENTED = {"expr"}  # Expression parser needed
-
-    def test_core_conditions_implemented(self):
-        """Core condition types should be implemented."""
-        core_conditions = {"comparison", "and", "or", "not", "always"}
-        for cond in core_conditions:
-            assert cond in self.IMPLEMENTED_CONDITIONS, f"{cond} should be implemented"
-
-    def test_condition_coverage(self):
-        """Check condition type coverage."""
-        total = len(SUPPORTED_CONDITION_TYPES)
-        implemented = len(self.IMPLEMENTED_CONDITIONS & set(SUPPORTED_CONDITION_TYPES))
-        coverage = (implemented / total) * 100 if total > 0 else 0
-
-        print(f"\nCondition Coverage: {implemented}/{total} ({coverage:.1f}%)")
-        assert coverage >= 70, f"Condition coverage too low: {coverage:.1f}%"
+    def test_all_condition_types_implemented(self):
+        schema_set = set(SUPPORTED_CONDITION_TYPES)
+        missing = schema_set - IMPLEMENTED_CONDITION_TYPES
+        assert not missing, (
+            f"Schema defines condition types not implemented: {sorted(missing)}"
+        )
 
 
-class TestSignalTypeCoverage:
-    """Tests for signal type implementation coverage."""
+class TestSignalTypeSync:
+    """Every schema-defined signal type must be implemented or explicitly deferred."""
 
-    # Signal types implemented in pyutss
-    IMPLEMENTED_SIGNALS = {
-        "price", "indicator", "constant", "calendar",
-        "$ref",
-    }
+    def test_all_signal_types_accounted_for(self):
+        schema_set = set(SUPPORTED_SIGNAL_TYPES)
+        accounted = IMPLEMENTED_SIGNAL_TYPES | DEFERRED_SIGNAL_TYPES
+        missing = schema_set - accounted
+        assert not missing, (
+            f"Schema defines signal types neither implemented nor deferred: {sorted(missing)}. "
+            "Add to IMPLEMENTED_SIGNAL_TYPES or DEFERRED_SIGNAL_TYPES."
+        )
 
-    # Not yet implemented
-    NOT_YET_IMPLEMENTED = {
-        "fundamental", "event", "portfolio", "relative", "expr", "external"
-    }
-
-    def test_core_signals_implemented(self):
-        """Core signal types should be implemented."""
-        core_signals = {"price", "indicator", "constant"}
-        for signal in core_signals:
-            assert signal in self.IMPLEMENTED_SIGNALS, f"{signal} should be implemented"
-
-    def test_signal_coverage(self):
-        """Check signal type coverage."""
-        total = len(SUPPORTED_SIGNAL_TYPES)
-        # Filter out $ref as it's special
-        implemented = len((self.IMPLEMENTED_SIGNALS - {"$ref"}) & set(SUPPORTED_SIGNAL_TYPES))
-        coverage = (implemented / total) * 100 if total > 0 else 0
-
-        print(f"\nSignal Coverage: {implemented}/{total} ({coverage:.1f}%)")
-        assert coverage >= 40, f"Signal coverage too low: {coverage:.1f}%"
+    def test_deferred_signals_are_valid_schema_types(self):
+        """Deferred set should only contain types the schema actually defines."""
+        schema_set = set(SUPPORTED_SIGNAL_TYPES)
+        stale = DEFERRED_SIGNAL_TYPES - schema_set
+        assert not stale, (
+            f"DEFERRED_SIGNAL_TYPES contains types not in schema: {sorted(stale)}"
+        )
 
 
-class TestPriceFieldCoverage:
-    """Tests for price field coverage."""
+class TestSizingTypeSync:
+    """Every schema-defined sizing type must be implemented."""
 
-    IMPLEMENTED_FIELDS = {"open", "high", "low", "close", "volume", "hl2", "hlc3", "ohlc4"}
-
-    def test_basic_price_fields(self):
-        """Basic OHLCV fields should be supported."""
-        for field in ["open", "high", "low", "close", "volume"]:
-            assert field in self.IMPLEMENTED_FIELDS
-
-
-class TestCalendarFieldCoverage:
-    """Tests for calendar field coverage."""
-
-    IMPLEMENTED_FIELDS = {
-        "day_of_week", "day_of_month", "month", "week_of_year",
-        "is_month_start", "is_month_end", "is_quarter_end"
-    }
-
-    def test_core_calendar_fields(self):
-        """Core calendar fields should be supported."""
-        for field in ["day_of_week", "day_of_month"]:
-            assert field in self.IMPLEMENTED_FIELDS
+    def test_all_sizing_types_implemented(self):
+        schema_set = set(SUPPORTED_SIZING_TYPES)
+        missing = schema_set - IMPLEMENTED_SIZING_TYPES
+        assert not missing, (
+            f"Schema defines sizing types not implemented: {sorted(missing)}"
+        )
 
 
-class TestComparisonOperatorCoverage:
-    """Tests for comparison operator coverage."""
+class TestActionTypeSync:
+    """Every schema-defined action type must be implemented."""
 
-    IMPLEMENTED_OPERATORS = {"<", "<=", "=", "==", ">=", ">", "!=", "lt", "lte", "eq", "gte", "gt", "ne"}
-
-    def test_all_comparison_operators(self):
-        """All comparison operators should be supported."""
-        # Map UTSS operators to our implementation
-        utss_to_impl = {
-            "<": "<", "<=": "<=", "=": "=", ">=": ">=", ">": ">",
-            "lt": "lt", "lte": "lte", "eq": "eq", "gte": "gte", "gt": "gt",
-        }
-        for utss_op in SUPPORTED_COMPARISON_OPERATORS:
-            if utss_op in utss_to_impl:
-                assert utss_to_impl[utss_op] in self.IMPLEMENTED_OPERATORS
+    def test_all_action_types_implemented(self):
+        schema_set = set(SUPPORTED_ACTION_TYPES)
+        missing = schema_set - IMPLEMENTED_ACTION_TYPES
+        assert not missing, (
+            f"Schema defines action types not implemented: {sorted(missing)}"
+        )
 
 
-class TestSizingTypeCoverage:
-    """Tests for sizing type coverage."""
+class TestUniverseTypeSync:
+    """Every schema-defined universe type must be implemented."""
 
-    IMPLEMENTED_SIZING = {
-        "fixed_amount", "fixed_quantity", "percent_of_equity", "percent_of_cash"
-    }
-
-    NOT_YET_IMPLEMENTED = {
-        "percent_of_position", "risk_based", "kelly", "volatility_adjusted",
-    }
-
-    def test_core_sizing_types(self):
-        """Core sizing types should be implemented."""
-        core = {"percent_of_equity"}
-        for sizing in core:
-            assert sizing in self.IMPLEMENTED_SIZING
-
-
-class TestEvaluatorIntegration:
-    """Integration tests for evaluators with UTSS types."""
-
-    def test_signal_evaluator_creates(self):
-        """SignalEvaluator should be instantiable."""
-        evaluator = SignalEvaluator()
-        assert evaluator is not None
-
-    def test_condition_evaluator_creates(self):
-        """ConditionEvaluator should be instantiable."""
-        signal_eval = SignalEvaluator()
-        cond_eval = ConditionEvaluator(signal_eval)
-        assert cond_eval is not None
-
-
-class TestOverallCoverage:
-    """Summary tests for overall schema coverage."""
-
-    def test_print_coverage_summary(self):
-        """Print overall coverage summary."""
-        print("\n" + "=" * 50)
-        print("UTSS Schema Coverage Summary (v1.0)")
-        print("=" * 50)
-
-        # Indicators
-        ind_impl = len(TestIndicatorCoverage.IMPLEMENTED_INDICATORS)
-        ind_total = len(SUPPORTED_INDICATORS)
-        print(f"Indicators:  {ind_impl}/{ind_total} ({ind_impl/ind_total*100:.0f}%)")
-
-        # Conditions
-        cond_impl = len(TestConditionTypeCoverage.IMPLEMENTED_CONDITIONS & set(SUPPORTED_CONDITION_TYPES))
-        cond_total = len(SUPPORTED_CONDITION_TYPES)
-        print(f"Conditions:  {cond_impl}/{cond_total} ({cond_impl/cond_total*100:.0f}%)")
-
-        # Signals
-        sig_impl = len(TestSignalTypeCoverage.IMPLEMENTED_SIGNALS) - 1  # Exclude $ref
-        sig_total = len(SUPPORTED_SIGNAL_TYPES)
-        print(f"Signals:     {sig_impl}/{sig_total} ({sig_impl/sig_total*100:.0f}%)")
-
-        # Sizing
-        size_impl = len(TestSizingTypeCoverage.IMPLEMENTED_SIZING)
-        size_total = len(SUPPORTED_SIZING_TYPES)
-        print(f"Sizing:      {size_impl}/{size_total} ({size_impl/size_total*100:.0f}%)")
-
-        print("=" * 50)
+    def test_all_universe_types_implemented(self):
+        schema_set = set(SUPPORTED_UNIVERSE_TYPES)
+        missing = schema_set - IMPLEMENTED_UNIVERSE_TYPES
+        assert not missing, (
+            f"Schema defines universe types not implemented: {sorted(missing)}"
+        )

@@ -505,13 +505,49 @@ class ConversationSession:
         )
 
 
-# Session storage for multi-turn conversations
-_sessions: dict[str, ConversationSession] = {}
+class SessionManager:
+    """Manages conversation session lifecycle.
+
+    Provides create/get/delete operations for ConversationSession instances.
+    A default instance is used by the module-level convenience functions.
+    """
+
+    def __init__(self) -> None:
+        self._sessions: dict[str, ConversationSession] = {}
+
+    def create(
+        self,
+        provider: LLMProvider | None = None,
+        mode: ParseMode = ParseMode.BEGINNER,
+    ) -> ConversationSession:
+        """Create a new conversation session."""
+        session = ConversationSession(provider=provider, mode=mode)
+        self._sessions[session.session_id] = session
+        return session
+
+    def get(self, session_id: str) -> ConversationSession | None:
+        """Get an existing session by ID."""
+        return self._sessions.get(session_id)
+
+    def delete(self, session_id: str) -> bool:
+        """Delete a session."""
+        if session_id in self._sessions:
+            del self._sessions[session_id]
+            return True
+        return False
+
+    def clear(self) -> None:
+        """Remove all sessions."""
+        self._sessions.clear()
+
+
+# Default manager used by module-level convenience functions
+_default_manager = SessionManager()
 
 
 def get_session(session_id: str) -> ConversationSession | None:
     """Get an existing session by ID."""
-    return _sessions.get(session_id)
+    return _default_manager.get(session_id)
 
 
 def create_session(
@@ -519,14 +555,9 @@ def create_session(
     mode: ParseMode = ParseMode.BEGINNER,
 ) -> ConversationSession:
     """Create a new conversation session."""
-    session = ConversationSession(provider=provider, mode=mode)
-    _sessions[session.session_id] = session
-    return session
+    return _default_manager.create(provider=provider, mode=mode)
 
 
 def delete_session(session_id: str) -> bool:
     """Delete a session."""
-    if session_id in _sessions:
-        del _sessions[session_id]
-        return True
-    return False
+    return _default_manager.delete(session_id)
