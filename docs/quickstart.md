@@ -412,11 +412,11 @@ schedule:
 Once you have a strategy, run it against historical data:
 
 ```bash
-pip install pyutss[yahoo]  # Include Yahoo Finance data provider
+pip install pyutss  # Includes Yahoo Finance data provider
 ```
 
 ```python
-from pyutss import BacktestEngine, BacktestConfig
+from pyutss import Engine
 from pyutss.data import fetch
 from utss import load_yaml
 
@@ -426,9 +426,9 @@ strategy = load_yaml(open("my_strategy.yaml").read())
 # Fetch data
 data = fetch("AAPL", start="2023-01-01", end="2024-01-01")
 
-# Run backtest
-engine = BacktestEngine(config=BacktestConfig(initial_capital=100000))
-result = engine.run(strategy, data=data, symbol="AAPL")
+# Run backtest (unified Engine for 1..N symbols)
+engine = Engine(initial_capital=100000)
+result = engine.backtest(strategy, data=data, symbol="AAPL")
 
 # View results
 result.summary()
@@ -437,12 +437,31 @@ result.summary()
 ### Advanced Features
 
 ```python
-# Portfolio backtesting (multiple symbols with shared capital)
-from pyutss.portfolio import PortfolioBacktester, PortfolioConfig
+# Portfolio backtesting (same Engine, multiple symbols)
+from pyutss import Engine
 
-config = PortfolioConfig(initial_capital=100000, rebalance="monthly")
-backtester = PortfolioBacktester(config)
-result = backtester.run(strategy, data={"AAPL": aapl_df, "MSFT": msft_df}, weights="equal")
+engine = Engine(initial_capital=100000)
+result = engine.backtest(
+    strategy,
+    data={"AAPL": aapl_df, "MSFT": msft_df},
+    weights="equal",
+)
+# Returns PortfolioResult for multi-symbol, BacktestResult for single
+
+# Japanese market with lot size and tiered commission
+from pyutss import Engine, BacktestExecutor
+
+executor = BacktestExecutor(
+    lot_size=100,  # Standard Japanese lot
+    tiered_commission=[
+        {"up_to": 50000, "fee": 55},
+        {"up_to": 100000, "fee": 99},
+        {"up_to": 200000, "fee": 115},
+    ],
+    slippage_rate=0.001,
+)
+engine = Engine(initial_capital=10_000_000, executor=executor)
+result = engine.backtest(strategy, data=data, symbol="7203.T")
 
 # Walk-forward optimization
 from pyutss.optimization import WalkForwardOptimizer

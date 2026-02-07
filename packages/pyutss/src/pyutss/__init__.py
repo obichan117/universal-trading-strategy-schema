@@ -47,10 +47,12 @@ from pyutss.data.providers.base import BaseDataProvider, DataProviderError
 
 # Engine components
 from pyutss.engine.backtest import BacktestEngine
+from pyutss.engine.engine import Engine
 from pyutss.engine.evaluator import (
     ConditionEvaluator,
     EvaluationContext,
     EvaluationError,
+    EvaluationPortfolioState,
     PortfolioState,
     SignalEvaluator,
 )
@@ -60,6 +62,10 @@ from pyutss.engine.indicators import (
     MACDResult,
     StochasticResult,
 )
+from pyutss.engine.executor import BacktestExecutor, Fill, OrderRequest
+from pyutss.engine.portfolio import PortfolioManager
+from pyutss.engine.sizing import calculate_size, round_to_lot
+from pyutss.engine.universe import UniverseResolver
 
 # Metrics
 from pyutss.metrics.benchmark import (
@@ -106,12 +112,14 @@ __all__ = [
     "BaseDataProvider",
     "DataProviderError",
     # Engine
+    "Engine",
     "BacktestEngine",
     "BacktestConfig",
     "SignalEvaluator",
     "ConditionEvaluator",
     "EvaluationContext",
     "EvaluationError",
+    "EvaluationPortfolioState",
     "PortfolioState",
     "IndicatorService",
     "MACDResult",
@@ -128,6 +136,14 @@ __all__ = [
     "PeriodBreakdown",
     "BenchmarkMetrics",
     "calculate_benchmark_metrics",
+    # Engine - new modules
+    "BacktestExecutor",
+    "OrderRequest",
+    "Fill",
+    "PortfolioManager",
+    "calculate_size",
+    "round_to_lot",
+    "UniverseResolver",
     # Analysis
     "MonteCarloSimulator",
     "MonteCarloResult",

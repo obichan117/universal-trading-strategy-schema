@@ -1,10 +1,7 @@
 """Tests for optimization module."""
 
-from datetime import date
-
 import numpy as np
 import pandas as pd
-import pytest
 
 from pyutss.optimization import (
     GridSearchOptimizer,
@@ -15,7 +12,6 @@ from pyutss.optimization import (
     WalkForwardOptimizer,
     WalkForwardResult,
 )
-from pyutss.results.types import BacktestConfig
 
 
 def create_sample_data(periods: int = 500) -> pd.DataFrame:
@@ -226,7 +222,7 @@ class TestGridSearchOptimizer:
             progress_callback=callback,
         )
 
-        result = optimizer.run(data, symbol="TEST")
+        optimizer.run(data, symbol="TEST")
 
         assert len(progress) == 4
         assert progress[-1][0] == progress[-1][1]  # Last call: current == total

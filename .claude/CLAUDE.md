@@ -75,6 +75,16 @@ utss/
 │   │   │   ├── data/               # Data providers
 │   │   │   │   └── providers/      # Yahoo, J-Quants, etc.
 │   │   │   ├── engine/             # Backtest execution
+│   │   │   │   ├── engine.py       # Unified Engine (1..N symbols)
+│   │   │   │   ├── executor.py     # Executor protocol + BacktestExecutor
+│   │   │   │   ├── universe.py     # UniverseResolver
+│   │   │   │   ├── portfolio.py    # PortfolioManager
+│   │   │   │   ├── sizing.py       # Position sizing logic
+│   │   │   │   ├── evaluator.py    # Signal/Condition evaluators
+│   │   │   │   ├── indicators.py   # 31 technical indicators
+│   │   │   │   ├── expr_parser.py  # Expression parser
+│   │   │   │   ├── capabilities.py # Engine capability reporting
+│   │   │   │   └── backtest.py     # Legacy BacktestEngine (deprecated)
 │   │   │   ├── metrics/            # Performance metrics
 │   │   │   └── results/            # Result handling
 │   │   └── tests/
@@ -98,7 +108,8 @@ utss/
 │       └── tests/
 │
 ├── schema/v1/
-│   └── strategy.schema.json        # JSON Schema (SOURCE OF TRUTH)
+│   ├── strategy.schema.json        # JSON Schema (SOURCE OF TRUTH)
+│   └── backtest.schema.json        # Backtest config schema
 │
 ├── patterns/                       # Reusable condition formulas
 │   ├── crossovers.yaml             # cross_above, cross_below

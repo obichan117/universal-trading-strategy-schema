@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from pyutss.engine.backtest import BacktestEngine
+from pyutss.engine.engine import Engine
 from pyutss.metrics.calculator import MetricsCalculator
 from pyutss.optimization.grid_search import GridSearchOptimizer
 from pyutss.optimization.result import WalkForwardResult, WindowResult
@@ -138,7 +138,7 @@ class WalkForwardOptimizer:
         window_results: list[WindowResult] = []
         all_best_params: list[dict[str, Any]] = []
 
-        engine = BacktestEngine(config=self.config)
+        engine = Engine(config=self.config)
         calculator = MetricsCalculator(risk_free_rate=self.config.risk_free_rate)
 
         for window_idx, (train_idx, test_idx) in enumerate(splits):
@@ -187,7 +187,7 @@ class WalkForwardOptimizer:
                 self.progress_callback(window_idx + 1, len(splits), "out_of_sample")
 
             try:
-                oos_result = engine.run(
+                oos_result = engine.backtest(
                     strategy=self.strategy,
                     data=test_data,
                     symbol=symbol,

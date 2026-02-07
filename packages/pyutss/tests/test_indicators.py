@@ -1,7 +1,6 @@
 """Tests for pyutss indicator calculations using real market data."""
 
 import pandas as pd
-import pytest
 
 from pyutss import IndicatorService
 

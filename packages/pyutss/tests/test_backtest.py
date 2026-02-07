@@ -1,7 +1,5 @@
 """Tests for pyutss backtest engine using real market data."""
 
-from datetime import date, timedelta
-
 import pandas as pd
 import pytest
 

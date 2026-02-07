@@ -479,6 +479,59 @@ class ExpressionParser:
         elif indicator == "VWAP":
             signal["params"] = {}
 
+        elif indicator in ("HIGHEST", "LOWEST"):
+            signal["params"] = {}
+            if len(params) >= 2 and isinstance(params[0], str):
+                # HIGHEST(close, 252) → source=close, period=252
+                signal["params"]["source"] = params[0]
+                signal["params"]["period"] = int(params[1])
+            elif len(params) >= 1:
+                signal["params"]["period"] = int(params[0])
+
+        elif indicator in ("DEMA", "TEMA", "ROC", "MOMENTUM", "STDDEV", "VARIANCE"):
+            if params:
+                signal["params"] = {"period": int(params[0])}
+                if len(params) > 1 and isinstance(params[1], str):
+                    signal["params"]["source"] = params[1]
+
+        elif indicator == "KAMA":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["fast_period"] = int(params[1])
+            if len(params) >= 3:
+                signal["params"]["slow_period"] = int(params[2])
+
+        elif indicator == "SUPERTREND":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["multiplier"] = float(params[1])
+
+        elif indicator == "PSAR":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["af_start"] = float(params[0])
+            if len(params) >= 2:
+                signal["params"]["af_increment"] = float(params[1])
+            if len(params) >= 3:
+                signal["params"]["af_max"] = float(params[2])
+
+        elif indicator in (
+            "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU_B",
+        ):
+            if params:
+                signal["params"] = {"period": int(params[0])}
+
+        elif indicator == "ICHIMOKU_SENKOU_A":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["tenkan_period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["kijun_period"] = int(params[1])
+
         else:
             # Generic: assume first param is period
             if params:

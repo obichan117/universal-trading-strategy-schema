@@ -946,6 +946,7 @@ class IndexUniverse(BaseSchema):
     rank_by: Signal | None = None
     order: Literal["asc", "desc"] = "desc"
     limit: int | ParameterReference | None = Field(None, ge=1)
+    refresh: Literal["daily", "weekly", "monthly", "quarterly", "never"] | None = None
 
 
 class ScreenerUniverse(BaseSchema):
@@ -957,6 +958,7 @@ class ScreenerUniverse(BaseSchema):
     rank_by: Signal | None = None
     order: Literal["asc", "desc"] = "desc"
     limit: int | None = Field(None, ge=1)
+    refresh: Literal["daily", "weekly", "monthly", "quarterly", "never"] | None = None
 
 
 class DualUniverseSide(BaseSchema):
@@ -1116,6 +1118,13 @@ class CommissionModel(BaseSchema):
 
 class Execution(BaseSchema):
     """Strategy execution assumptions.
+
+    .. deprecated::
+        The execution section in the strategy is deprecated for backtest configuration.
+        Use a separate backtest config file (BacktestSpec) for execution parameters
+        like commission, slippage, and lot size. The strategy's execution section
+        remains as "design assumptions" for documentation purposes, but the
+        BacktestSpec.execution takes precedence during backtesting.
 
     Defines the slippage, commission, and other execution parameters
     that the strategy was designed for. These are part of the strategy

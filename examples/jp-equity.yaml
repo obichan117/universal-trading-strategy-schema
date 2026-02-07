@@ -1,0 +1,92 @@
+# Japanese Equity Strategy Example
+# Demonstrates UTSS for Tokyo Stock Exchange with proper market rules
+
+info:
+  id: jp-mean-reversion
+  name: "Nikkei Mean Reversion"
+  version: "1.0"
+  description: "Buy oversold Nikkei stocks, sell when recovered"
+
+universe:
+  type: index
+  index: NIKKEI225
+  limit: 20
+  refresh: weekly
+
+signals:
+  rsi_14:
+    type: indicator
+    indicator: RSI
+    params:
+      period: 14
+
+  sma_200:
+    type: indicator
+    indicator: SMA
+    params:
+      period: 200
+
+conditions:
+  oversold_uptrend:
+    type: and
+    conditions:
+      - type: comparison
+        left: { $ref: "#/signals/rsi_14" }
+        operator: "<"
+        right: { type: constant, value: 30 }
+      - type: comparison
+        left: { type: price, field: close }
+        operator: ">"
+        right: { $ref: "#/signals/sma_200" }
+
+  overbought:
+    type: comparison
+    left: { $ref: "#/signals/rsi_14" }
+    operator: ">"
+    right: { type: constant, value: 70 }
+
+rules:
+  - name: buy-oversold
+    when: { $ref: "#/conditions/oversold_uptrend" }
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 10
+
+  - name: sell-overbought
+    when: { $ref: "#/conditions/overbought" }
+    then:
+      type: trade
+      direction: sell
+      sizing:
+        type: percent_of_position
+        percent: 100
+
+constraints:
+  max_positions: 5
+  stop_loss:
+    percent: 5
+  take_profit:
+    percent: 15
+
+parameters:
+  rsi_period:
+    type: integer
+    default: 14
+    min: 10
+    max: 20
+    step: 2
+  rsi_oversold:
+    type: integer
+    default: 30
+    min: 20
+    max: 35
+    step: 5
+  rsi_overbought:
+    type: integer
+    default: 70
+    min: 60
+    max: 80
+    step: 5

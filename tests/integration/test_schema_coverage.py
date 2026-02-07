@@ -4,19 +4,13 @@ Validates that pyutss implements all capabilities defined in the UTSS schema.
 This ensures the engine stays in sync with the schema as both evolve.
 """
 
-import pytest
-
 from utss.capabilities import (
     SCHEMA_VERSION,
-    SUPPORTED_ARITHMETIC_OPERATORS,
-    SUPPORTED_CALENDAR_FIELDS,
     SUPPORTED_COMPARISON_OPERATORS,
     SUPPORTED_CONDITION_TYPES,
     SUPPORTED_INDICATORS,
-    SUPPORTED_PRICE_FIELDS,
     SUPPORTED_SIGNAL_TYPES,
     SUPPORTED_SIZING_TYPES,
-    SUPPORTED_TRADE_DIRECTIONS,
 )
 from pyutss.engine.indicators import IndicatorService
 from pyutss.engine.evaluator import SignalEvaluator, ConditionEvaluator

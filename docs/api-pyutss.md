@@ -18,7 +18,7 @@ pip install pyutss[dev]
 ## Quick Start
 
 ```python
-from pyutss import BacktestEngine, BacktestConfig
+from pyutss import Engine
 from utss import load_yaml
 import pandas as pd
 
@@ -28,16 +28,13 @@ strategy = load_yaml("my_strategy.yaml")
 # Get historical data (OHLCV DataFrame)
 data = pd.read_csv("AAPL.csv", index_col="date", parse_dates=True)
 
-# Configure backtest
-config = BacktestConfig(
+# Run backtest (unified Engine for 1..N symbols)
+engine = Engine(
     initial_capital=100000,
     commission_rate=0.001,
     slippage_rate=0.0005,
 )
-
-# Run backtest
-engine = BacktestEngine(config=config)
-result = engine.run(strategy, data=data, symbol="AAPL")
+result = engine.backtest(strategy, data=data, symbol="AAPL")
 
 # View results
 print(f"Total Return: {result.total_return_pct:.2f}%")
@@ -45,37 +42,87 @@ print(f"Win Rate: {result.win_rate:.1f}%")
 result.summary()
 ```
 
-## BacktestEngine
+## Engine
 
-The main entry point for running backtests.
+The unified entry point for running backtests. Handles both single-symbol and multi-symbol strategies with the same API.
 
 ### Constructor
 
 ```python
-BacktestEngine(config: BacktestConfig | None = None)
+Engine(
+    initial_capital: float = 100000.0,
+    commission_rate: float = 0.001,
+    slippage_rate: float = 0.0005,
+    risk_free_rate: float = 0.0,
+    lot_size: int = 1,
+    config: BacktestConfig | None = None,
+    executor: BacktestExecutor | None = None,
+)
 ```
 
 ### Methods
 
-#### `run(strategy, data, symbol) -> BacktestResult`
+#### `backtest(strategy, data, symbol, ...) -> BacktestResult | PortfolioResult`
 
-Execute a backtest for a single symbol.
+Execute a backtest. Returns `BacktestResult` for single symbol, `PortfolioResult` for multiple.
 
 ```python
-result = engine.run(
-    strategy=strategy,          # UTSS Strategy object
+# Single symbol
+result = engine.backtest(
+    strategy=strategy,          # dict or path to YAML
     data=ohlcv_dataframe,       # DataFrame with OHLCV columns
     symbol="AAPL",              # Symbol identifier
+)
+
+# Multi symbol
+result = engine.backtest(
+    strategy=strategy,
+    data={"AAPL": df1, "MSFT": df2},
+    weights="equal",            # "equal", "inverse_vol", "risk_parity"
 )
 ```
 
 **Parameters:**
 
-- `strategy`: Validated UTSS Strategy object
-- `data`: pandas DataFrame with columns: `open`, `high`, `low`, `close`, `volume`
-- `symbol`: String identifier for the symbol
+- `strategy`: UTSS strategy dict or path to YAML file
+- `data`: DataFrame (single) or dict of DataFrames (multi), or None for auto-fetch
+- `symbol`: Symbol name (for single-symbol with DataFrame)
+- `start_date`: Backtest start date
+- `end_date`: Backtest end date
+- `parameters`: Strategy parameter overrides
+- `weights`: Weight scheme for multi-symbol
+- `config`: BacktestSpec or path to backtest config YAML
 
-**Returns:** `BacktestResult` with trades, equity curve, and metrics
+**Returns:** `BacktestResult` for single symbol, `PortfolioResult` for multiple
+
+## BacktestExecutor
+
+Handles simulated trade execution with commission, slippage, and lot size models.
+
+```python
+from pyutss import BacktestExecutor
+
+# US market (default)
+executor = BacktestExecutor(commission_rate=0.001, slippage_rate=0.0005)
+
+# Japanese market with tiered commission
+executor = BacktestExecutor(
+    lot_size=100,
+    tiered_commission=[
+        {"up_to": 50000, "fee": 55},
+        {"up_to": 100000, "fee": 99},
+        {"up_to": 200000, "fee": 115},
+        {"above": 200000, "fee": 275},
+    ],
+    slippage_rate=0.001,
+)
+
+engine = Engine(initial_capital=10_000_000, executor=executor)
+```
+
+## BacktestEngine (Deprecated)
+
+Legacy API. Use `Engine` instead. `BacktestEngine` is still available for backward compatibility.
 
 ## BacktestConfig
 
@@ -332,20 +379,14 @@ mc_result = simulator.bootstrap_returns(
 )
 ```
 
-## Portfolio Backtester
+## Multi-Symbol Portfolio Backtesting
 
-Test strategies across multiple symbols.
+Use the unified `Engine` for multi-symbol strategies. Returns `PortfolioResult` automatically.
 
 ```python
-from pyutss.portfolio import PortfolioBacktester, PortfolioConfig
+from pyutss import Engine
 
-config = PortfolioConfig(
-    initial_capital=1000000,
-    rebalance_frequency="monthly",
-    weight_scheme="equal",
-)
-
-backtester = PortfolioBacktester(config=config)
+engine = Engine(initial_capital=1000000)
 
 # Prepare data for multiple symbols
 data_dict = {
@@ -354,15 +395,28 @@ data_dict = {
     "GOOGL": googl_data,
 }
 
-result = backtester.run(strategy, data_dict)
+# Same Engine API - returns PortfolioResult for multi-symbol
+result = engine.backtest(strategy, data=data_dict, weights="equal")
+
+print(f"Portfolio Return: {result.total_return_pct:.2f}%")
+print(f"Symbols: {result.symbols}")
+print(f"Rebalance Count: {result.rebalance_count}")
+
+# Access per-symbol results
+for sym, sym_result in result.per_symbol_results.items():
+    print(f"  {sym}: {sym_result.total_return_pct:.2f}%")
 ```
 
 ### Weight Schemes
 
-- `equal`: Equal weight across all positions
-- `inverse_volatility`: Weight inversely to volatility
-- `risk_parity`: Target equal risk contribution
-- `market_cap`: Weight by market capitalization
+- `"equal"`: Equal weight across all positions
+- `"inverse_vol"`: Weight inversely to volatility
+- `"risk_parity"`: Target equal risk contribution
+- `dict[str, float]`: Custom target weights (e.g., `{"AAPL": 0.5, "MSFT": 0.3, "GOOGL": 0.2}`)
+
+### PortfolioBacktester (Deprecated)
+
+Legacy API. Use `Engine` with a data dict instead.
 
 ## Optimization
 
@@ -495,7 +549,15 @@ All major types are exported at the package level:
 
 ```python
 from pyutss import (
-    # Engine
+    # Engine (unified)
+    Engine,
+    BacktestExecutor,
+    OrderRequest,
+    Fill,
+    PortfolioManager,
+    UniverseResolver,
+
+    # Legacy (deprecated, use Engine instead)
     BacktestEngine,
     BacktestConfig,
 
@@ -515,6 +577,10 @@ from pyutss import (
     # Analysis
     MonteCarloSimulator,
     MonteCarloResult,
+
+    # Sizing
+    calculate_size,
+    round_to_lot,
 
     # Data
     OHLCV,

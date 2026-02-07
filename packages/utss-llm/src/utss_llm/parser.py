@@ -11,7 +11,7 @@ import yaml
 
 from utss import Strategy, ValidationError, validate_yaml
 
-from utss_llm.prompts import ADVANCED_TEMPLATE, BEGINNER_TEMPLATE, SYSTEM_PROMPT
+from utss_llm.prompts import ADVANCED_TEMPLATE, SYSTEM_PROMPT
 from utss_llm.providers.base import LLMProvider
 
 

@@ -18,10 +18,12 @@ class EvaluationError(Exception):
 
 
 @dataclass
-class PortfolioState:
+class EvaluationPortfolioState:
     """Current portfolio state for signal evaluation.
 
     Updated by the backtest engine on each bar.
+    This is the evaluator's view of portfolio state, distinct from
+    the engine's PortfolioManager which tracks actual positions.
     """
 
     cash: float = 0.0
@@ -36,6 +38,10 @@ class PortfolioState:
     def __post_init__(self):
         if self.positions is None:
             self.positions = {}
+
+
+# Backward compatibility alias
+PortfolioState = EvaluationPortfolioState
 
 
 @dataclass
@@ -259,6 +265,123 @@ class SignalEvaluator:
                 data["high"], data["low"], data["close"], data["volume"]
             )
 
+        elif indicator == "DEMA":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.dema(source, period)
+
+        elif indicator == "TEMA":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.tema(source, period)
+
+        elif indicator == "KAMA":
+            period = int(resolved_params.get("period", 10))
+            fast = int(resolved_params.get("fast_period", 2))
+            slow = int(resolved_params.get("slow_period", 30))
+            return IndicatorService.kama(source, period, fast, slow)
+
+        elif indicator == "ROC":
+            period = int(resolved_params.get("period", 12))
+            return IndicatorService.roc(source, period)
+
+        elif indicator == "MOMENTUM":
+            period = int(resolved_params.get("period", 10))
+            return IndicatorService.momentum(source, period)
+
+        elif indicator == "STDDEV":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.stddev(source, period)
+
+        elif indicator == "VARIANCE":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.variance(source, period)
+
+        elif indicator == "HIGHEST":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.highest(source, period)
+
+        elif indicator == "LOWEST":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.lowest(source, period)
+
+        elif indicator == "MACD_SIGNAL":
+            fast = int(resolved_params.get("fast_period", 12))
+            slow = int(resolved_params.get("slow_period", 26))
+            signal_period = int(resolved_params.get("signal_period", 9))
+            result = IndicatorService.macd(source, fast, slow, signal_period)
+            return result.signal_line
+
+        elif indicator == "MACD_HIST":
+            fast = int(resolved_params.get("fast_period", 12))
+            slow = int(resolved_params.get("slow_period", 26))
+            signal_period = int(resolved_params.get("signal_period", 9))
+            result = IndicatorService.macd(source, fast, slow, signal_period)
+            return result.histogram
+
+        elif indicator == "STOCH_K":
+            k_period = int(resolved_params.get("k_period", 14))
+            d_period = int(resolved_params.get("d_period", 3))
+            result = IndicatorService.stochastic(data["high"], data["low"], data["close"], k_period, d_period)
+            return result.k
+
+        elif indicator == "STOCH_D":
+            k_period = int(resolved_params.get("k_period", 14))
+            d_period = int(resolved_params.get("d_period", 3))
+            result = IndicatorService.stochastic(data["high"], data["low"], data["close"], k_period, d_period)
+            return result.d
+
+        elif indicator == "BB_UPPER":
+            period = int(resolved_params.get("period", 20))
+            std_dev = float(resolved_params.get("std_dev", 2.0))
+            return IndicatorService.bollinger_bands(source, period, std_dev).upper
+
+        elif indicator == "BB_LOWER":
+            period = int(resolved_params.get("period", 20))
+            std_dev = float(resolved_params.get("std_dev", 2.0))
+            return IndicatorService.bollinger_bands(source, period, std_dev).lower
+
+        elif indicator == "BB_MIDDLE":
+            period = int(resolved_params.get("period", 20))
+            std_dev = float(resolved_params.get("std_dev", 2.0))
+            return IndicatorService.bollinger_bands(source, period, std_dev).middle
+
+        elif indicator == "BB_WIDTH":
+            period = int(resolved_params.get("period", 20))
+            std_dev = float(resolved_params.get("std_dev", 2.0))
+            return IndicatorService.bollinger_bands(source, period, std_dev).bandwidth
+
+        elif indicator == "BB_PERCENT":
+            period = int(resolved_params.get("period", 20))
+            std_dev = float(resolved_params.get("std_dev", 2.0))
+            return IndicatorService.bollinger_bands(source, period, std_dev).percent_b
+
+        elif indicator == "PSAR":
+            af_start = float(resolved_params.get("af_start", 0.02))
+            af_increment = float(resolved_params.get("af_increment", 0.02))
+            af_max = float(resolved_params.get("af_max", 0.2))
+            return IndicatorService.psar(data["high"], data["low"], data["close"], af_start, af_increment, af_max)
+
+        elif indicator == "SUPERTREND":
+            period = int(resolved_params.get("period", 10))
+            multiplier = float(resolved_params.get("multiplier", 3.0))
+            return IndicatorService.supertrend(data["high"], data["low"], data["close"], period, multiplier)
+
+        elif indicator == "ICHIMOKU_TENKAN":
+            period = int(resolved_params.get("period", 9))
+            return IndicatorService.ichimoku_tenkan(data["high"], data["low"], period)
+
+        elif indicator == "ICHIMOKU_KIJUN":
+            period = int(resolved_params.get("period", 26))
+            return IndicatorService.ichimoku_kijun(data["high"], data["low"], period)
+
+        elif indicator == "ICHIMOKU_SENKOU_A":
+            tenkan_p = int(resolved_params.get("tenkan_period", 9))
+            kijun_p = int(resolved_params.get("kijun_period", 26))
+            return IndicatorService.ichimoku_senkou_a(data["high"], data["low"], tenkan_p, kijun_p)
+
+        elif indicator == "ICHIMOKU_SENKOU_B":
+            period = int(resolved_params.get("period", 52))
+            return IndicatorService.ichimoku_senkou_b(data["high"], data["low"], period)
+
         else:
             raise EvaluationError(f"Unsupported indicator: {indicator}")
 
@@ -309,21 +432,36 @@ class SignalEvaluator:
         operator = signal.get("operator", "+")
         operands = signal.get("operands", [])
 
-        if len(operands) < 2:
-            raise EvaluationError("Arithmetic signal requires at least 2 operands")
+        if len(operands) < 1:
+            raise EvaluationError("Arithmetic signal requires at least 1 operand")
 
         values = [self.evaluate_signal(op, context) for op in operands]
-        result = values[0]
 
+        # Single operand operators
+        if operator in ("abs",):
+            return values[0].abs()
+
+        if len(values) < 2:
+            raise EvaluationError("Arithmetic signal requires at least 2 operands")
+
+        result = values[0]
         for val in values[1:]:
-            if operator == "+":
+            if operator in ("+", "add"):
                 result = result + val
-            elif operator == "-":
+            elif operator in ("-", "subtract"):
                 result = result - val
-            elif operator == "*":
+            elif operator in ("*", "multiply"):
                 result = result * val
-            elif operator == "/":
+            elif operator in ("/", "divide"):
                 result = result / val
+            elif operator == "min":
+                result = pd.concat([result, val], axis=1).min(axis=1)
+            elif operator == "max":
+                result = pd.concat([result, val], axis=1).max(axis=1)
+            elif operator == "avg":
+                result = pd.concat([result, val], axis=1).mean(axis=1)
+            elif operator == "pow":
+                result = result ** val
             else:
                 raise EvaluationError(f"Unknown arithmetic operator: {operator}")
 

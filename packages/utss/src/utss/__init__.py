@@ -118,6 +118,25 @@ from utss.models import (
     Visibility,
     VolatilityAdjustedSizing,
 )
+from utss.backtest_models import (
+    BacktestSpec,
+    Benchmark,
+    CommissionConfig,
+    CommissionTier,
+    DataConfig,
+    DataSource,
+    ExecutionConfig,
+    FractionalConfig,
+    LotSizeConfig,
+    LotSizeMatch,
+    LotSizeRule,
+    MarginConfig,
+    MetricsConfig,
+    PriceLimitsConfig,
+    SlippageConfig,
+    SlippageTier,
+)
+from utss.backtest_validator import validate_backtest, validate_backtest_yaml
 from utss.validator import ValidationError, validate_strategy, validate_yaml
 
 __version__ = "1.0.0"
@@ -231,4 +250,23 @@ __all__ = [
     "SUPPORTED_ACTION_TYPES",
     "SUPPORTED_SIZING_TYPES",
     "SUPPORTED_UNIVERSE_TYPES",
+    # Backtest configuration
+    "BacktestSpec",
+    "Benchmark",
+    "CommissionConfig",
+    "CommissionTier",
+    "DataConfig",
+    "DataSource",
+    "ExecutionConfig",
+    "FractionalConfig",
+    "LotSizeConfig",
+    "LotSizeMatch",
+    "LotSizeRule",
+    "MarginConfig",
+    "MetricsConfig",
+    "PriceLimitsConfig",
+    "SlippageConfig",
+    "SlippageTier",
+    "validate_backtest",
+    "validate_backtest_yaml",
 ]

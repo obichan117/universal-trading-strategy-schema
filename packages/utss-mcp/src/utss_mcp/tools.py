@@ -148,7 +148,7 @@ async def backtest_strategy(
         - trades: List of trades executed
     """
     try:
-        from pyutss import BacktestConfig, BacktestEngine, MetricsCalculator
+        from pyutss import Engine, MetricsCalculator
         from pyutss.data import fetch
 
         # Parse strategy
@@ -173,10 +173,9 @@ async def backtest_strategy(
                 "error": f"Insufficient data for backtest: only {len(data)} data points",
             }
 
-        # Run backtest
-        config = BacktestConfig(initial_capital=initial_capital)
-        engine = BacktestEngine(config=config)
-        result = engine.run(strategy=strategy, data=data, symbol=symbol)
+        # Run backtest using unified Engine
+        engine = Engine(initial_capital=initial_capital)
+        result = engine.backtest(strategy=strategy, data=data, symbol=symbol)
 
         # Calculate metrics
         calculator = MetricsCalculator()

@@ -14,7 +14,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from pyutss.engine.backtest import BacktestEngine
+from pyutss.engine.engine import Engine
 from pyutss.metrics.calculator import MetricsCalculator
 from pyutss.optimization.result import OptimizationResult, ParameterResult
 from pyutss.results.types import BacktestConfig
@@ -111,7 +111,7 @@ class GridSearchOptimizer:
         all_results: list[ParameterResult] = []
         best_result: ParameterResult | None = None
 
-        engine = BacktestEngine(config=self.config)
+        engine = Engine(config=self.config)
         calculator = MetricsCalculator(risk_free_rate=self.config.risk_free_rate)
 
         for i, values in enumerate(combinations):
@@ -122,7 +122,7 @@ class GridSearchOptimizer:
 
             try:
                 # Run backtest with these parameters
-                result = engine.run(
+                result = engine.backtest(
                     strategy=self.strategy,
                     data=data,
                     symbol=symbol,
@@ -273,7 +273,7 @@ class RandomSearchOptimizer:
         all_results: list[ParameterResult] = []
         best_result: ParameterResult | None = None
 
-        engine = BacktestEngine(config=self.config)
+        engine = Engine(config=self.config)
         calculator = MetricsCalculator(risk_free_rate=self.config.risk_free_rate)
 
         for i, params in enumerate(sampled_params):
@@ -281,7 +281,7 @@ class RandomSearchOptimizer:
                 self.progress_callback(i + 1, actual_iterations, params)
 
             try:
-                result = engine.run(
+                result = engine.backtest(
                     strategy=self.strategy,
                     data=data,
                     symbol=symbol,

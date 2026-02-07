@@ -1,10 +1,13 @@
 """Engine module for pyutss."""
 
 from pyutss.engine.backtest import BacktestEngine
+from pyutss.engine.engine import Engine
 from pyutss.engine.evaluator import (
     ConditionEvaluator,
     EvaluationContext,
     EvaluationError,
+    EvaluationPortfolioState,
+    PortfolioState,
     SignalEvaluator,
 )
 from pyutss.engine.indicators import (
@@ -13,15 +16,29 @@ from pyutss.engine.indicators import (
     MACDResult,
     StochasticResult,
 )
+from pyutss.engine.executor import BacktestExecutor, Fill, OrderRequest
+from pyutss.engine.portfolio import PortfolioManager
+from pyutss.engine.sizing import calculate_size, round_to_lot
+from pyutss.engine.universe import UniverseResolver
 
 __all__ = [
+    "Engine",
     "BacktestEngine",
     "SignalEvaluator",
     "ConditionEvaluator",
     "EvaluationContext",
     "EvaluationError",
+    "EvaluationPortfolioState",
+    "PortfolioState",
     "IndicatorService",
     "MACDResult",
     "BollingerBandsResult",
     "StochasticResult",
+    "BacktestExecutor",
+    "OrderRequest",
+    "Fill",
+    "PortfolioManager",
+    "calculate_size",
+    "round_to_lot",
+    "UniverseResolver",
 ]

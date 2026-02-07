@@ -1,0 +1,51 @@
+# Japanese Market Backtest Configuration
+# Demonstrates tiered commission and lot size for TSE
+$schema: https://utss.dev/schema/v1/backtest.json
+
+strategy: ./jp-equity.yaml
+
+start_date: "2020-01-01"
+end_date: "2024-12-31"
+initial_capital: 10000000       # 10,000,000 JPY
+currency: JPY
+
+benchmark:
+  symbol: "1306.T"              # TOPIX ETF
+
+execution:
+  commission:
+    type: tiered
+    currency: JPY
+    tiers:
+      - { up_to: 50000,    fee: 55 }
+      - { up_to: 100000,   fee: 99 }
+      - { up_to: 200000,   fee: 115 }
+      - { up_to: 500000,   fee: 275 }
+      - { up_to: 1000000,  fee: 535 }
+      - { up_to: 1500000,  fee: 640 }
+      - { up_to: 30000000, fee: 1013 }
+      - { above: 30000000, fee: 1070 }
+
+  slippage:
+    type: percentage
+    value: 0.1                  # 0.1%
+
+  lot_size:
+    default: 100                # Standard Japanese lot
+    rules:
+      - match: { type: ETF }
+        size: 1
+      - match: { type: REIT }
+        size: 1
+
+  settlement_days: 2            # T+2
+
+data:
+  source: auto
+  timeframe: daily
+  warmup_period: 200
+  adjust: true
+
+metrics:
+  risk_free_rate: 0.001         # 0.1% (Japan)
+  trading_days_per_year: 245    # TSE calendar

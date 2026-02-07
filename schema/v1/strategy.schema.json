@@ -731,7 +731,13 @@
           "enum": ["asc", "desc"],
           "default": "desc"
         },
-        "limit": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] }
+        "limit": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+        "refresh": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "never"],
+          "default": "never",
+          "description": "How often to re-evaluate the universe (for dynamic filtering)"
+        }
       },
       "additionalProperties": false
     },
@@ -756,7 +762,13 @@
           "enum": ["asc", "desc"],
           "default": "desc"
         },
-        "limit": { "type": "integer", "minimum": 1 }
+        "limit": { "type": "integer", "minimum": 1 },
+        "refresh": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "never"],
+          "default": "never",
+          "description": "How often to re-evaluate the screener filters"
+        }
       },
       "additionalProperties": false
     },
@@ -868,7 +880,7 @@
 
     "Execution": {
       "type": "object",
-      "description": "Strategy execution assumptions (slippage, commission, requirements)",
+      "description": "Strategy execution assumptions (slippage, commission, requirements). DEPRECATED for backtest configuration - use a separate backtest config file (backtest.schema.json) instead. This section remains for documenting the strategy's design assumptions.",
       "properties": {
         "slippage": { "$ref": "#/definitions/SlippageModel" },
         "commission": { "$ref": "#/definitions/CommissionModel" },

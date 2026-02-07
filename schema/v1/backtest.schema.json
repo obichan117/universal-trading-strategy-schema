@@ -1,0 +1,390 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://utss.dev/schema/v1/backtest.json",
+  "title": "UTSS Backtest Configuration Schema v1.0",
+  "description": "Configuration for backtesting a UTSS strategy. Separates execution parameters (commission, slippage, lot size) from strategy definition.",
+  "type": "object",
+  "required": ["strategy", "start_date", "end_date", "initial_capital"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema URL for validation"
+    },
+    "strategy": {
+      "type": "string",
+      "description": "Path to strategy YAML file (relative or absolute)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest start date (YYYY-MM-DD)"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest end date (YYYY-MM-DD)"
+    },
+    "initial_capital": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Starting capital for the backtest"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "Currency for the backtest (e.g., USD, JPY, EUR)"
+    },
+    "benchmark": {
+      "$ref": "#/definitions/Benchmark"
+    },
+    "execution": {
+      "$ref": "#/definitions/ExecutionConfig"
+    },
+    "data": {
+      "$ref": "#/definitions/DataConfig"
+    },
+    "metrics": {
+      "$ref": "#/definitions/MetricsConfig"
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "Benchmark": {
+      "type": "object",
+      "description": "Benchmark for performance comparison",
+      "required": ["symbol"],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Benchmark symbol (e.g., SPY, 1306.T)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ExecutionConfig": {
+      "type": "object",
+      "description": "Execution simulation parameters",
+      "properties": {
+        "commission": {
+          "$ref": "#/definitions/CommissionConfig"
+        },
+        "slippage": {
+          "$ref": "#/definitions/SlippageConfig"
+        },
+        "lot_size": {
+          "$ref": "#/definitions/LotSizeConfig"
+        },
+        "settlement_days": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Settlement period in business days (e.g., T+2 = 2)"
+        },
+        "price_limits": {
+          "$ref": "#/definitions/PriceLimitsConfig"
+        },
+        "margin": {
+          "$ref": "#/definitions/MarginConfig"
+        },
+        "order_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["market", "limit", "stop", "stop_limit"]
+          },
+          "default": ["market", "limit"],
+          "description": "Supported order types"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CommissionConfig": {
+      "type": "object",
+      "description": "Commission model for the backtest",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["per_trade", "per_share", "percentage", "tiered"],
+          "description": "Commission model type"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Commission value (flat fee, per-share cost, or percentage)"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Commission currency (defaults to backtest currency)"
+        },
+        "min": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Minimum commission per trade"
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum commission per trade"
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Tiered commission schedule",
+          "items": {
+            "$ref": "#/definitions/CommissionTier"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CommissionTier": {
+      "type": "object",
+      "description": "A tier in tiered commission model. Use 'up_to' for capped tiers, 'above' for the final open-ended tier.",
+      "properties": {
+        "up_to": {
+          "type": "number",
+          "description": "Trade value threshold (inclusive)"
+        },
+        "above": {
+          "type": "number",
+          "description": "Trade value floor for final tier (exclusive)"
+        },
+        "fee": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Fixed fee for this tier"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Percentage or per-share rate for this tier"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "SlippageConfig": {
+      "type": "object",
+      "description": "Slippage model for the backtest",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["percentage", "fixed", "tiered"],
+          "description": "Slippage model type"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Slippage value (percentage or fixed amount)"
+        },
+        "tiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "up_to": { "type": "number" },
+              "value": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "LotSizeConfig": {
+      "type": "object",
+      "description": "Lot size configuration (e.g., 100 shares for Japanese stocks)",
+      "required": ["default"],
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Default lot size (e.g., 100 for TSE stocks, 1 for US stocks)"
+        },
+        "rules": {
+          "type": "array",
+          "description": "Override rules for specific instrument types",
+          "items": {
+            "$ref": "#/definitions/LotSizeRule"
+          }
+        },
+        "fractional": {
+          "$ref": "#/definitions/FractionalConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "LotSizeRule": {
+      "type": "object",
+      "description": "Lot size override for specific instrument types",
+      "required": ["match", "size"],
+      "properties": {
+        "match": {
+          "type": "object",
+          "description": "Matching criteria",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Instrument type (e.g., ETF, REIT)"
+            },
+            "symbol_pattern": {
+              "type": "string",
+              "description": "Regex pattern for symbol matching"
+            }
+          }
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Lot size for matched instruments"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "FractionalConfig": {
+      "type": "object",
+      "description": "Fractional share trading configuration (e.g., S-kabu in Japan)",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether fractional shares are allowed"
+        },
+        "commission": {
+          "$ref": "#/definitions/CommissionConfig"
+        },
+        "order_types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowed order types for fractional trading"
+        },
+        "execution_timing": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "When fractional orders are executed (e.g., morning_open)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "PriceLimitsConfig": {
+      "type": "object",
+      "description": "Daily price limit configuration (e.g., Japanese stock limit-up/limit-down)",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether price limits are enforced"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["exchange", "custom"],
+          "default": "exchange",
+          "description": "Source for price limit rules"
+        },
+        "upper_percent": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Custom upper limit as percentage of previous close"
+        },
+        "lower_percent": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Custom lower limit as percentage of previous close"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "MarginConfig": {
+      "type": "object",
+      "description": "Margin trading configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether margin trading is enabled"
+        },
+        "requirement": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Margin requirement as decimal (e.g., 0.3 = 30%)"
+        },
+        "max_leverage": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Maximum leverage (e.g., 3.3 for Japanese margin trading)"
+        },
+        "interest_rate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Annual margin interest rate (e.g., 0.028 = 2.8%)"
+        },
+        "borrow_fee": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Annual stock borrowing fee for short sales"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "DataConfig": {
+      "type": "object",
+      "description": "Data source configuration",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["auto", "yahoo", "jquants", "csv"],
+          "default": "auto",
+          "description": "Data source (auto detects from symbol format)"
+        },
+        "timeframe": {
+          "type": "string",
+          "enum": ["1m", "5m", "15m", "30m", "1h", "4h", "daily", "weekly", "monthly"],
+          "default": "daily",
+          "description": "Data timeframe"
+        },
+        "warmup_period": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 200,
+          "description": "Extra bars before start_date for indicator warmup"
+        },
+        "adjust": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to use adjusted prices (for splits/dividends)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "MetricsConfig": {
+      "type": "object",
+      "description": "Metrics calculation parameters",
+      "properties": {
+        "risk_free_rate": {
+          "type": "number",
+          "default": 0.05,
+          "description": "Annual risk-free rate for Sharpe/Sortino calculation"
+        },
+        "trading_days_per_year": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 252,
+          "description": "Trading days per year (252 for US, 245 for Japan)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
