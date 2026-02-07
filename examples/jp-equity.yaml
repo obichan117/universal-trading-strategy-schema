@@ -8,8 +8,8 @@ info:
   description: "Buy oversold Nikkei stocks, sell when recovered"
 
 universe:
-  type: index
-  index: NIKKEI225
+  type: screener
+  base: NIKKEI225
   limit: 20
   refresh: weekly
 

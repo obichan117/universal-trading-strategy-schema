@@ -7,7 +7,6 @@ implement all required features.
 """
 
 from utss.models import (
-    ArithmeticOperator,
     CalendarField,
     CommissionType,
     ComparisonOperator,
@@ -16,7 +15,6 @@ from utss.models import (
     IndicatorType,
     PortfolioField,
     PriceField,
-    RebalanceMethod,
     SlippageType,
     TradeDirection,
 )
@@ -45,14 +43,8 @@ SUPPORTED_PORTFOLIO_FIELDS: list[str] = [e.value for e in PortfolioField]
 # All supported comparison operators
 SUPPORTED_COMPARISON_OPERATORS: list[str] = [e.value for e in ComparisonOperator]
 
-# All supported arithmetic operators
-SUPPORTED_ARITHMETIC_OPERATORS: list[str] = [e.value for e in ArithmeticOperator]
-
 # All supported trade directions
 SUPPORTED_TRADE_DIRECTIONS: list[str] = [e.value for e in TradeDirection]
-
-# All supported rebalance methods
-SUPPORTED_REBALANCE_METHODS: list[str] = [e.value for e in RebalanceMethod]
 
 # Condition types that engines must support (minimal primitives + expr)
 SUPPORTED_CONDITION_TYPES: list[str] = [
@@ -74,7 +66,6 @@ SUPPORTED_SIGNAL_TYPES: list[str] = [
     "portfolio",
     "relative",
     "constant",
-    "arithmetic",
     "expr",
     "external",
 ]
@@ -82,7 +73,6 @@ SUPPORTED_SIGNAL_TYPES: list[str] = [
 # Action types that engines must support
 SUPPORTED_ACTION_TYPES: list[str] = [
     "trade",
-    "rebalance",
     "alert",
     "hold",
 ]
@@ -90,12 +80,13 @@ SUPPORTED_ACTION_TYPES: list[str] = [
 # Sizing types that engines must support
 SUPPORTED_SIZING_TYPES: list[str] = [
     "fixed_amount",
+    "fixed_quantity",
     "percent_of_equity",
+    "percent_of_cash",
     "percent_of_position",
     "risk_based",
     "kelly",
     "volatility_adjusted",
-    "conditional",
 ]
 
 # Universe types that engines must support
@@ -103,7 +94,6 @@ SUPPORTED_UNIVERSE_TYPES: list[str] = [
     "static",
     "index",
     "screener",
-    "dual",
 ]
 
 # Slippage model types
@@ -121,9 +111,7 @@ __all__ = [
     "SUPPORTED_CALENDAR_FIELDS",
     "SUPPORTED_PORTFOLIO_FIELDS",
     "SUPPORTED_COMPARISON_OPERATORS",
-    "SUPPORTED_ARITHMETIC_OPERATORS",
     "SUPPORTED_TRADE_DIRECTIONS",
-    "SUPPORTED_REBALANCE_METHODS",
     "SUPPORTED_CONDITION_TYPES",
     "SUPPORTED_SIGNAL_TYPES",
     "SUPPORTED_ACTION_TYPES",

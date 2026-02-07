@@ -77,7 +77,6 @@ class SignalEvaluator:
     - calendar: Date patterns (day_of_week, is_month_end, etc.)
     - portfolio: Portfolio state (not yet implemented)
     - constant: Fixed values
-    - arithmetic: Math operations on signals
     - expr: Custom expressions (limited support)
 
     Example:
@@ -125,8 +124,6 @@ class SignalEvaluator:
             return self._eval_constant_signal(signal, context)
         elif signal_type == "calendar":
             return self._eval_calendar_signal(signal, context)
-        elif signal_type == "arithmetic":
-            return self._eval_arithmetic_signal(signal, context)
         elif signal_type == "portfolio":
             return self._eval_portfolio_signal(signal, context)
         elif signal_type == "$ref":
@@ -553,48 +550,6 @@ class SignalEvaluator:
             return pd.Series((index.month % 3 == 0) & (self._is_last_trading_day(index)), index=index).astype(int)
         else:
             raise EvaluationError(f"Unknown calendar field: {field}")
-
-    def _eval_arithmetic_signal(
-        self, signal: dict[str, Any], context: EvaluationContext
-    ) -> pd.Series:
-        """Evaluate arithmetic signal."""
-        operator = signal.get("operator", "+")
-        operands = signal.get("operands", [])
-
-        if len(operands) < 1:
-            raise EvaluationError("Arithmetic signal requires at least 1 operand")
-
-        values = [self.evaluate_signal(op, context) for op in operands]
-
-        # Single operand operators
-        if operator in ("abs",):
-            return values[0].abs()
-
-        if len(values) < 2:
-            raise EvaluationError("Arithmetic signal requires at least 2 operands")
-
-        result = values[0]
-        for val in values[1:]:
-            if operator in ("+", "add"):
-                result = result + val
-            elif operator in ("-", "subtract"):
-                result = result - val
-            elif operator in ("*", "multiply"):
-                result = result * val
-            elif operator in ("/", "divide"):
-                result = result / val
-            elif operator == "min":
-                result = pd.concat([result, val], axis=1).min(axis=1)
-            elif operator == "max":
-                result = pd.concat([result, val], axis=1).max(axis=1)
-            elif operator == "avg":
-                result = pd.concat([result, val], axis=1).mean(axis=1)
-            elif operator == "pow":
-                result = result ** val
-            else:
-                raise EvaluationError(f"Unknown arithmetic operator: {operator}")
-
-        return result
 
     def _eval_portfolio_signal(
         self, signal: dict[str, Any], context: EvaluationContext

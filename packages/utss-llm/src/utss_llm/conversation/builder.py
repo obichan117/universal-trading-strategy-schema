@@ -151,18 +151,18 @@ class StrategyBuilder:
                 message="You've chosen to trade specific symbols.",
                 question=QUESTION_SYMBOLS,
             )
-        elif answer == "index":
+        elif answer == "screener":
             return ConversationResponse(
                 type=ResponseType.QUESTION,
                 message="You've chosen to trade index members.",
                 question=QUESTION_INDEX,
             )
         else:
-            # Skip to entry indicator for screener (simplified)
+            # Fallback
             state.current_step = "entry_indicator"
             return ConversationResponse(
                 type=ResponseType.QUESTION,
-                message="Screener universe selected. Now let's define entry conditions.",
+                message="Universe selected. Now let's define entry conditions.",
                 question=self._get_entry_indicator_question(state),
             )
 
@@ -176,7 +176,7 @@ class StrategyBuilder:
             # Parse comma-separated symbols
             symbols = [s.strip().upper() for s in answer.split(",")]
             strategy.symbols = symbols
-        elif strategy.universe_type == "index":
+        elif strategy.universe_type == "screener":
             strategy.index = answer
 
         self._advance_step(state)

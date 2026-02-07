@@ -136,25 +136,23 @@ Signal → Condition → Rule → Strategy
 ### Condition Types
 
 - **Comparison** - `RSI < 30`
-- **Cross** - `SMA(50) crosses above SMA(200)`
-- **Range** - `20 < RSI < 80`
-- **Temporal** - `RSI < 30 for 3 bars`
-- **Sequence** - `A then B within 5 bars`
+- **Expression** - `SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)` (crossovers, ranges, temporal patterns)
 - **Logical** - `AND`, `OR`, `NOT`
+- **Always** - Unconditional (for scheduled actions)
 
 ### Action Types
 
 - **Trade** - Buy, sell, short, cover
-- **Rebalance** - Adjust to target weights
 - **Alert** - Send notifications
 
 ### Sizing Methods
 
 - **Fixed Amount** - `$10,000`
+- **Fixed Quantity** - `100 shares`
 - **Percent of Equity** - `10%`
+- **Percent of Cash** - `20% of available cash`
 - **Risk-Based** - `1% risk with ATR stop`
 - **Kelly Criterion** - Optimal sizing
-- **Conditional** - Different sizing by regime
 
 ---
 

@@ -65,7 +65,7 @@ class PartialStrategy:
     description: str | None = None
 
     # Universe
-    universe_type: str | None = None  # static, index, screener
+    universe_type: str | None = None  # static, screener
     symbols: list[str] = field(default_factory=list)
     index: str | None = None
 
@@ -114,8 +114,8 @@ class PartialStrategy:
             strategy["universe"] = {"type": self.universe_type}
             if self.universe_type == "static" and self.symbols:
                 strategy["universe"]["symbols"] = self.symbols
-            elif self.universe_type == "index" and self.index:
-                strategy["universe"]["index"] = self.index
+            elif self.universe_type == "screener" and self.index:
+                strategy["universe"]["base"] = self.index
 
         # Signals
         if self.signals:

@@ -218,7 +218,6 @@ from utss import (
 | `event` | Market events | `EARNINGS_RELEASE` |
 | `portfolio` | Position state | `unrealized_pnl`, `days_in_position` |
 | `constant` | Fixed value | `30`, `0.05` |
-| `arithmetic` | Math operations | `SMA(20) - SMA(50)` |
 | `expr` | Custom formula | `"(close - SMA(20)) / ATR(14)"` |
 | `external` | Runtime signal | Webhook, ML model |
 | `$ref` | Reference | `"#/signals/rsi_14"` |
@@ -230,7 +229,7 @@ from utss import (
 | `comparison` | Compare signals | `RSI < 30` |
 | `and`/`or`/`not` | Logical operators | `RSI < 30 AND MACD > 0` |
 | `expr` | Formula expression | `"SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"` |
-| `always` | Unconditional | For scheduled rebalancing |
+| `always` | Unconditional | For scheduled actions |
 
 Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `expr` formulas. See `patterns/` for reusable formulas.
 

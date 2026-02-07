@@ -158,13 +158,3 @@ class TestScreenerFiltering:
         symbols = resolver.resolve(universe, data=data)
         assert symbols == ["A"]
 
-    def test_dual_universe_with_screener_sides(self):
-        """Dual universe resolves screener sub-universes."""
-        resolver = UniverseResolver(custom_indices={"TEST": ["A", "B", "C"]})
-        universe = {
-            "type": "dual",
-            "long": {"type": "screener", "base": "TEST", "limit": 1},
-            "short": {"type": "screener", "base": "TEST", "limit": 1},
-        }
-        symbols = resolver.resolve(universe)
-        assert len(symbols) >= 1  # At least one symbol from both sides

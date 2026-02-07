@@ -16,8 +16,7 @@ UTSS is a composable schema for expressing trading strategies with the following
 - `calendar`: Date patterns (day_of_week, is_month_end, etc.)
 - `portfolio`: Position state (unrealized_pnl, days_in_position, etc.)
 - `constant`: Fixed numeric value
-- `arithmetic`: Math operations on signals
-- `expr`: Custom formula expression
+- `expr`: Custom formula expression (supports arithmetic: +, -, *, /, ^)
 - `$ref`: Reference to defined signal
 
 ## Condition Types
@@ -30,24 +29,31 @@ UTSS is a composable schema for expressing trading strategies with the following
 ## Action Types
 
 - `trade`: Buy, sell, short, cover
-- `rebalance`: Adjust to target weights
 - `alert`: Send notification
 - `hold`: Explicit no-op
 
 ## Sizing Types
 
 - `fixed_amount`: Fixed currency amount
+- `fixed_quantity`: Fixed number of shares/contracts
 - `percent_of_equity`: Percentage of portfolio
+- `percent_of_cash`: Percentage of available cash
 - `percent_of_position`: Percentage of existing position
 - `risk_based`: Based on stop distance
 - `kelly`: Kelly criterion
 - `volatility_adjusted`: Target volatility
 
+## Universe Types
+
+- `static`: Explicit list of symbols
+- `screener`: Filter from a base index (e.g., base: SP500, with optional filters)
+- `index`: (deprecated) Use screener with base instead
+
 ## Output Format
 
 Always output valid YAML that conforms to UTSS v1.0 schema. Include:
 1. `info`: id, name, version, description
-2. `universe`: What to trade (static symbols or index)
+2. `universe`: What to trade (static symbols or screener with base)
 3. `signals`: Reusable signal definitions (optional but recommended)
 4. `rules`: At least one rule with when/then
 5. `constraints`: Risk limits (optional but recommended)

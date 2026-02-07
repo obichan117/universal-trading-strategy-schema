@@ -35,7 +35,7 @@ IMPLEMENTED_INDICATORS: set[str] = {
 # Signal types implemented in SignalEvaluator
 IMPLEMENTED_SIGNAL_TYPES: set[str] = {
     "price", "indicator", "constant", "calendar",
-    "arithmetic", "portfolio", "$ref", "$param", "expr",
+    "portfolio", "$ref", "$param", "expr",
 }
 
 # Condition types implemented in ConditionEvaluator
@@ -57,14 +57,7 @@ IMPLEMENTED_SIZING_TYPES: set[str] = {
 
 # Universe types implemented in UniverseResolver
 IMPLEMENTED_UNIVERSE_TYPES: set[str] = {
-    "static", "index", "screener", "dual",
-}
-
-# Arithmetic operators implemented in evaluator
-IMPLEMENTED_ARITHMETIC_OPERATORS: set[str] = {
-    "+", "-", "*", "/",
-    "add", "subtract", "multiply", "divide",
-    "min", "max", "avg", "abs", "pow",
+    "static", "index", "screener",
 }
 
 
@@ -85,7 +78,6 @@ def validate_engine_capabilities() -> dict[str, dict]:
             SUPPORTED_ACTION_TYPES,
             SUPPORTED_SIZING_TYPES,
             SUPPORTED_UNIVERSE_TYPES,
-            SUPPORTED_ARITHMETIC_OPERATORS,
         )
     except ImportError:
         return {"error": "utss package not installed"}
@@ -108,7 +100,6 @@ def validate_engine_capabilities() -> dict[str, dict]:
         "action_types": _compare(SUPPORTED_ACTION_TYPES, IMPLEMENTED_ACTION_TYPES),
         "sizing_types": _compare(SUPPORTED_SIZING_TYPES, IMPLEMENTED_SIZING_TYPES),
         "universe_types": _compare(SUPPORTED_UNIVERSE_TYPES, IMPLEMENTED_UNIVERSE_TYPES),
-        "arithmetic_operators": _compare(SUPPORTED_ARITHMETIC_OPERATORS, IMPLEMENTED_ARITHMETIC_OPERATORS),
     }
 
 

@@ -57,7 +57,6 @@ graph TB
         Portfolio["PortfolioSignal"]
         Relative["RelativeSignal"]
         Constant["ConstantSignal"]
-        Arithmetic["ArithmeticSignal"]
         Expression["ExpressionSignal"]
         External["ExternalSignal"]
     end
@@ -71,14 +70,15 @@ graph TB
 
     subgraph ActionTypes["⚡ Action Types"]
         Trade["TradeAction"]
-        Rebalance["RebalanceAction"]
         Alert["AlertAction"]
         Hold["HoldAction"]
     end
 
     subgraph SizingTypes["📐 Sizing Types"]
         Fixed["FixedAmount"]
+        FixedQty["FixedQuantity"]
         PctEquity["PercentEquity"]
+        PctCash["PercentCash"]
         PctPosition["PercentPosition"]
         RiskBased["RiskBased"]
         Kelly["Kelly"]
@@ -505,7 +505,6 @@ Signal:
     - PortfolioSignal
     - RelativeSignal
     - ConstantSignal
-    - ArithmeticSignal
     - ExpressionSignal
     - ExternalSignal
     - Reference
@@ -561,11 +560,6 @@ classDiagram
         +type: "constant"
         +value: number
     }
-    class ArithmeticSignal {
-        +type: "arithmetic"
-        +operator: ArithmeticOp
-        +operands: Signal[]
-    }
     class ExpressionSignal {
         +type: "expr"
         +formula: string
@@ -591,13 +585,11 @@ classDiagram
     Signal <|-- PortfolioSignal
     Signal <|-- RelativeSignal
     Signal <|-- ConstantSignal
-    Signal <|-- ArithmeticSignal
     Signal <|-- ExpressionSignal
     Signal <|-- ExternalSignal
     Signal <|-- Reference
     Signal <|-- ParameterReference
 
-    ArithmeticSignal o-- Signal : operands
     RelativeSignal o-- Signal : signal
 ```
 
@@ -734,14 +726,6 @@ conditions:
 ```yaml
 type: constant
 value: number               # Required
-```
-
-#### ArithmeticSignal
-
-```yaml
-type: arithmetic
-operator: ArithmeticOp      # Required. add|subtract|multiply|divide|min|max|avg|abs|pow
-operands: [Signal]          # Required. Min 2 items (1 for abs)
 ```
 
 #### ExpressionSignal
@@ -974,7 +958,6 @@ What to do when condition is met.
 Action:
   oneOf:
     - TradeAction
-    - RebalanceAction
     - AlertAction
     - HoldAction
 ```
@@ -994,12 +977,6 @@ classDiagram
         +stop_price: Signal
         +time_in_force: TimeInForce
     }
-    class RebalanceAction {
-        +type: "rebalance"
-        +method: RebalanceMethod
-        +targets: TargetWeight[]
-        +threshold: number
-    }
     class AlertAction {
         +type: "alert"
         +message: string
@@ -1013,7 +990,6 @@ classDiagram
     }
 
     Action <|-- TradeAction
-    Action <|-- RebalanceAction
     Action <|-- AlertAction
     Action <|-- HoldAction
 
@@ -1033,24 +1009,6 @@ limit_price: Signal         # Optional. For limit orders
 stop_price: Signal          # Optional. For stop orders
 time_in_force: TimeInForce  # Optional. Default: day
 ```
-
-#### RebalanceAction
-
-```yaml
-type: rebalance
-method: RebalanceMethod     # Required
-targets:                    # Required for target_weights method
-  - symbol: string
-    weight: number          # 0-1
-threshold: number           # Optional. Min deviation to trigger. Default: 0.05
-```
-
-RebalanceMethod options:
-- `equal_weight`: Equal allocation to all universe symbols
-- `market_cap_weight`: Weight by market cap
-- `risk_parity`: Weight by inverse volatility (equal risk contribution)
-- `inverse_volatility`: Weight by inverse volatility
-- `target_weights`: Use explicit targets
 
 #### AlertAction
 
@@ -1081,12 +1039,13 @@ How much to trade.
 Sizing:
   oneOf:
     - FixedAmountSizing
+    - FixedQuantitySizing
     - PercentEquitySizing
+    - PercentCashSizing
     - PercentPositionSizing
     - RiskBasedSizing
     - KellySizing
     - VolatilityAdjustedSizing
-    - ConditionalSizing
 ```
 
 ```mermaid
@@ -1099,8 +1058,16 @@ classDiagram
         +amount: number
         +currency: string
     }
+    class FixedQuantitySizing {
+        +type: "fixed_quantity"
+        +quantity: number
+    }
     class PercentEquitySizing {
         +type: "percent_of_equity"
+        +percent: number
+    }
+    class PercentCashSizing {
+        +type: "percent_of_cash"
         +percent: number
     }
     class PercentPositionSizing {
@@ -1122,23 +1089,16 @@ classDiagram
         +target_volatility: number
         +lookback: integer
     }
-    class ConditionalSizing {
-        +type: "conditional"
-        +cases: SizingCase[]
-        +default: Sizing
-    }
-
     Sizing <|-- FixedAmountSizing
+    Sizing <|-- FixedQuantitySizing
     Sizing <|-- PercentEquitySizing
+    Sizing <|-- PercentCashSizing
     Sizing <|-- PercentPositionSizing
     Sizing <|-- RiskBasedSizing
     Sizing <|-- KellySizing
     Sizing <|-- VolatilityAdjustedSizing
-    Sizing <|-- ConditionalSizing
 
     RiskBasedSizing o-- Signal : stop_distance
-    ConditionalSizing o-- Sizing : cases, default
-    ConditionalSizing o-- Condition : cases.when
 ```
 
 #### FixedAmountSizing
@@ -1149,10 +1109,24 @@ amount: number              # Required. Currency amount
 currency: string            # Optional. Default: USD
 ```
 
+#### FixedQuantitySizing
+
+```yaml
+type: fixed_quantity
+quantity: number            # Required. Number of shares/contracts
+```
+
 #### PercentEquitySizing
 
 ```yaml
 type: percent_of_equity
+percent: number             # Required. 0-100
+```
+
+#### PercentCashSizing
+
+```yaml
+type: percent_of_cash
 percent: number             # Required. 0-100
 ```
 
@@ -1185,16 +1159,6 @@ lookback: integer           # Optional. Bars for win rate calc. Default: 100
 type: volatility_adjusted
 target_volatility: number   # Required. Target annualized vol
 lookback: integer           # Optional. Default: 20
-```
-
-#### ConditionalSizing
-
-```yaml
-type: conditional
-cases:                      # Required. Min 1
-  - when: Condition
-    sizing: Sizing
-default: Sizing             # Required. Fallback sizing
 ```
 
 ---
@@ -1241,12 +1205,6 @@ day | gtc | ioc | fok
 
 ```
 < | <= | = | >= | > | !=
-```
-
-#### ArithmeticOp
-
-```
-add | subtract | multiply | divide | min | max | avg | abs | pow
 ```
 
 ---
@@ -1630,13 +1588,14 @@ conditions:
     right: { type: constant, value: 0 }
 
 rules:
-  - name: Monthly rebalance
+  - name: Monthly buy
     when:
       type: calendar
       field: is_month_start
     then:
-      type: rebalance
-      method: equal_weight
+      type: trade
+      direction: buy
+      sizing: { type: percent_of_equity, percent: 20 }
     priority: 1
 
   - name: Activate hedge
@@ -1676,28 +1635,28 @@ schedule:
   timezone: Asia/Tokyo
 ```
 
-### Risk Parity Portfolio
+### Monthly DCA Portfolio
 
 ```yaml
 info:
-  id: risk_parity
-  name: Risk Parity Portfolio
+  id: monthly_dca
+  name: Monthly Dollar-Cost Averaging
   version: "1.0"
-  tags: [portfolio, risk-parity]
+  tags: [portfolio, dca]
 
 universe:
   type: static
   symbols: [SPY, TLT, GLD, VNQ]
 
 rules:
-  - name: Monthly risk parity rebalance
+  - name: Monthly buy
     when:
       type: calendar
       field: is_month_start
     then:
-      type: rebalance
-      method: risk_parity
-      threshold: 0.05
+      type: trade
+      direction: buy
+      sizing: { type: percent_of_cash, percent: 25 }
 
 constraints:
   max_drawdown: 15

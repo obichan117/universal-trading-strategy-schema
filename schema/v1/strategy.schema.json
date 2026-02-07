@@ -105,7 +105,6 @@
         { "$ref": "#/definitions/PortfolioSignal" },
         { "$ref": "#/definitions/RelativeSignal" },
         { "$ref": "#/definitions/ConstantSignal" },
-        { "$ref": "#/definitions/ArithmeticSignal" },
         { "$ref": "#/definitions/ExpressionSignal" },
         { "$ref": "#/definitions/ExternalSignal" },
         { "$ref": "#/definitions/Reference" },
@@ -290,25 +289,6 @@
       "additionalProperties": false
     },
 
-    "ArithmeticSignal": {
-      "type": "object",
-      "description": "Arithmetic operation on signals",
-      "required": ["type", "operator", "operands"],
-      "properties": {
-        "type": { "const": "arithmetic" },
-        "operator": {
-          "type": "string",
-          "enum": ["add", "subtract", "multiply", "divide", "min", "max", "avg", "abs", "pow"]
-        },
-        "operands": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/Signal" },
-          "minItems": 1
-        }
-      },
-      "additionalProperties": false
-    },
-
     "ExpressionSignal": {
       "type": "object",
       "description": "Custom formula expression",
@@ -440,7 +420,6 @@
       "description": "What to do when a condition is met",
       "oneOf": [
         { "$ref": "#/definitions/TradeAction" },
-        { "$ref": "#/definitions/RebalanceAction" },
         { "$ref": "#/definitions/AlertAction" },
         { "$ref": "#/definitions/HoldAction" }
       ]
@@ -472,36 +451,6 @@
           "type": "string",
           "enum": ["day", "gtc", "ioc", "fok"],
           "default": "day"
-        }
-      },
-      "additionalProperties": false
-    },
-
-    "RebalanceAction": {
-      "type": "object",
-      "description": "Rebalance to target weights",
-      "required": ["type", "method"],
-      "properties": {
-        "type": { "const": "rebalance" },
-        "method": {
-          "type": "string",
-          "enum": ["equal_weight", "market_cap_weight", "risk_parity", "inverse_volatility", "target_weights"]
-        },
-        "targets": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["symbol", "weight"],
-            "properties": {
-              "symbol": { "type": "string" },
-              "weight": { "type": "number", "minimum": 0, "maximum": 1 }
-            }
-          }
-        },
-        "threshold": {
-          "type": "number",
-          "description": "Minimum deviation to trigger rebalance",
-          "default": 0.05
         }
       },
       "additionalProperties": false
@@ -554,12 +503,13 @@
       "description": "How to size a position",
       "oneOf": [
         { "$ref": "#/definitions/FixedAmountSizing" },
+        { "$ref": "#/definitions/FixedQuantitySizing" },
         { "$ref": "#/definitions/PercentEquitySizing" },
+        { "$ref": "#/definitions/PercentCashSizing" },
         { "$ref": "#/definitions/PercentPositionSizing" },
         { "$ref": "#/definitions/RiskBasedSizing" },
         { "$ref": "#/definitions/KellySizing" },
-        { "$ref": "#/definitions/VolatilityAdjustedSizing" },
-        { "$ref": "#/definitions/ConditionalSizing" }
+        { "$ref": "#/definitions/VolatilityAdjustedSizing" }
       ]
     },
 
@@ -574,11 +524,33 @@
       "additionalProperties": false
     },
 
+    "FixedQuantitySizing": {
+      "type": "object",
+      "description": "Fixed number of shares/contracts",
+      "required": ["type", "quantity"],
+      "properties": {
+        "type": { "const": "fixed_quantity" },
+        "quantity": { "oneOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/definitions/ParameterReference" }] }
+      },
+      "additionalProperties": false
+    },
+
     "PercentEquitySizing": {
       "type": "object",
       "required": ["type", "percent"],
       "properties": {
         "type": { "const": "percent_of_equity" },
+        "percent": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 100 }, { "$ref": "#/definitions/ParameterReference" }] }
+      },
+      "additionalProperties": false
+    },
+
+    "PercentCashSizing": {
+      "type": "object",
+      "description": "Percent of available cash",
+      "required": ["type", "percent"],
+      "properties": {
+        "type": { "const": "percent_of_cash" },
         "percent": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 100 }, { "$ref": "#/definitions/ParameterReference" }] }
       },
       "additionalProperties": false
@@ -646,29 +618,6 @@
       "additionalProperties": false
     },
 
-    "ConditionalSizing": {
-      "type": "object",
-      "description": "Size based on conditions",
-      "required": ["type", "cases", "default"],
-      "properties": {
-        "type": { "const": "conditional" },
-        "cases": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["when", "sizing"],
-            "properties": {
-              "when": { "$ref": "#/definitions/Condition" },
-              "sizing": { "$ref": "#/definitions/Sizing" }
-            }
-          },
-          "minItems": 1
-        },
-        "default": { "$ref": "#/definitions/Sizing" }
-      },
-      "additionalProperties": false
-    },
-
     "Rule": {
       "type": "object",
       "description": "A condition-action pair",
@@ -696,8 +645,7 @@
       "oneOf": [
         { "$ref": "#/definitions/StaticUniverse" },
         { "$ref": "#/definitions/IndexUniverse" },
-        { "$ref": "#/definitions/ScreenerUniverse" },
-        { "$ref": "#/definitions/DualUniverse" }
+        { "$ref": "#/definitions/ScreenerUniverse" }
       ]
     },
 
@@ -717,6 +665,7 @@
 
     "IndexUniverse": {
       "type": "object",
+      "description": "DEPRECATED: Use screener with base instead. e.g. {type: screener, base: SP500}",
       "required": ["type", "index"],
       "properties": {
         "type": { "const": "index" },
@@ -744,7 +693,7 @@
 
     "ScreenerUniverse": {
       "type": "object",
-      "required": ["type", "filters"],
+      "required": ["type"],
       "properties": {
         "type": { "const": "screener" },
         "base": {
@@ -768,38 +717,6 @@
           "enum": ["daily", "weekly", "monthly", "quarterly", "never"],
           "default": "never",
           "description": "How often to re-evaluate the screener filters"
-        }
-      },
-      "additionalProperties": false
-    },
-
-    "DualUniverse": {
-      "type": "object",
-      "description": "Separate long and short universes",
-      "required": ["type", "long", "short"],
-      "properties": {
-        "type": { "const": "dual" },
-        "long": {
-          "type": "object",
-          "properties": {
-            "type": { "type": "string" },
-            "index": { "$ref": "#/definitions/StockIndex" },
-            "filters": { "type": "array", "items": { "$ref": "#/definitions/Condition" } },
-            "rank_by": { "$ref": "#/definitions/Signal" },
-            "order": { "type": "string", "enum": ["asc", "desc"] },
-            "limit": { "type": "integer", "minimum": 1 }
-          }
-        },
-        "short": {
-          "type": "object",
-          "properties": {
-            "type": { "type": "string" },
-            "index": { "$ref": "#/definitions/StockIndex" },
-            "filters": { "type": "array", "items": { "$ref": "#/definitions/Condition" } },
-            "rank_by": { "$ref": "#/definitions/Signal" },
-            "order": { "type": "string", "enum": ["asc", "desc"] },
-            "limit": { "type": "integer", "minimum": 1 }
-          }
         }
       },
       "additionalProperties": false

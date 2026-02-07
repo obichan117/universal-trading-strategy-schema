@@ -29,7 +29,6 @@ UTSS v1.0 is a **clean, minimal design** with 6 condition types and an `expr` es
 | `portfolio` | Position state (unrealized_pnl, days_in_position, etc.) |
 | `relative` | Benchmark comparisons (ratio, beta, correlation) |
 | `constant` | Fixed numeric values |
-| `arithmetic` | Math operations (add, subtract, multiply, etc.) |
 | `expr` | Custom formula expressions |
 | `external` | Runtime signals (webhook, file, provider) |
 
@@ -50,21 +49,19 @@ See `patterns/` directory for reusable formula library.
 ### Action Types
 
 - **TradeAction** - Buy, sell, short, cover with various sizing methods
-- **RebalanceAction** - Equal weight, risk parity, target weights
 - **AlertAction** - Notifications via log, webhook, email, telegram, etc.
 - **HoldAction** - Explicitly do nothing
 
 ### Sizing Types
 
-- `fixed_amount`, `percent_of_equity`, `percent_of_position`
-- `risk_based`, `kelly`, `volatility_adjusted`, `conditional`
+- `fixed_amount`, `fixed_quantity`, `percent_of_equity`, `percent_of_cash`, `percent_of_position`
+- `risk_based`, `kelly`, `volatility_adjusted`
 
 ### Universe Types
 
 - `static` - Fixed symbol list
-- `index` - Index members with filters/ranking
-- `screener` - Dynamic screening
-- `dual` - Separate long/short universes
+- `index` - Index members with filters/ranking (deprecated; use screener with base instead)
+- `screener` - Dynamic screening (preferred for index-based strategies)
 
 ### Other Features
 

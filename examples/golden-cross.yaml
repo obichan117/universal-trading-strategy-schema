@@ -18,8 +18,8 @@ info:
   visibility: public
 
 universe:
-  type: index
-  index: SP500
+  type: screener
+  base: SP500
 
 signals:
   sma_50:

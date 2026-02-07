@@ -80,56 +80,6 @@ class TestUniverseResolverScreener:
         assert symbols == []
 
 
-class TestUniverseResolverDual:
-    """Test dual universe resolution."""
-
-    def test_dual_long_and_short(self):
-        resolver = UniverseResolver(custom_indices={
-            "LONG_IDX": ["A", "B", "C"],
-            "SHORT_IDX": ["D", "E"],
-        })
-        symbols = resolver.resolve({
-            "type": "dual",
-            "long": {"index": "LONG_IDX"},
-            "short": {"index": "SHORT_IDX"},
-        })
-        assert set(symbols) == {"A", "B", "C", "D", "E"}
-
-    def test_dual_overlapping_symbols(self):
-        resolver = UniverseResolver(custom_indices={
-            "IDX1": ["A", "B"],
-            "IDX2": ["B", "C"],
-        })
-        symbols = resolver.resolve({
-            "type": "dual",
-            "long": {"index": "IDX1"},
-            "short": {"index": "IDX2"},
-        })
-        assert set(symbols) == {"A", "B", "C"}
-
-    def test_dual_with_limit(self):
-        resolver = UniverseResolver()
-        symbols = resolver.resolve({
-            "type": "dual",
-            "long": {"index": "DOW30", "limit": 3},
-            "short": {"index": "NIKKEI225", "limit": 2},
-        })
-        assert len(symbols) == 5
-
-    def test_dual_long_only(self):
-        resolver = UniverseResolver(custom_indices={"IDX": ["X", "Y"]})
-        symbols = resolver.resolve({
-            "type": "dual",
-            "long": {"index": "IDX"},
-        })
-        assert set(symbols) == {"X", "Y"}
-
-    def test_dual_empty(self):
-        resolver = UniverseResolver()
-        symbols = resolver.resolve({"type": "dual"})
-        assert symbols == []
-
-
 class TestUniverseResolverMisc:
     """Test miscellaneous resolver features."""
 

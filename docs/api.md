@@ -208,18 +208,6 @@ signal = ConstantSignal(
 )
 ```
 
-### ArithmeticSignal
-
-```python
-from utss import ArithmeticSignal, ArithmeticOperator
-
-signal = ArithmeticSignal(
-    type="arithmetic",
-    operator=ArithmeticOperator.SUBTRACT,
-    operands=[sma_20_signal, sma_50_signal]
-)
-```
-
 ### ExpressionSignal
 
 ```python
@@ -350,18 +338,6 @@ action = TradeAction(
 )
 ```
 
-### RebalanceAction
-
-```python
-from utss import RebalanceAction, RebalanceMethod
-
-action = RebalanceAction(
-    type="rebalance",
-    method=RebalanceMethod.EQUAL_WEIGHT,  # equal_weight|market_cap_weight|risk_parity|inverse_volatility|target_weights
-    threshold=0.05
-)
-```
-
 ### AlertAction
 
 ```python
@@ -403,20 +379,25 @@ sizing = RiskBasedSizing(
 )
 ```
 
-### ConditionalSizing
+### FixedQuantitySizing
 
 ```python
-from utss import ConditionalSizing, ConditionalSizingCase
+from utss import FixedQuantitySizing
 
-sizing = ConditionalSizing(
-    type="conditional",
-    cases=[
-        ConditionalSizingCase(
-            when=high_volatility_condition,
-            sizing=PercentEquitySizing(type="percent_of_equity", percent=5)
-        )
-    ],
-    default=PercentEquitySizing(type="percent_of_equity", percent=10)
+sizing = FixedQuantitySizing(
+    type="fixed_quantity",
+    quantity=100  # Number of shares/units
+)
+```
+
+### PercentCashSizing
+
+```python
+from utss import PercentCashSizing
+
+sizing = PercentCashSizing(
+    type="percent_of_cash",
+    percent=20.0  # 0-100, percentage of available cash
 )
 ```
 
@@ -435,11 +416,16 @@ universe = StaticUniverse(
 )
 ```
 
-### IndexUniverse
+### IndexUniverse (Deprecated)
+
+!!! warning "Deprecated"
+    `IndexUniverse` is deprecated. Use a **screener** universe with a `base` field instead,
+    which provides more flexible filtering and ranking capabilities.
 
 ```python
 from utss import IndexUniverse, StockIndex
 
+# Deprecated approach
 universe = IndexUniverse(
     type="index",
     index=StockIndex.NIKKEI225,
@@ -447,27 +433,14 @@ universe = IndexUniverse(
     order="desc",             # asc|desc
     limit=10                  # Optional
 )
-```
 
-### DualUniverse
-
-```python
-from utss import DualUniverse, DualUniverseSide
-
-universe = DualUniverse(
-    type="dual",
-    long=DualUniverseSide(
-        index=StockIndex.SP500,
-        rank_by=momentum_signal,
-        limit=50
-    ),
-    short=DualUniverseSide(
-        index=StockIndex.SP500,
-        rank_by=momentum_signal,
-        order="asc",
-        limit=50
-    )
-)
+# Preferred approach: use screener with base
+# universe:
+#   type: screener
+#   base: { index: NIKKEI225 }
+#   filters: [...]
+#   rank_by: ...
+#   limit: 10
 ```
 
 ---

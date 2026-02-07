@@ -76,14 +76,9 @@ QUESTION_UNIVERSE_TYPE = Question(
             description="Enter specific stock tickers",
         ),
         Option(
-            id="index",
-            label="Index members",
-            description="Trade all stocks in an index (S&P 500, Nikkei 225, etc.)",
-        ),
-        Option(
             id="screener",
-            label="Dynamic screener",
-            description="Filter stocks by criteria (market cap, sector, etc.)",
+            label="Index members",
+            description="Trade stocks in an index (S&P 500, Nikkei 225, etc.), with optional filters",
         ),
     ],
 )

@@ -138,7 +138,6 @@ Signal → Condition → Rule → Strategy
 | `event` | Market events | Earnings, dividends |
 | `relative` | Benchmark comparison | Beta, correlation |
 | `constant` | Fixed numeric value | 30, 70 |
-| `arithmetic` | Math operations | SMA(20) - SMA(50) |
 | `expr` | Custom formula | "(close - SMA(20)) / ATR(14)" |
 | `external` | Runtime signal | Webhook, ML model |
 
@@ -160,7 +159,6 @@ Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `ex
 | Type | Description |
 |------|-------------|
 | `trade` | Buy, sell, short, or cover |
-| `rebalance` | Adjust to target weights |
 | `alert` | Send notification |
 | `hold` | Explicitly do nothing |
 
@@ -169,12 +167,13 @@ Complex patterns (crossovers, ranges, temporal, sequences) are expressed via `ex
 | Type | Description |
 |------|-------------|
 | `fixed_amount` | Fixed currency amount |
+| `fixed_quantity` | Fixed number of shares |
 | `percent_of_equity` | % of portfolio |
+| `percent_of_cash` | % of available cash |
 | `percent_of_position` | % of existing position |
 | `risk_based` | Based on stop distance |
 | `kelly` | Kelly criterion |
 | `volatility_adjusted` | Target volatility |
-| `conditional` | Varies by condition |
 
 ## Supported Indicators
 

@@ -1,7 +1,7 @@
 """Universe resolution for UTSS strategies.
 
 Resolves strategy universe definitions into concrete symbol lists.
-Supports static, index, screener, and dual universe types.
+Supports static, index, and screener universe types.
 
 When data is provided, screener filters are evaluated to select
 symbols that match the conditions.
@@ -39,9 +39,8 @@ class UniverseResolver:
 
     Supports:
     - static: Returns symbols directly
-    - index: Maps index name to constituent symbols
+    - index: Maps index name to constituent symbols (deprecated, use screener)
     - screener: Resolves base universe then applies filters
-    - dual: Resolves long and short sides independently
     """
 
     def __init__(self, custom_indices: dict[str, list[str]] | None = None) -> None:
@@ -79,8 +78,6 @@ class UniverseResolver:
             return self._resolve_index(universe)
         elif utype == "screener":
             return self._resolve_screener(universe, data)
-        elif utype == "dual":
-            return self._resolve_dual(universe, data)
         else:
             raise ValueError(f"Unknown universe type: {utype}")
 
@@ -229,53 +226,6 @@ class UniverseResolver:
         reverse = order == "desc"
         scores.sort(key=lambda x: x[1], reverse=reverse)
         return [sym for sym, _ in scores]
-
-    def _resolve_dual(
-        self,
-        universe: dict,
-        data: dict[str, pd.DataFrame] | None = None,
-    ) -> list[str]:
-        """Resolve dual universe (long + short sides)."""
-        symbols = set()
-
-        long_side = universe.get("long", {})
-        short_side = universe.get("short", {})
-
-        if long_side:
-            long_symbols = self._resolve_side(long_side, data)
-            symbols.update(long_symbols)
-
-        if short_side:
-            short_symbols = self._resolve_side(short_side, data)
-            symbols.update(short_symbols)
-
-        return list(symbols)
-
-    def _resolve_side(
-        self,
-        side: dict,
-        data: dict[str, pd.DataFrame] | None = None,
-    ) -> list[str]:
-        """Resolve one side of a dual universe."""
-        # Treat each side as its own sub-universe
-        side_type = side.get("type", "")
-
-        if side_type == "screener":
-            return self._resolve_screener(side, data)
-        elif side_type == "index" or "index" in side:
-            return self._resolve_index(side)
-        elif "symbols" in side:
-            return self._resolve_static(side)
-        else:
-            # Legacy format: just an index field
-            index_name = side.get("index", "")
-            if index_name:
-                syms = self._get_index_symbols(index_name)
-                limit = side.get("limit")
-                if limit and isinstance(limit, int):
-                    syms = syms[:limit]
-                return syms
-            return []
 
     def _get_index_symbols(self, index_name: str) -> list[str]:
         """Get symbols for a named index."""

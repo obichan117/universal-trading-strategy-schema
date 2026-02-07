@@ -253,3 +253,84 @@ execution:
     assert len(strategy.execution.slippage.tiers) == 3
     assert strategy.execution.slippage.tiers[0].up_to == 10000
     assert strategy.execution.slippage.tiers[0].value == 0.0005
+
+
+def test_fixed_quantity_sizing():
+    """Test fixed_quantity sizing type."""
+    yaml_content = """
+info:
+  id: fixed-qty-test
+  name: Fixed Quantity Test
+  version: "1.0"
+
+universe:
+  type: static
+  symbols: ["AAPL"]
+
+rules:
+  - name: buy-fixed
+    when:
+      type: always
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: fixed_quantity
+        quantity: 100
+"""
+    strategy = validate_yaml(yaml_content)
+    assert strategy.rules[0].then.sizing.type == "fixed_quantity"
+    assert strategy.rules[0].then.sizing.quantity == 100
+
+
+def test_percent_of_cash_sizing():
+    """Test percent_of_cash sizing type."""
+    yaml_content = """
+info:
+  id: pct-cash-test
+  name: Percent Cash Test
+  version: "1.0"
+
+universe:
+  type: static
+  symbols: ["AAPL"]
+
+rules:
+  - name: buy-pct-cash
+    when:
+      type: always
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_cash
+        percent: 50
+"""
+    strategy = validate_yaml(yaml_content)
+    assert strategy.rules[0].then.sizing.type == "percent_of_cash"
+    assert strategy.rules[0].then.sizing.percent == 50
+
+
+def test_screener_without_filters():
+    """Test screener universe with no filters (just base)."""
+    yaml_content = """
+info:
+  id: screener-no-filter-test
+  name: Screener No Filter Test
+  version: "1.0"
+
+universe:
+  type: screener
+  base: SP500
+
+rules:
+  - name: test-rule
+    when:
+      type: always
+    then:
+      type: hold
+"""
+    strategy = validate_yaml(yaml_content)
+    assert strategy.universe.type == "screener"
+    assert strategy.universe.base == "SP500"
+    assert strategy.universe.filters is None

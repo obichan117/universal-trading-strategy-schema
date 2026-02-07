@@ -261,20 +261,6 @@ class RelativeMeasure(str, Enum):
     Z_SCORE = "z_score"
 
 
-class ArithmeticOperator(str, Enum):
-    """Arithmetic operators."""
-
-    ADD = "add"
-    SUBTRACT = "subtract"
-    MULTIPLY = "multiply"
-    DIVIDE = "divide"
-    MIN = "min"
-    MAX = "max"
-    AVG = "avg"
-    ABS = "abs"
-    POW = "pow"
-
-
 class ComparisonOperator(str, Enum):
     """Comparison operators."""
 
@@ -311,16 +297,6 @@ class TimeInForce(str, Enum):
     GTC = "gtc"
     IOC = "ioc"
     FOK = "fok"
-
-
-class RebalanceMethod(str, Enum):
-    """Rebalance methods."""
-
-    EQUAL_WEIGHT = "equal_weight"
-    MARKET_CAP_WEIGHT = "market_cap_weight"
-    RISK_PARITY = "risk_parity"
-    INVERSE_VOLATILITY = "inverse_volatility"
-    TARGET_WEIGHTS = "target_weights"
 
 
 class AlertLevel(str, Enum):
@@ -649,14 +625,6 @@ class RelativeSignal(BaseSchema):
     lookback: int | None = Field(None, ge=1)
 
 
-class ArithmeticSignal(BaseSchema):
-    """Arithmetic operation on signals."""
-
-    type: Literal["arithmetic"]
-    operator: ArithmeticOperator
-    operands: list["Signal"] = Field(..., min_length=1)
-
-
 class ExpressionSignal(BaseSchema):
     """Custom formula expression signal."""
 
@@ -686,7 +654,6 @@ Signal = Union[
     PortfolioSignal,
     RelativeSignal,
     ConstantSignal,
-    ArithmeticSignal,
     ExpressionSignal,
     ExternalSignal,
     Reference,
@@ -777,10 +744,24 @@ class FixedAmountSizing(BaseSchema):
     currency: str = "USD"
 
 
+class FixedQuantitySizing(BaseSchema):
+    """Fixed number of shares/contracts."""
+
+    type: Literal["fixed_quantity"]
+    quantity: float | ParameterReference = Field(..., ge=0)
+
+
 class PercentEquitySizing(BaseSchema):
     """Percent of portfolio equity."""
 
     type: Literal["percent_of_equity"]
+    percent: float | ParameterReference = Field(..., ge=0, le=100)
+
+
+class PercentCashSizing(BaseSchema):
+    """Percent of available cash."""
+
+    type: Literal["percent_of_cash"]
     percent: float | ParameterReference = Field(..., ge=0, le=100)
 
 
@@ -815,31 +796,17 @@ class VolatilityAdjustedSizing(BaseSchema):
     lookback: int = 20
 
 
-class ConditionalSizingCase(BaseSchema):
-    """A case in conditional sizing."""
-
-    when: "Condition"
-    sizing: "Sizing"
-
-
-class ConditionalSizing(BaseSchema):
-    """Size based on conditions."""
-
-    type: Literal["conditional"]
-    cases: list[ConditionalSizingCase] = Field(..., min_length=1)
-    default: "Sizing"
-
-
 # Sizing discriminated union
 Sizing = Annotated[
     Union[
         FixedAmountSizing,
+        FixedQuantitySizing,
         PercentEquitySizing,
+        PercentCashSizing,
         PercentPositionSizing,
         RiskBasedSizing,
         KellySizing,
         VolatilityAdjustedSizing,
-        ConditionalSizing,
     ],
     Field(discriminator="type"),
 ]
@@ -863,22 +830,6 @@ class TradeAction(BaseSchema):
     time_in_force: TimeInForce = TimeInForce.DAY
 
 
-class RebalanceTarget(BaseSchema):
-    """Target weight for rebalancing."""
-
-    symbol: str
-    weight: float = Field(..., ge=0, le=1)
-
-
-class RebalanceAction(BaseSchema):
-    """Rebalance to target weights."""
-
-    type: Literal["rebalance"]
-    method: RebalanceMethod
-    targets: list[RebalanceTarget] | None = None
-    threshold: float = 0.05
-
-
 class AlertAction(BaseSchema):
     """Send notification or log event."""
 
@@ -898,7 +849,7 @@ class HoldAction(BaseSchema):
 
 # Action discriminated union
 Action = Annotated[
-    Union[TradeAction, RebalanceAction, AlertAction, HoldAction],
+    Union[TradeAction, AlertAction, HoldAction],
     Field(discriminator="type"),
 ]
 
@@ -934,6 +885,10 @@ class StaticUniverse(BaseSchema):
 class IndexUniverse(BaseSchema):
     """Index-based universe.
 
+    .. deprecated::
+        Use ``ScreenerUniverse`` with ``base`` instead.
+        Example: ``{type: screener, base: SP500}``
+
     Supports core indices (e.g., SP500, NIKKEI225) and extensions:
     - custom:MY_WATCHLIST - User-defined symbol lists
     - etf:SPY - ETF as universe source
@@ -950,39 +905,25 @@ class IndexUniverse(BaseSchema):
 
 
 class ScreenerUniverse(BaseSchema):
-    """Screener-based universe."""
+    """Screener-based universe.
+
+    The canonical universe type for filtered/index-based universes.
+    Use ``base`` to specify a starting index (e.g., SP500, NIKKEI225).
+    ``filters`` is optional — omit for unfiltered index membership.
+    """
 
     type: Literal["screener"]
     base: str | None = None
-    filters: list[Condition] = Field(..., min_length=1)
+    filters: list[Condition] | None = None
     rank_by: Signal | None = None
     order: Literal["asc", "desc"] = "desc"
     limit: int | None = Field(None, ge=1)
     refresh: Literal["daily", "weekly", "monthly", "quarterly", "never"] | None = None
 
 
-class DualUniverseSide(BaseSchema):
-    """One side of a dual universe."""
-
-    type: str | None = None
-    index: ExtensibleIndex | None = None
-    filters: list[Condition] | None = None
-    rank_by: Signal | None = None
-    order: Literal["asc", "desc"] | None = None
-    limit: int | None = Field(None, ge=1)
-
-
-class DualUniverse(BaseSchema):
-    """Separate long and short universes."""
-
-    type: Literal["dual"]
-    long: DualUniverseSide
-    short: DualUniverseSide
-
-
 # Universe discriminated union
 Universe = Annotated[
-    Union[StaticUniverse, IndexUniverse, ScreenerUniverse, DualUniverse],
+    Union[StaticUniverse, IndexUniverse, ScreenerUniverse],
     Field(discriminator="type"),
 ]
 
@@ -1203,18 +1144,13 @@ class Strategy(BaseSchema):
 
 # Update forward references
 RelativeSignal.model_rebuild()
-ArithmeticSignal.model_rebuild()
 ComparisonCondition.model_rebuild()
 AndCondition.model_rebuild()
 OrCondition.model_rebuild()
 NotCondition.model_rebuild()
 ExpressionCondition.model_rebuild()
 RiskBasedSizing.model_rebuild()
-ConditionalSizingCase.model_rebuild()
-ConditionalSizing.model_rebuild()
 TradeAction.model_rebuild()
 IndexUniverse.model_rebuild()
 ScreenerUniverse.model_rebuild()
-DualUniverseSide.model_rebuild()
-DualUniverse.model_rebuild()
 Strategy.model_rebuild()

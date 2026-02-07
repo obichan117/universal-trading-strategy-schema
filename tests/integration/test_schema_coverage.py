@@ -114,7 +114,7 @@ class TestSignalTypeCoverage:
 
     # Signal types implemented in pyutss
     IMPLEMENTED_SIGNALS = {
-        "price", "indicator", "constant", "calendar", "arithmetic",
+        "price", "indicator", "constant", "calendar",
         "$ref",
     }
 
@@ -190,7 +190,7 @@ class TestSizingTypeCoverage:
     }
 
     NOT_YET_IMPLEMENTED = {
-        "percent_of_position", "risk_based", "kelly", "volatility_adjusted", "conditional"
+        "percent_of_position", "risk_based", "kelly", "volatility_adjusted",
     }
 
     def test_core_sizing_types(self):

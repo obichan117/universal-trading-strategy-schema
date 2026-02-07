@@ -268,12 +268,12 @@ UTSS uses a clear type hierarchy that mirrors the structure of trading decisions
 │  │  │   150.5 │ │     45.2  │ │      25.3   │ │ week: 3  │           │   │
 │  │  └─────────┘ └───────────┘ └─────────────┘ └──────────┘           │   │
 │  │                                                                     │   │
-│  │  ┌─────────┐ ┌───────────┐ ┌─────────────┐ ┌──────────┐           │   │
-│  │  │  event  │ │ portfolio │ │ arithmetic  │ │   expr   │           │   │
-│  │  │  ───────│ │ ──────────│ │ ────────────│ │ ─────────│           │   │
-│  │  │EARNINGS:│ │ unreal_pnl│ │ SMA20-SMA50 │ │ custom   │           │   │
-│  │  │    1    │ │    2.5%   │ │     -3.2    │ │ formula  │           │   │
-│  │  └─────────┘ └───────────┘ └─────────────┘ └──────────┘           │   │
+│  │  ┌─────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐              │   │
+│  │  │  event  │ │ portfolio │ │ constant │ │   expr   │              │   │
+│  │  │  ───────│ │ ──────────│ │ ─────────│ │ ─────────│              │   │
+│  │  │EARNINGS:│ │ unreal_pnl│ │   30.0   │ │ custom   │              │   │
+│  │  │    1    │ │    2.5%   │ │          │ │ formula  │              │   │
+│  │  └─────────┘ └───────────┘ └──────────┘ └──────────┘              │   │
 │  │                                                                     │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
@@ -281,31 +281,31 @@ UTSS uses a clear type hierarchy that mirrors the structure of trading decisions
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                                                                     │   │
 │  │  ┌──────────────┐  ┌─────────────┐  ┌─────────────┐                │   │
-│  │  │  comparison  │  │    cross    │  │    range    │                │   │
+│  │  │  comparison  │  │   and/or    │  │    not      │                │   │
 │  │  │  ────────────│  │  ──────────│  │  ──────────│                │   │
-│  │  │ RSI < 30     │  │ SMA50 cross │  │ 20<RSI<80  │                │   │
-│  │  │   = true     │  │ above SMA200│  │   = true   │                │   │
+│  │  │ RSI < 30     │  │ A AND B    │  │ NOT cond   │                │   │
+│  │  │   = true     │  │   = true   │  │   = true   │                │   │
 │  │  └──────────────┘  └─────────────┘  └─────────────┘                │   │
 │  │                                                                     │   │
-│  │  ┌──────────────┐  ┌─────────────┐  ┌─────────────┐                │   │
-│  │  │   and/or     │  │  temporal   │  │  sequence   │                │   │
-│  │  │  ────────────│  │  ──────────│  │  ──────────│                │   │
-│  │  │ A AND B      │  │ A for 3bars │  │ A then B   │                │   │
-│  │  │   = true     │  │   = true    │  │   = true   │                │   │
-│  │  └──────────────┘  └─────────────┘  └─────────────┘                │   │
+│  │  ┌──────────────┐  ┌─────────────┐                                 │   │
+│  │  │    expr      │  │   always    │                                 │   │
+│  │  │  ────────────│  │  ──────────│                                 │   │
+│  │  │ SMA50 cross  │  │ uncondi-   │                                 │   │
+│  │  │ above SMA200 │  │ tional     │                                 │   │
+│  │  └──────────────┘  └─────────────┘                                 │   │
 │  │                                                                     │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  ACTION (What to Do)                                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                                                                     │   │
-│  │  ┌───────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────┐    │   │
-│  │  │   trade   │  │  rebalance  │  │    alert    │  │   hold   │    │   │
-│  │  │  ─────────│  │  ──────────│  │  ──────────│  │  ────────│    │   │
-│  │  │ buy/sell  │  │ adjust to   │  │ send        │  │ do       │    │   │
-│  │  │ short/    │  │ target      │  │ notification│  │ nothing  │    │   │
-│  │  │ cover     │  │ weights     │  │             │  │          │    │   │
-│  │  └───────────┘  └─────────────┘  └─────────────┘  └──────────┘    │   │
+│  │  ┌───────────┐  ┌─────────────┐  ┌──────────┐                     │   │
+│  │  │   trade   │  │    alert    │  │   hold   │                     │   │
+│  │  │  ─────────│  │  ──────────│  │  ────────│                     │   │
+│  │  │ buy/sell  │  │ send        │  │ do       │                     │   │
+│  │  │ short/    │  │ notification│  │ nothing  │                     │   │
+│  │  │ cover     │  │             │  │          │                     │   │
+│  │  └───────────┘  └─────────────┘  └──────────┘                     │   │
 │  │                                                                     │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
@@ -455,9 +455,8 @@ Simple strategies are simple. Complexity is opt-in.
 │  LEVEL 5: Advanced Features                                                 │
 │  ──────────────────────────                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • Sequence conditions (A then B within 5 bars)                     │   │
+│  │  • Expression conditions (crossovers, ranges, temporal patterns)    │   │
 │  │  • Portfolio signals (unrealized_pnl, days_in_position)             │   │
-│  │  • Conditional sizing (different size based on regime)              │   │
 │  │  • External signals (ML model predictions via webhook)              │   │
 │  │  • Expression language (custom formulas)                            │   │
 │  │  • Platform extensions (x-backtest, x-live)                         │   │
