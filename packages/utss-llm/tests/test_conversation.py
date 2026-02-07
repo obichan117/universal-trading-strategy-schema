@@ -14,6 +14,12 @@ from utss_llm.conversation import (
     delete_session,
     get_session,
 )
+from utss_llm.conversation.llm_adapter import (
+    apply_updates,
+    extract_json,
+    prefill_strategy,
+    skip_to_unanswered,
+)
 
 
 class TestOption:
@@ -293,12 +299,11 @@ class TestSmartStartExtraction:
 
     def test_extract_json_from_code_block(self):
         """Should extract JSON from markdown code block."""
-        session = ConversationSession()
         content = '''Here's the analysis:
 ```json
 {"strategy_type": "mean_reversion", "indicators": ["RSI"]}
 ```'''
-        result = session._extract_json(content)
+        result = extract_json(content)
 
         assert result is not None
         assert result["strategy_type"] == "mean_reversion"
@@ -306,91 +311,89 @@ class TestSmartStartExtraction:
 
     def test_extract_json_plain(self):
         """Should extract plain JSON."""
-        session = ConversationSession()
         content = '{"strategy_type": "trend_following"}'
-        result = session._extract_json(content)
+        result = extract_json(content)
 
         assert result is not None
         assert result["strategy_type"] == "trend_following"
 
     def test_extract_json_invalid(self):
         """Should return None for invalid JSON."""
-        session = ConversationSession()
-        result = session._extract_json("Not JSON at all")
+        result = extract_json("Not JSON at all")
 
         assert result is None
 
     def test_prefill_strategy_type(self):
         """Should prefill strategy type from extraction."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {"strategy_type": "mean_reversion"}
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.name == "Mean Reversion Strategy"
-        assert "oversold" in session.state.partial_strategy.description.lower()
+        assert ps.name == "Mean Reversion Strategy"
+        assert "oversold" in ps.description.lower()
 
     def test_prefill_indicators(self):
         """Should prefill indicators from extraction."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {"indicators": ["RSI", "MACD"]}
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.entry_indicator == "RSI"
-        assert session.state.partial_strategy.exit_indicator == "MACD"
+        assert ps.entry_indicator == "RSI"
+        assert ps.exit_indicator == "MACD"
 
     def test_prefill_single_indicator(self):
         """Should use same indicator for entry and exit if only one given."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {"indicators": ["RSI"]}
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.entry_indicator == "RSI"
-        assert session.state.partial_strategy.exit_indicator == "RSI"
+        assert ps.entry_indicator == "RSI"
+        assert ps.exit_indicator == "RSI"
 
     def test_prefill_thresholds(self):
         """Should prefill thresholds from extraction."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {
             "entry_threshold": 30,
             "exit_threshold": 70,
         }
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.entry_threshold == 30.0
-        assert session.state.partial_strategy.exit_threshold == 70.0
+        assert ps.entry_threshold == 30.0
+        assert ps.exit_threshold == 70.0
 
     def test_prefill_symbols(self):
         """Should prefill symbols from extraction."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {"symbols": ["aapl", "msft"]}
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.universe_type == "static"
-        assert session.state.partial_strategy.symbols == ["AAPL", "MSFT"]
+        assert ps.universe_type == "static"
+        assert ps.symbols == ["AAPL", "MSFT"]
 
     def test_prefill_risk_management(self):
         """Should prefill stop loss and position size."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         extracted = {
             "stop_loss": 5,
             "position_size": 10,
         }
 
-        session._prefill_strategy(extracted)
+        prefill_strategy(ps, extracted)
 
-        assert session.state.partial_strategy.stop_loss_pct == 5.0
-        assert session.state.partial_strategy.sizing_value == 10.0
+        assert ps.stop_loss_pct == 5.0
+        assert ps.sizing_value == 10.0
 
     def test_skip_to_unanswered_strategy_type(self):
         """Should start at strategy type if nothing filled."""
         session = ConversationSession()
 
-        response = session._skip_to_unanswered()
+        response = skip_to_unanswered(session.state, session.builder)
 
         assert response.type == ResponseType.QUESTION
         assert response.question.id == "strategy_type"
@@ -400,7 +403,7 @@ class TestSmartStartExtraction:
         session = ConversationSession()
         session.state.partial_strategy.name = "Test Strategy"
 
-        response = session._skip_to_unanswered()
+        response = skip_to_unanswered(session.state, session.builder)
 
         assert response.question.id == "universe_type"
 
@@ -417,7 +420,7 @@ class TestSmartStartExtraction:
         ps.exit_threshold = 70
         ps.sizing_value = 10
 
-        response = session._skip_to_unanswered()
+        response = skip_to_unanswered(session.state, session.builder)
 
         assert response.type == ResponseType.CONFIRMATION
         assert response.preview_yaml is not None
@@ -485,46 +488,46 @@ class TestApplyUpdates:
 
     def test_apply_entry_threshold(self):
         """Should apply entry threshold update."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         updates = {"entry_threshold": 25}
 
-        session._apply_updates(updates)
+        apply_updates(ps, updates)
 
-        assert session.state.partial_strategy.entry_threshold == 25.0
+        assert ps.entry_threshold == 25.0
 
     def test_apply_exit_threshold(self):
         """Should apply exit threshold update."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         updates = {"exit_threshold": 75}
 
-        session._apply_updates(updates)
+        apply_updates(ps, updates)
 
-        assert session.state.partial_strategy.exit_threshold == 75.0
+        assert ps.exit_threshold == 75.0
 
     def test_apply_stop_loss(self):
         """Should apply stop loss update."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         updates = {"stop_loss_pct": 8}
 
-        session._apply_updates(updates)
+        apply_updates(ps, updates)
 
-        assert session.state.partial_strategy.stop_loss_pct == 8.0
+        assert ps.stop_loss_pct == 8.0
 
     def test_apply_indicator(self):
         """Should apply indicator update (uppercase)."""
-        session = ConversationSession()
+        ps = PartialStrategy()
         updates = {"entry_indicator": "macd"}
 
-        session._apply_updates(updates)
+        apply_updates(ps, updates)
 
-        assert session.state.partial_strategy.entry_indicator == "MACD"
+        assert ps.entry_indicator == "MACD"
 
     def test_apply_null_ignored(self):
         """Should ignore null values."""
-        session = ConversationSession()
-        session.state.partial_strategy.entry_threshold = 30
+        ps = PartialStrategy()
+        ps.entry_threshold = 30
         updates = {"entry_threshold": None}
 
-        session._apply_updates(updates)
+        apply_updates(ps, updates)
 
-        assert session.state.partial_strategy.entry_threshold == 30
+        assert ps.entry_threshold == 30

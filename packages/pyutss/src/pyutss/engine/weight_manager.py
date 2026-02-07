@@ -92,7 +92,10 @@ def rebalance(
                 if symbol in pm.positions:
                     pos = pm.positions[symbol]
                     new_qty = pos.quantity + fill.quantity
-                    pos.avg_price = (pos.avg_price * pos.quantity + price * fill.quantity) / new_qty
+                    if new_qty > 0:
+                        pos.avg_price = (
+                            pos.avg_price * pos.quantity + price * fill.quantity
+                        ) / new_qty
                     pos.quantity = new_qty
                     pm.cash -= cost
                 else:

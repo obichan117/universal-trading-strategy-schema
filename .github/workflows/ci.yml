@@ -34,7 +34,7 @@ jobs:
         run: uv run ruff check --select F401,F841
 
       - name: Type check with mypy
-        run: uv run mypy packages/utss/src/utss --ignore-missing-imports
+        run: uv run mypy packages/utss/src/utss packages/pyutss/src/pyutss packages/utss-llm/src/utss_llm packages/utss-mcp/src/utss_mcp --ignore-missing-imports
 
       - name: Run tests
         run: uv run pytest packages/ tests/ -v

@@ -8,8 +8,20 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
+from pyutss.engine.data_resolver import prepare_data
 from pyutss.engine.executor import OrderRequest
 from pyutss.engine.portfolio import PortfolioManager
+from pyutss.engine.rule_executor import (
+    build_context,
+    execute_rule,
+    precompute_rules,
+)
+from pyutss.engine.weight_manager import (
+    get_current_weights,
+    get_weight_scheme,
+    get_weight_scheme_name,
+    rebalance,
+)
 from pyutss.portfolio.result import PortfolioResult
 from pyutss.portfolio.weights import WeightScheme
 from pyutss.results.types import BacktestResult
@@ -50,7 +62,7 @@ def run_multi(
     # Prepare data
     aligned_data = {}
     for sym, df in data.items():
-        prepared = engine._prepare_data(df, start_date, end_date)
+        prepared = prepare_data(df, start_date, end_date)
         if not prepared.empty:
             aligned_data[sym] = prepared
 
@@ -58,7 +70,7 @@ def run_multi(
         raise ValueError("No overlapping data across symbols")
 
     # Setup weight scheme
-    weight_scheme = engine._get_weight_scheme(weights)
+    weight_scheme = get_weight_scheme(weights)
 
     # Setup rebalancer
     from pyutss.portfolio.rebalancer import RebalanceConfig, RebalanceFrequency, Rebalancer
@@ -76,9 +88,9 @@ def run_multi(
     # Pre-compute signals per symbol
     symbol_signals = {}
     for sym, df in aligned_data.items():
-        ctx = engine._build_context(strategy, df, parameters)
+        ctx = build_context(strategy, df, parameters)
         rules = strategy.get("rules", [])
-        rule_sigs = engine._precompute_rules(rules, ctx)
+        rule_sigs = precompute_rules(engine.condition_evaluator, rules, ctx)
         symbol_signals[sym] = {"rules": rules, "signals": rule_sigs, "data": df}
 
     first_date = pd.Timestamp(all_dates[0])
@@ -104,10 +116,10 @@ def run_multi(
         pm.update_positions(prices, current_date)
 
         # Check rebalancing
-        current_weights = engine._get_current_weights(pm, prices)
+        current_weights = get_current_weights(pm, prices)
         if rebalancer.should_rebalance(current_date, current_weights, target_weights):
             target_weights = weight_scheme.calculate(symbols, aligned_data, ts)
-            turnover = engine._rebalance(pm, symbols, prices, target_weights)
+            turnover = rebalance(engine.executor, pm, symbols, prices, target_weights)
             total_turnover += turnover
             rebalance_count += 1
 
@@ -116,15 +128,17 @@ def run_multi(
             if ts not in sig_data["data"].index:
                 continue
             idx_pos = sig_data["data"].index.get_loc(ts)
-            price = prices.get(sym, 0)
+            price = prices.get(sym)
+            if price is None or price <= 0:
+                continue
 
             for rule_idx, rule in enumerate(sig_data["rules"]):
                 if not rule.get("enabled", True):
                     continue
                 if sig_data["signals"][rule_idx].iloc[idx_pos]:
-                    engine._execute_rule(
-                        rule, sym, price, current_date,
-                        engine._build_context(strategy, sig_data["data"], parameters),
+                    execute_rule(
+                        engine.executor, rule, sym, price, current_date,
+                        build_context(strategy, sig_data["data"], parameters),
                         constraints, pm, sig_data["data"],
                     )
 
@@ -209,6 +223,6 @@ def run_multi(
         rebalance_count=rebalance_count,
         turnover=avg_turnover,
         parameters=parameters,
-        weight_scheme=engine._get_weight_scheme_name(weights),
+        weight_scheme=get_weight_scheme_name(weights),
         rebalance_frequency="monthly",
     )

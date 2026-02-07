@@ -7,8 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
+from pyutss.engine.data_resolver import prepare_data
 from pyutss.engine.executor import OrderRequest
 from pyutss.engine.portfolio import PortfolioManager
+from pyutss.engine.rule_executor import (
+    build_context,
+    execute_rule,
+    precompute_rules,
+)
 from pyutss.results.types import BacktestResult
 
 if TYPE_CHECKING:
@@ -40,15 +46,15 @@ def run_single(
     """
     engine.signal_evaluator.clear_cache()
 
-    data = engine._prepare_data(data, start_date, end_date)
+    data = prepare_data(data, start_date, end_date)
     if data.empty:
         raise ValueError("No data in specified date range")
 
     pm = PortfolioManager(initial_capital=engine.initial_capital)
-    context = engine._build_context(strategy, data, parameters)
+    context = build_context(strategy, data, parameters)
     rules = strategy.get("rules", [])
     constraints = strategy.get("constraints", {})
-    rule_signals = engine._precompute_rules(rules, context)
+    rule_signals = precompute_rules(engine.condition_evaluator, rules, context)
 
     for i, (idx, row) in enumerate(data.iterrows()):
         current_date = idx.date() if hasattr(idx, "date") else idx
@@ -65,8 +71,8 @@ def run_single(
             if not rule.get("enabled", True):
                 continue
             if rule_signals[rule_idx].iloc[i]:
-                engine._execute_rule(
-                    rule, symbol, current_price, current_date,
+                execute_rule(
+                    engine.executor, rule, symbol, current_price, current_date,
                     context, constraints, pm, data,
                 )
 

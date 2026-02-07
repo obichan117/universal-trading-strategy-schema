@@ -201,11 +201,6 @@ class PortfolioManager:
         position = self.positions.pop(symbol)
         position_value = price * position.quantity
 
-        # Calculate commission/slippage if not provided
-        if commission == 0.0 and slippage == 0.0:
-            # Will be set by caller or executor
-            pass
-
         # Find and close the open trade
         closed_trade = None
         for trade in reversed(self.trades):

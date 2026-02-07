@@ -54,7 +54,7 @@ def resolve_universe_symbols(strategy: dict[str, Any]) -> list[str]:
     universe = strategy.get("universe", {})
     try:
         return resolver.resolve(universe)
-    except (ValueError, Exception) as e:
+    except Exception as e:
         logger.warning(f"Failed to resolve universe: {e}")
         return []
 

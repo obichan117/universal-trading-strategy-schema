@@ -27,25 +27,12 @@ from typing import Any
 import pandas as pd
 import yaml
 
-from pyutss.engine.data_resolver import prepare_data, resolve_data
+from pyutss.engine.data_resolver import resolve_data
 from pyutss.engine.evaluator import (
     ConditionEvaluator,
-    EvaluationContext,
     SignalEvaluator,
 )
 from pyutss.engine.executor import BacktestExecutor
-from pyutss.engine.portfolio import PortfolioManager
-from pyutss.engine.rule_executor import (
-    build_context,
-    execute_rule,
-    precompute_rules,
-)
-from pyutss.engine.weight_manager import (
-    get_current_weights,
-    get_weight_scheme,
-    get_weight_scheme_name,
-    rebalance,
-)
 from pyutss.portfolio.result import PortfolioResult
 from pyutss.portfolio.weights import WeightScheme
 from pyutss.results.types import (
@@ -153,14 +140,9 @@ class Engine:
                 end_date = config.get("end_date", end_date)
 
         # Resolve symbols and data
-        symbols, data_dict = self._resolve_data(strategy, data, symbol, start_date, end_date)
+        symbols, data_dict = resolve_data(strategy, data, symbol, start_date, end_date)
 
-        if len(symbols) == 1 and symbol is not None:
-            return self._run_single(
-                strategy, data_dict[symbols[0]], symbols[0],
-                start_date, end_date, parameters,
-            )
-        elif len(symbols) == 1:
+        if len(symbols) == 1:
             return self._run_single(
                 strategy, data_dict[symbols[0]], symbols[0],
                 start_date, end_date, parameters,
@@ -199,81 +181,6 @@ class Engine:
         """Run multi-symbol portfolio backtest (delegates to portfolio_runner)."""
         from pyutss.engine.portfolio_runner import run_multi
         return run_multi(self, strategy, data, symbols, start_date, end_date, parameters, weights)
-
-    # ─── Thin wrappers (backward compatibility) ──────────────
-
-    def _execute_rule(
-        self, rule: dict, symbol: str, price: float, current_date: date,
-        context: EvaluationContext, constraints: dict,
-        pm: PortfolioManager, data: pd.DataFrame,
-    ) -> None:
-        """Execute a triggered rule (delegates to rule_executor)."""
-        execute_rule(self.executor, rule, symbol, price, current_date, context, constraints, pm, data)
-
-    def _execute_trade(
-        self, action: dict, symbol: str, price: float, current_date: date,
-        context: EvaluationContext, constraints: dict,
-        pm: PortfolioManager, data: pd.DataFrame,
-    ) -> None:
-        """Execute a trade action (delegates to rule_executor)."""
-        from pyutss.engine.rule_executor import execute_trade
-        execute_trade(self.executor, action, symbol, price, current_date, context, constraints, pm, data)
-
-    def _precompute_rules(
-        self, rules: list[dict], context: EvaluationContext,
-    ) -> list[pd.Series]:
-        """Pre-compute rule conditions (delegates to rule_executor)."""
-        return precompute_rules(self.condition_evaluator, rules, context)
-
-    def _build_context(
-        self, strategy: dict, data: pd.DataFrame,
-        parameters: dict[str, float] | None,
-    ) -> EvaluationContext:
-        """Build evaluation context (delegates to rule_executor)."""
-        return build_context(strategy, data, parameters)
-
-    def _resolve_data(
-        self, strategy: dict,
-        data: pd.DataFrame | dict[str, pd.DataFrame] | None,
-        symbol: str | None,
-        start_date: date | str | None,
-        end_date: date | str | None,
-    ) -> tuple[list[str], dict[str, pd.DataFrame]]:
-        """Resolve symbols and data (delegates to data_resolver)."""
-        return resolve_data(strategy, data, symbol, start_date, end_date)
-
-    def _prepare_data(
-        self, data: pd.DataFrame,
-        start_date: date | str | None,
-        end_date: date | str | None,
-    ) -> pd.DataFrame:
-        """Prepare data (delegates to data_resolver)."""
-        return prepare_data(data, start_date, end_date)
-
-    def _get_weight_scheme(
-        self, weights: str | WeightScheme | dict[str, float],
-    ) -> WeightScheme:
-        """Get weight scheme (delegates to weight_manager)."""
-        return get_weight_scheme(weights)
-
-    def _get_weight_scheme_name(
-        self, weights: str | WeightScheme | dict[str, float],
-    ) -> str:
-        """Get weight scheme name (delegates to weight_manager)."""
-        return get_weight_scheme_name(weights)
-
-    def _get_current_weights(
-        self, pm: PortfolioManager, prices: dict[str, float],
-    ) -> dict[str, float]:
-        """Get current weights (delegates to weight_manager)."""
-        return get_current_weights(pm, prices)
-
-    def _rebalance(
-        self, pm: PortfolioManager, symbols: list[str],
-        prices: dict[str, float], target_weights: dict[str, float],
-    ) -> float:
-        """Rebalance portfolio (delegates to weight_manager)."""
-        return rebalance(self.executor, pm, symbols, prices, target_weights)
 
     @staticmethod
     def _load_yaml(path: str) -> dict:
