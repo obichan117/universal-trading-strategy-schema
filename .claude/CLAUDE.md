@@ -76,12 +76,26 @@ utss/
 │   │   │   │   └── providers/      # Yahoo, J-Quants, etc.
 │   │   │   ├── engine/             # Backtest execution
 │   │   │   │   ├── engine.py       # Unified Engine (1..N symbols)
+│   │   │   │   ├── single_runner.py  # Single-symbol backtest runner
+│   │   │   │   ├── portfolio_runner.py # Multi-symbol portfolio runner
 │   │   │   │   ├── executor.py     # Executor protocol + BacktestExecutor
 │   │   │   │   ├── universe.py     # UniverseResolver
 │   │   │   │   ├── portfolio.py    # PortfolioManager
 │   │   │   │   ├── sizing.py       # Position sizing logic
-│   │   │   │   ├── evaluator.py    # Signal/Condition evaluators
-│   │   │   │   ├── indicators.py   # 31 technical indicators
+│   │   │   │   ├── evaluator/      # Signal/Condition evaluators (package)
+│   │   │   │   │   ├── context.py          # EvaluationContext, errors
+│   │   │   │   │   ├── signal_evaluator.py # SignalEvaluator
+│   │   │   │   │   └── condition_evaluator.py # ConditionEvaluator
+│   │   │   │   ├── indicators/     # Technical indicators (package)
+│   │   │   │   │   ├── dispatcher.py    # INDICATOR_REGISTRY (single source of truth)
+│   │   │   │   │   ├── service.py       # IndicatorService facade
+│   │   │   │   │   ├── results.py       # Result dataclasses
+│   │   │   │   │   ├── moving_averages.py # SMA, EMA, WMA, DEMA, TEMA, etc.
+│   │   │   │   │   ├── momentum.py      # RSI, MACD, Stochastic, etc.
+│   │   │   │   │   ├── volatility.py    # ATR, Bollinger Bands, etc.
+│   │   │   │   │   ├── trend.py         # ADX, Supertrend, PSAR, etc.
+│   │   │   │   │   ├── volume.py        # OBV, VWAP, CMF, etc.
+│   │   │   │   │   └── statistical.py   # Z-score, percentile, etc.
 │   │   │   │   ├── expr_parser.py  # Expression parser
 │   │   │   │   ├── capabilities.py # Engine capability reporting
 │   │   │   │   └── backtest.py     # Legacy BacktestEngine (deprecated)

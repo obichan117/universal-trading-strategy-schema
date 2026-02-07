@@ -16,20 +16,13 @@ cd universal-trading-strategy-schema
 ### Install Dependencies
 
 ```bash
-cd python
-uv sync --extra dev --extra docs
+uv sync
 ```
 
 ### Run Tests
 
 ```bash
 uv run pytest
-```
-
-### Run Type Checker
-
-```bash
-uv run mypy utss --ignore-missing-imports
 ```
 
 ### Build Documentation
@@ -45,13 +38,16 @@ uv run mkdocs serve
 ```
 universal-trading-strategy-schema/
 ├── schema/v1/
-│   └── strategy.schema.json    # JSON Schema (SOURCE OF TRUTH)
-├── python/utss/
-│   ├── models.py               # Pydantic models
-│   ├── validator.py            # Validation functions
-│   └── __init__.py             # Public API
+│   ├── strategy.schema.json    # JSON Schema (SOURCE OF TRUTH)
+│   └── backtest.schema.json    # Backtest config schema
+├── packages/
+│   ├── utss/                   # Schema package (pip install utss)
+│   ├── pyutss/                 # Backtesting engine (pip install pyutss)
+│   ├── utss-llm/               # LLM integration (pip install utss-llm)
+│   └── utss-mcp/               # MCP server (pip install utss-mcp)
 ├── examples/                   # Example strategies
 ├── docs/                       # Documentation (MkDocs)
+├── pyproject.toml              # Workspace root (uv workspaces)
 └── mkdocs.yml                  # MkDocs configuration
 ```
 
@@ -64,10 +60,11 @@ universal-trading-strategy-schema/
 The JSON Schema is the **source of truth**. When making schema changes:
 
 1. **Update JSON Schema first** (`schema/v1/strategy.schema.json`)
-2. **Update Python models** (`python/utss/models.py`)
-3. **Add/update examples** (`examples/`)
-4. **Update documentation** (`docs/`)
-5. **Run tests** to ensure everything works
+2. **Update Python models** (`packages/utss/src/utss/models.py`)
+3. **Update capabilities** (`packages/utss/src/utss/capabilities.py`)
+4. **Add/update examples** (`examples/`)
+5. **Update documentation** (`docs/`)
+6. **Run tests** (`uv run pytest`)
 
 ### Adding a New Signal Type
 
@@ -102,9 +99,11 @@ class NewSignal(BaseSchema):
 
 ### Adding a New Indicator
 
-1. Add to `IndicatorType` enum in JSON Schema
-2. Add to `IndicatorType` enum in `models.py`
-3. Document in specification
+1. Add computation function in the appropriate `engine/indicators/` category module
+2. Add entry to `INDICATOR_REGISTRY` in `engine/indicators/dispatcher.py`
+3. Add `@staticmethod` wrapper to `IndicatorService` in `engine/indicators/service.py`
+4. Add to `SUPPORTED_INDICATORS` in `packages/utss/src/utss/capabilities.py`
+5. Add tests and document in specification
 
 ---
 
@@ -119,10 +118,10 @@ class NewSignal(BaseSchema):
 
 ```bash
 # Format code
-uv run ruff format utss
+uv run ruff format
 
 # Check linting
-uv run ruff check utss
+uv run ruff check
 ```
 
 ### YAML Examples
@@ -139,7 +138,7 @@ uv run ruff check utss
 2. **Create a branch** for your feature (`git checkout -b feature/my-feature`)
 3. **Make changes** following the guidelines above
 4. **Run tests** (`uv run pytest`)
-5. **Run type checker** (`uv run mypy utss`)
+5. **Run linter** (`uv run ruff check`)
 6. **Build docs** (`uv run mkdocs build --strict`)
 7. **Commit** with a clear message
 8. **Push** to your fork
