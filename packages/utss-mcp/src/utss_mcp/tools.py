@@ -6,11 +6,10 @@ from typing import Any
 import yaml
 from utss.capabilities import SUPPORTED_CONDITION_TYPES, SUPPORTED_INDICATORS
 from utss_llm.conversation import (
-    ConversationSession,
+    create_session,
+    delete_session,
+    get_session,
 )
-
-# Session storage
-_sessions: dict[str, ConversationSession] = {}
 
 
 async def build_strategy(
@@ -43,12 +42,17 @@ async def build_strategy(
         - preview_yaml: Preview of strategy being built
     """
     # Get or create session
-    if session_id and session_id in _sessions:
-        session = _sessions[session_id]
-        response = await session.answer(prompt)
+    if session_id:
+        session = get_session(session_id)
+        if session:
+            response = await session.answer(prompt)
+        else:
+            return {
+                "type": "error",
+                "message": f"Session not found: {session_id}",
+            }
     else:
-        session = ConversationSession()
-        _sessions[session.session_id] = session
+        session = create_session()
         response = await session.start(prompt if prompt else None)
 
     # Build response dict
@@ -78,7 +82,7 @@ async def build_strategy(
 
     # Clean up completed sessions
     if response.is_complete:
-        del _sessions[session.session_id]
+        delete_session(session.session_id)
 
     return result
 
@@ -297,13 +301,12 @@ async def revise_strategy(
     Returns:
         dict with updated preview and confirmation
     """
-    if session_id not in _sessions:
+    session = get_session(session_id)
+    if not session:
         return {
             "success": False,
             "error": f"Session not found: {session_id}",
         }
-
-    session = _sessions[session_id]
     response = await session.revise(instruction)
 
     return {

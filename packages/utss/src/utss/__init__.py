@@ -132,7 +132,7 @@ from utss.backtest_models import (
 from utss.backtest_validator import validate_backtest, validate_backtest_yaml
 from utss.validator import ValidationError, validate_strategy, validate_yaml
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     # Enums
     "Timeframe",

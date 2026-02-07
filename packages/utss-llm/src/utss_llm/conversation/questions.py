@@ -243,14 +243,3 @@ QUESTION_CONFIRM = Question(
 )
 
 
-# =============================================================================
-# Question Flow Mapping
-# =============================================================================
-
-# Maps strategy type to relevant entry indicators
-STRATEGY_TYPE_INDICATORS = {
-    "mean_reversion": MOMENTUM_INDICATORS,
-    "trend_following": TREND_INDICATORS,
-    "breakout": VOLATILITY_INDICATORS + TREND_INDICATORS,
-    "calendar": [],  # Calendar doesn't use indicators
-}

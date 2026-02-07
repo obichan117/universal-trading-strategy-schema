@@ -5,19 +5,6 @@ Contains system prompts, few-shot examples, and templates
 for different parsing modes.
 """
 
-from pathlib import Path
-
-_PROMPTS_DIR = Path(__file__).parent
-
-
-def load_prompt(name: str) -> str:
-    """Load a prompt template by name."""
-    path = _PROMPTS_DIR / f"{name}.txt"
-    if not path.exists():
-        raise FileNotFoundError(f"Prompt template not found: {name}")
-    return path.read_text()
-
-
 # System prompt for strategy generation
 SYSTEM_PROMPT = """You are a trading strategy expert that converts natural language descriptions into UTSS (Universal Trading Strategy Schema) YAML format.
 
@@ -56,7 +43,6 @@ Please answer these questions so I can generate the complete strategy."""
 
 
 __all__ = [
-    "load_prompt",
     "SYSTEM_PROMPT",
     "ADVANCED_TEMPLATE",
     "BEGINNER_TEMPLATE",
