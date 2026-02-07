@@ -35,7 +35,7 @@ pip install pyutss
 ### YAML Strategy Definition
 
 ```yaml
-$schema: https://utss.dev/schema/v1/strategy.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json
 
 info:
   id: rsi_reversal

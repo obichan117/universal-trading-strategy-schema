@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://utss.dev/schema/v1/backtest.json",
+  "$id": "https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/backtest.json",
   "title": "UTSS Backtest Configuration Schema v1.0",
   "description": "Configuration for backtesting a UTSS strategy. Separates execution parameters (commission, slippage, lot size) from strategy definition.",
   "type": "object",

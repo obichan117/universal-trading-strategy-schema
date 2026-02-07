@@ -1,6 +1,6 @@
 # Example UTSS Backtest Configuration
 # Separates execution parameters from strategy definition
-$schema: https://utss.dev/schema/v1/backtest.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/backtest.json
 
 strategy: ./rsi-reversal.yaml
 

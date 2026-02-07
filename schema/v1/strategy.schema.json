@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://utss.dev/schema/v1/strategy.json",
+  "$id": "https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json",
   "title": "Universal Trading Strategy Schema (UTSS) v1.0",
   "description": "A comprehensive, composable schema for expressing any trading strategy",
   "type": "object",

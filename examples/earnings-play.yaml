@@ -1,7 +1,7 @@
 # Earnings Volatility Strategy
 # Trade around earnings announcements
 
-$schema: https://utss.dev/schema/v1/strategy.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json
 
 info:
   id: earnings_play

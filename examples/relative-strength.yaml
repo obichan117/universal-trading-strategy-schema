@@ -1,7 +1,7 @@
 # Relative Strength Strategy
 # Buy stocks showing momentum, sell when momentum fades
 
-$schema: https://utss.dev/schema/v1/strategy.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json
 
 info:
   id: relative_strength

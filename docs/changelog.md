@@ -87,5 +87,5 @@ This project uses [Semantic Versioning](https://semver.org/):
 Schema version is specified in strategy documents:
 
 ```yaml
-$schema: https://utss.dev/schema/v1/strategy.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json
 ```

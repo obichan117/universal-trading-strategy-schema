@@ -1,7 +1,7 @@
 # Market Monitoring Strategy
 # Demonstrates condition monitoring with trade actions
 
-$schema: https://utss.dev/schema/v1/strategy.json
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json
 
 info:
   id: market_monitor

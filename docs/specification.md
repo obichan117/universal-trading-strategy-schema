@@ -306,7 +306,7 @@ flowchart LR
 ### Top-Level Document
 
 ```yaml
-$schema: https://utss.dev/schema/v1/strategy.json  # Optional
+$schema: https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json  # Optional
 
 info:          # Required - Strategy metadata
 universe:      # Required - Asset selection

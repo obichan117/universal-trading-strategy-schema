@@ -293,14 +293,14 @@ def test_validate_backtest_dict():
 def test_validate_backtest_dict_with_schema():
     """Test that $schema field is accepted."""
     data = {
-        "$schema": "https://utss.dev/schema/v1/backtest.json",
+        "$schema": "https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/backtest.json",
         "strategy": "./test.yaml",
         "start_date": "2020-01-01",
         "end_date": "2024-12-31",
         "initial_capital": 100000,
     }
     spec = validate_backtest(data)
-    assert spec.schema_ == "https://utss.dev/schema/v1/backtest.json"
+    assert spec.schema_ == "https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/backtest.json"
 
 
 # =============================================================================
