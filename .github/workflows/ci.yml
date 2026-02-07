@@ -30,11 +30,17 @@ jobs:
       - name: Lint with ruff
         run: uv run ruff check packages/
 
+      - name: Check unused imports/variables
+        run: uv run ruff check --select F401,F841
+
       - name: Type check with mypy
         run: uv run mypy packages/utss/src/utss --ignore-missing-imports
 
       - name: Run tests
         run: uv run pytest packages/ tests/ -v
+
+      - name: Build docs
+        run: uv run mkdocs build --strict
 
   validate-examples:
     runs-on: ubuntu-latest

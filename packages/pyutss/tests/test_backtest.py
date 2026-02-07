@@ -5,6 +5,8 @@ import pytest
 
 from pyutss import BacktestConfig, BacktestEngine, BacktestResult
 
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+
 
 # sample_data fixture is provided by conftest.py (real AAPL data)
 

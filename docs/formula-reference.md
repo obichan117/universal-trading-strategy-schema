@@ -312,7 +312,7 @@ conditions:
 
 3. **Test expressions**: Use pyutss to validate your formulas
    ```python
-   from pyutss import BacktestEngine
+   from pyutss import Engine
    # Engine will raise ExpressionError for invalid formulas
    ```
 

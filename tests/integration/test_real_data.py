@@ -209,6 +209,7 @@ rules:
 class TestEndToEndPipeline:
     """Test the complete pipeline from YAML to backtest results."""
 
+    @pytest.mark.filterwarnings("ignore::DeprecationWarning")
     def test_yaml_to_backtest_pipeline(self):
         """Test loading YAML, fetching data, running backtest."""
         from pathlib import Path

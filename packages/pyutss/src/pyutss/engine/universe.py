@@ -2,12 +2,17 @@
 
 Resolves strategy universe definitions into concrete symbol lists.
 Supports static, index, screener, and dual universe types.
+
+When data is provided, screener filters are evaluated to select
+symbols that match the conditions.
 """
 
 from __future__ import annotations
 
 import logging
 from typing import Any
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +54,16 @@ class UniverseResolver:
         if custom_indices:
             self._indices.update(custom_indices)
 
-    def resolve(self, universe: dict[str, Any]) -> list[str]:
+    def resolve(
+        self,
+        universe: dict[str, Any],
+        data: dict[str, pd.DataFrame] | None = None,
+    ) -> list[str]:
         """Resolve a universe definition to a list of symbols.
 
         Args:
             universe: Universe definition from strategy
+            data: Optional dict of symbol -> OHLCV DataFrames for screener filtering
 
         Returns:
             List of symbol strings
@@ -68,9 +78,9 @@ class UniverseResolver:
         elif utype == "index":
             return self._resolve_index(universe)
         elif utype == "screener":
-            return self._resolve_screener(universe)
+            return self._resolve_screener(universe, data)
         elif utype == "dual":
-            return self._resolve_dual(universe)
+            return self._resolve_dual(universe, data)
         else:
             raise ValueError(f"Unknown universe type: {utype}")
 
@@ -92,28 +102,139 @@ class UniverseResolver:
 
         return symbols
 
-    def _resolve_screener(self, universe: dict) -> list[str]:
-        """Resolve screener universe.
+    def _resolve_screener(
+        self,
+        universe: dict,
+        data: dict[str, pd.DataFrame] | None = None,
+    ) -> list[str]:
+        """Resolve screener universe with optional filter evaluation.
 
-        Note: Full filter evaluation requires data. Without data,
-        returns the base universe symbols.
+        When data is provided, evaluates filter conditions against each
+        symbol's data. Only symbols where ALL filters pass on the last bar
+        are included.
+
+        When no data is provided, returns the base universe symbols (unfiltered).
         """
         base = universe.get("base", "")
         if base and base in self._indices:
-            symbols = list(self._indices[base])
+            candidates = list(self._indices[base])
         elif base:
             logger.warning(f"Unknown screener base '{base}', returning empty list")
-            symbols = []
+            candidates = []
         else:
-            symbols = []
+            candidates = []
+
+        filters = universe.get("filters", [])
+
+        # If we have data and filters, evaluate them
+        if data and filters:
+            candidates = self._apply_filters(candidates, filters, data)
+
+        # Rank if specified
+        rank_by = universe.get("rank_by")
+        rank_order = universe.get("order", "desc")
+        if rank_by and data:
+            candidates = self._rank_symbols(candidates, rank_by, rank_order, data)
 
         limit = universe.get("limit")
         if limit and isinstance(limit, int):
-            symbols = symbols[:limit]
+            candidates = candidates[:limit]
 
-        return symbols
+        return candidates
 
-    def _resolve_dual(self, universe: dict) -> list[str]:
+    def _apply_filters(
+        self,
+        symbols: list[str],
+        filters: list[dict],
+        data: dict[str, pd.DataFrame],
+    ) -> list[str]:
+        """Apply filter conditions to candidate symbols.
+
+        Each filter is evaluated against the symbol's last bar.
+        A symbol passes only if ALL filters are True.
+        """
+        from pyutss.engine.evaluator import (
+            ConditionEvaluator,
+            EvaluationContext,
+            SignalEvaluator,
+        )
+
+        signal_eval = SignalEvaluator()
+        cond_eval = ConditionEvaluator(signal_eval)
+        passed = []
+
+        for sym in symbols:
+            if sym not in data:
+                continue
+
+            df = data[sym]
+            if df.empty:
+                continue
+
+            ctx = EvaluationContext(primary_data=df)
+            ctx.current_bar_idx = len(df) - 1
+
+            try:
+                all_pass = True
+                for filt in filters:
+                    result = cond_eval.evaluate_condition(filt, ctx)
+                    if not result.iloc[-1]:
+                        all_pass = False
+                        break
+                if all_pass:
+                    passed.append(sym)
+            except Exception as e:
+                logger.debug(f"Filter evaluation failed for {sym}: {e}")
+                continue
+
+        return passed
+
+    def _rank_symbols(
+        self,
+        symbols: list[str],
+        rank_by: dict,
+        order: str,
+        data: dict[str, pd.DataFrame],
+    ) -> list[str]:
+        """Rank symbols by a signal value.
+
+        Evaluates the rank_by signal for each symbol's last bar and sorts.
+        """
+        from pyutss.engine.evaluator import (
+            EvaluationContext,
+            SignalEvaluator,
+        )
+
+        signal_eval = SignalEvaluator()
+        scores: list[tuple[str, float]] = []
+
+        for sym in symbols:
+            if sym not in data:
+                continue
+
+            df = data[sym]
+            if df.empty:
+                continue
+
+            ctx = EvaluationContext(primary_data=df)
+            try:
+                result = signal_eval.evaluate_signal(rank_by, ctx)
+                value = result.iloc[-1]
+                if pd.notna(value):
+                    scores.append((sym, float(value)))
+            except Exception as e:
+                logger.debug(f"Rank evaluation failed for {sym}: {e}")
+                continue
+
+        reverse = order == "desc"
+        scores.sort(key=lambda x: x[1], reverse=reverse)
+        return [sym for sym, _ in scores]
+
+    def _resolve_dual(
+        self,
+        universe: dict,
+        data: dict[str, pd.DataFrame] | None = None,
+    ) -> list[str]:
         """Resolve dual universe (long + short sides)."""
         symbols = set()
 
@@ -121,24 +242,40 @@ class UniverseResolver:
         short_side = universe.get("short", {})
 
         if long_side:
-            index_name = long_side.get("index", "")
-            if index_name:
-                long_symbols = self._get_index_symbols(index_name)
-                limit = long_side.get("limit")
-                if limit and isinstance(limit, int):
-                    long_symbols = long_symbols[:limit]
-                symbols.update(long_symbols)
+            long_symbols = self._resolve_side(long_side, data)
+            symbols.update(long_symbols)
 
         if short_side:
-            index_name = short_side.get("index", "")
-            if index_name:
-                short_symbols = self._get_index_symbols(index_name)
-                limit = short_side.get("limit")
-                if limit and isinstance(limit, int):
-                    short_symbols = short_symbols[:limit]
-                symbols.update(short_symbols)
+            short_symbols = self._resolve_side(short_side, data)
+            symbols.update(short_symbols)
 
         return list(symbols)
+
+    def _resolve_side(
+        self,
+        side: dict,
+        data: dict[str, pd.DataFrame] | None = None,
+    ) -> list[str]:
+        """Resolve one side of a dual universe."""
+        # Treat each side as its own sub-universe
+        side_type = side.get("type", "")
+
+        if side_type == "screener":
+            return self._resolve_screener(side, data)
+        elif side_type == "index" or "index" in side:
+            return self._resolve_index(side)
+        elif "symbols" in side:
+            return self._resolve_static(side)
+        else:
+            # Legacy format: just an index field
+            index_name = side.get("index", "")
+            if index_name:
+                syms = self._get_index_symbols(index_name)
+                limit = side.get("limit")
+                if limit and isinstance(limit, int):
+                    syms = syms[:limit]
+                return syms
+            return []
 
     def _get_index_symbols(self, index_name: str) -> list[str]:
         """Get symbols for a named index."""

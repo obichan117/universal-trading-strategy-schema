@@ -66,6 +66,12 @@ from pyutss.engine.executor import BacktestExecutor, Fill, OrderRequest
 from pyutss.engine.portfolio import PortfolioManager
 from pyutss.engine.sizing import calculate_size, round_to_lot
 from pyutss.engine.universe import UniverseResolver
+from pyutss.engine.live_executor import (
+    AccountInfo,
+    AlpacaExecutor,
+    LiveExecutorBase,
+    PaperExecutor,
+)
 
 # Metrics
 from pyutss.metrics.benchmark import (
@@ -144,6 +150,10 @@ __all__ = [
     "calculate_size",
     "round_to_lot",
     "UniverseResolver",
+    "PaperExecutor",
+    "AlpacaExecutor",
+    "LiveExecutorBase",
+    "AccountInfo",
     # Analysis
     "MonteCarloSimulator",
     "MonteCarloResult",

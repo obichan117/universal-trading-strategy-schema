@@ -1,6 +1,11 @@
-"""Backtesting engine for UTSS strategies."""
+"""Backtesting engine for UTSS strategies.
+
+.. deprecated::
+    Use :class:`pyutss.Engine` instead. ``BacktestEngine`` will be removed in v1.0.
+"""
 
 import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -73,7 +78,15 @@ class BacktestEngine:
 
         Args:
             config: Backtest configuration
+
+        .. deprecated::
+            Use ``Engine`` instead. ``BacktestEngine`` will be removed in v1.0.
         """
+        warnings.warn(
+            "BacktestEngine is deprecated; use pyutss.Engine instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.config = config or BacktestConfig()
         self.signal_evaluator = SignalEvaluator()
         self.condition_evaluator = ConditionEvaluator(self.signal_evaluator)

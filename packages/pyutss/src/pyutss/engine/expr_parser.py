@@ -439,7 +439,12 @@ class ExpressionParser:
         signal: dict[str, Any] = {"type": "indicator", "indicator": indicator}
 
         # Map common indicators to their parameter structures
-        if indicator in ("SMA", "EMA", "WMA", "RSI", "ATR", "ADX", "CCI", "MFI"):
+        if indicator in (
+            "SMA", "EMA", "WMA", "RSI", "ATR", "ADX", "CCI", "MFI",
+            "CMO", "HULL", "VWMA", "PLUS_DI", "MINUS_DI",
+            "AROON_UP", "AROON_DOWN", "AROON_OSC", "CMF",
+            "PERCENTILE", "RANK", "ZSCORE", "BETA", "CORRELATION",
+        ):
             if params:
                 signal["params"] = {"period": int(params[0])}
                 if len(params) > 1 and isinstance(params[1], str):
@@ -488,7 +493,7 @@ class ExpressionParser:
             elif len(params) >= 1:
                 signal["params"]["period"] = int(params[0])
 
-        elif indicator in ("DEMA", "TEMA", "ROC", "MOMENTUM", "STDDEV", "VARIANCE"):
+        elif indicator in ("DEMA", "TEMA", "ROC", "MOMENTUM", "STDDEV", "VARIANCE", "RETURN"):
             if params:
                 signal["params"] = {"period": int(params[0])}
                 if len(params) > 1 and isinstance(params[1], str):
@@ -521,6 +526,7 @@ class ExpressionParser:
 
         elif indicator in (
             "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU_B",
+            "ICHIMOKU_CHIKOU",
         ):
             if params:
                 signal["params"] = {"period": int(params[0])}
@@ -531,6 +537,45 @@ class ExpressionParser:
                 signal["params"]["tenkan_period"] = int(params[0])
             if len(params) >= 2:
                 signal["params"]["kijun_period"] = int(params[1])
+
+        elif indicator == "TSI":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["long_period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["short_period"] = int(params[1])
+
+        elif indicator == "STOCH_RSI":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["rsi_period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["stoch_period"] = int(params[1])
+            if len(params) >= 3:
+                signal["params"]["k_period"] = int(params[2])
+
+        elif indicator == "KLINGER":
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["fast_period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["slow_period"] = int(params[1])
+
+        elif indicator in ("DC_UPPER", "DC_MIDDLE", "DC_LOWER"):
+            if params:
+                signal["params"] = {"period": int(params[0])}
+
+        elif indicator in ("KC_UPPER", "KC_MIDDLE", "KC_LOWER"):
+            signal["params"] = {}
+            if len(params) >= 1:
+                signal["params"]["ema_period"] = int(params[0])
+            if len(params) >= 2:
+                signal["params"]["atr_period"] = int(params[1])
+            if len(params) >= 3:
+                signal["params"]["multiplier"] = float(params[2])
+
+        elif indicator in ("AD", "DRAWDOWN"):
+            signal["params"] = {}
 
         else:
             # Generic: assume first param is period

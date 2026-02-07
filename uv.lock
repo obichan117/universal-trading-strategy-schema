@@ -2557,7 +2557,7 @@ wheels = [
 
 [[package]]
 name = "pyutss"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/pyutss" }
 dependencies = [
     { name = "httpx" },
@@ -3259,7 +3259,7 @@ wheels = [
 
 [[package]]
 name = "utss"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "packages/utss" }
 dependencies = [
     { name = "pydantic" },
@@ -3289,7 +3289,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "utss-llm"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/utss-llm" }
 dependencies = [
     { name = "httpx" },
@@ -3345,7 +3345,7 @@ provides-extras = ["openai", "anthropic", "gemini", "local", "all", "dev"]
 
 [[package]]
 name = "utss-mcp"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/utss-mcp" }
 dependencies = [
     { name = "mcp" },

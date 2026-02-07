@@ -382,6 +382,135 @@ class SignalEvaluator:
             period = int(resolved_params.get("period", 52))
             return IndicatorService.ichimoku_senkou_b(data["high"], data["low"], period)
 
+        elif indicator == "ICHIMOKU_CHIKOU":
+            period = int(resolved_params.get("period", 26))
+            return IndicatorService.ichimoku_chikou(data["close"], period)
+
+        elif indicator == "HULL":
+            period = int(resolved_params.get("period", 9))
+            return IndicatorService.hull(source, period)
+
+        elif indicator == "DC_UPPER":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.donchian_channel(data["high"], data["low"], period).upper
+
+        elif indicator == "DC_MIDDLE":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.donchian_channel(data["high"], data["low"], period).middle
+
+        elif indicator == "DC_LOWER":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.donchian_channel(data["high"], data["low"], period).lower
+
+        elif indicator == "KC_UPPER":
+            ema_period = int(resolved_params.get("ema_period", 20))
+            atr_period = int(resolved_params.get("atr_period", 10))
+            multiplier = float(resolved_params.get("multiplier", 2.0))
+            return IndicatorService.keltner_channel(
+                data["high"], data["low"], data["close"], ema_period, atr_period, multiplier
+            ).upper
+
+        elif indicator == "KC_MIDDLE":
+            ema_period = int(resolved_params.get("ema_period", 20))
+            atr_period = int(resolved_params.get("atr_period", 10))
+            multiplier = float(resolved_params.get("multiplier", 2.0))
+            return IndicatorService.keltner_channel(
+                data["high"], data["low"], data["close"], ema_period, atr_period, multiplier
+            ).middle
+
+        elif indicator == "KC_LOWER":
+            ema_period = int(resolved_params.get("ema_period", 20))
+            atr_period = int(resolved_params.get("atr_period", 10))
+            multiplier = float(resolved_params.get("multiplier", 2.0))
+            return IndicatorService.keltner_channel(
+                data["high"], data["low"], data["close"], ema_period, atr_period, multiplier
+            ).lower
+
+        elif indicator == "AROON_UP":
+            period = int(resolved_params.get("period", 25))
+            return IndicatorService.aroon(data["high"], data["low"], period).aroon_up
+
+        elif indicator == "AROON_DOWN":
+            period = int(resolved_params.get("period", 25))
+            return IndicatorService.aroon(data["high"], data["low"], period).aroon_down
+
+        elif indicator == "AROON_OSC":
+            period = int(resolved_params.get("period", 25))
+            return IndicatorService.aroon(data["high"], data["low"], period).oscillator
+
+        elif indicator == "CMF":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.cmf(
+                data["high"], data["low"], data["close"], data["volume"], period
+            )
+
+        elif indicator == "CMO":
+            period = int(resolved_params.get("period", 14))
+            return IndicatorService.cmo(source, period)
+
+        elif indicator == "TSI":
+            long_period = int(resolved_params.get("long_period", 25))
+            short_period = int(resolved_params.get("short_period", 13))
+            return IndicatorService.tsi(source, long_period, short_period)
+
+        elif indicator == "STOCH_RSI":
+            rsi_period = int(resolved_params.get("rsi_period", 14))
+            stoch_period = int(resolved_params.get("stoch_period", 14))
+            k_period = int(resolved_params.get("k_period", 3))
+            return IndicatorService.stoch_rsi(source, rsi_period, stoch_period, k_period)
+
+        elif indicator == "KLINGER":
+            fast_period = int(resolved_params.get("fast_period", 34))
+            slow_period = int(resolved_params.get("slow_period", 55))
+            return IndicatorService.klinger(
+                data["high"], data["low"], data["close"], data["volume"],
+                fast_period, slow_period,
+            )
+
+        elif indicator == "AD":
+            return IndicatorService.ad(
+                data["high"], data["low"], data["close"], data["volume"]
+            )
+
+        elif indicator == "VWMA":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.vwma(data["close"], data["volume"], period)
+
+        elif indicator == "PLUS_DI":
+            period = int(resolved_params.get("period", 14))
+            return IndicatorService.plus_di(data["high"], data["low"], data["close"], period)
+
+        elif indicator == "MINUS_DI":
+            period = int(resolved_params.get("period", 14))
+            return IndicatorService.minus_di(data["high"], data["low"], data["close"], period)
+
+        elif indicator == "BETA":
+            period = int(resolved_params.get("period", 252))
+            return IndicatorService.beta(source, benchmark=None, period=period)
+
+        elif indicator == "CORRELATION":
+            period = int(resolved_params.get("period", 252))
+            return IndicatorService.correlation(source, benchmark=None, period=period)
+
+        elif indicator == "PERCENTILE":
+            period = int(resolved_params.get("period", 252))
+            return IndicatorService.percentile(source, period)
+
+        elif indicator == "RANK":
+            period = int(resolved_params.get("period", 252))
+            return IndicatorService.rank(source, period)
+
+        elif indicator == "ZSCORE":
+            period = int(resolved_params.get("period", 20))
+            return IndicatorService.zscore(source, period)
+
+        elif indicator == "RETURN":
+            period = int(resolved_params.get("period", 1))
+            return IndicatorService.simple_return(source, period)
+
+        elif indicator == "DRAWDOWN":
+            return IndicatorService.drawdown(source)
+
         else:
             raise EvaluationError(f"Unsupported indicator: {indicator}")
 

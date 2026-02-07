@@ -377,7 +377,7 @@ import asyncio
 from utss_llm import StrategyParser
 from utss_llm.conversation import create_session
 from utss_llm.providers import AnthropicProvider
-from pyutss import BacktestEngine, BacktestConfig
+from pyutss import Engine
 from utss import validate_yaml
 import pandas as pd
 
@@ -396,9 +396,9 @@ async def main():
         print("Strategy generated successfully!")
 
         # Backtest it
-        engine = BacktestEngine()
+        engine = Engine(initial_capital=100000)
         data = pd.read_csv("SPY.csv", index_col="date", parse_dates=True)
-        backtest_result = engine.run(strategy, data, "SPY")
+        backtest_result = engine.backtest(strategy, data=data, symbol="SPY")
         print(f"Return: {backtest_result.total_return_pct:.2f}%")
 
     # Method 2: Guided conversation

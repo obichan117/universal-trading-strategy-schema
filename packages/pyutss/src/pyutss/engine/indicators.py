@@ -48,6 +48,33 @@ class IchimokuResult:
     senkou_b: pd.Series
 
 
+@dataclass
+class DonchianChannelResult:
+    """Donchian Channel calculation result."""
+
+    upper: pd.Series
+    middle: pd.Series
+    lower: pd.Series
+
+
+@dataclass
+class KeltnerChannelResult:
+    """Keltner Channel calculation result."""
+
+    upper: pd.Series
+    middle: pd.Series
+    lower: pd.Series
+
+
+@dataclass
+class AroonResult:
+    """Aroon indicator calculation result."""
+
+    aroon_up: pd.Series
+    aroon_down: pd.Series
+    oscillator: pd.Series
+
+
 class IndicatorService:
     """Technical indicator calculation service.
 
@@ -848,3 +875,549 @@ class IndicatorService:
         highest_high = high.rolling(window=period, min_periods=period).max()
         lowest_low = low.rolling(window=period, min_periods=period).min()
         return ((highest_high + lowest_low) / 2).shift(26)
+
+    @staticmethod
+    def ichimoku_chikou(
+        close: pd.Series,
+        period: int = 26,
+    ) -> pd.Series:
+        """Ichimoku Chikou Span (Lagging Span).
+
+        Close price shifted back by the specified period.
+
+        Args:
+            close: Close prices
+            period: Shift period (default 26)
+
+        Returns:
+            Chikou Span series (close shifted back)
+        """
+        return close.shift(period)
+
+    @staticmethod
+    def hull(data: pd.Series, period: int = 9) -> pd.Series:
+        """Hull Moving Average.
+
+        HMA = WMA(2 * WMA(n/2) - WMA(n), sqrt(n))
+
+        Args:
+            data: Price series
+            period: Lookback period (default 9)
+
+        Returns:
+            Hull MA series
+        """
+        half_period = max(int(period / 2), 1)
+        sqrt_period = max(int(np.sqrt(period)), 1)
+
+        wma_half = IndicatorService.wma(data, half_period)
+        wma_full = IndicatorService.wma(data, period)
+        diff = 2 * wma_half - wma_full
+        return IndicatorService.wma(diff, sqrt_period)
+
+    @staticmethod
+    def donchian_channel(
+        high: pd.Series,
+        low: pd.Series,
+        period: int = 20,
+    ) -> DonchianChannelResult:
+        """Donchian Channel.
+
+        Upper = rolling max of high, Lower = rolling min of low.
+
+        Args:
+            high: High prices
+            low: Low prices
+            period: Lookback period (default 20)
+
+        Returns:
+            DonchianChannelResult with upper, middle, lower
+        """
+        upper = high.rolling(window=period, min_periods=period).max()
+        lower = low.rolling(window=period, min_periods=period).min()
+        middle = (upper + lower) / 2
+        return DonchianChannelResult(upper=upper, middle=middle, lower=lower)
+
+    @staticmethod
+    def keltner_channel(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        ema_period: int = 20,
+        atr_period: int = 10,
+        multiplier: float = 2.0,
+    ) -> KeltnerChannelResult:
+        """Keltner Channel.
+
+        Middle = EMA(close), Upper/Lower = EMA +/- multiplier * ATR.
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            ema_period: EMA period (default 20)
+            atr_period: ATR period (default 10)
+            multiplier: ATR multiplier (default 2.0)
+
+        Returns:
+            KeltnerChannelResult with upper, middle, lower
+        """
+        middle = IndicatorService.ema(close, ema_period)
+        atr = IndicatorService.atr(high, low, close, atr_period)
+        upper = middle + multiplier * atr
+        lower = middle - multiplier * atr
+        return KeltnerChannelResult(upper=upper, middle=middle, lower=lower)
+
+    @staticmethod
+    def aroon(
+        high: pd.Series,
+        low: pd.Series,
+        period: int = 25,
+    ) -> AroonResult:
+        """Aroon Indicator.
+
+        Aroon Up = ((period - bars since highest high) / period) * 100
+        Aroon Down = ((period - bars since lowest low) / period) * 100
+
+        Args:
+            high: High prices
+            low: Low prices
+            period: Lookback period (default 25)
+
+        Returns:
+            AroonResult with aroon_up, aroon_down, oscillator
+        """
+        aroon_up = high.rolling(window=period + 1, min_periods=period + 1).apply(
+            lambda x: ((period - (period - np.argmax(x))) / period) * 100,
+            raw=True,
+        )
+        aroon_down = low.rolling(window=period + 1, min_periods=period + 1).apply(
+            lambda x: ((period - (period - np.argmin(x))) / period) * 100,
+            raw=True,
+        )
+        oscillator = aroon_up - aroon_down
+        return AroonResult(aroon_up=aroon_up, aroon_down=aroon_down, oscillator=oscillator)
+
+    @staticmethod
+    def cmf(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        volume: pd.Series,
+        period: int = 20,
+    ) -> pd.Series:
+        """Chaikin Money Flow.
+
+        CMF = sum(MFV * volume, period) / sum(volume, period)
+        where MFV = ((close - low) - (high - close)) / (high - low)
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            volume: Volume data
+            period: Lookback period (default 20)
+
+        Returns:
+            CMF series (-1 to 1)
+        """
+        hl_range = high - low
+        # Avoid division by zero
+        mfv = ((close - low) - (high - close)) / hl_range.replace(0, np.nan)
+        mf_volume = mfv * volume
+
+        return mf_volume.rolling(window=period, min_periods=period).sum() / \
+            volume.rolling(window=period, min_periods=period).sum()
+
+    @staticmethod
+    def cmo(data: pd.Series, period: int = 14) -> pd.Series:
+        """Chande Momentum Oscillator.
+
+        CMO = (up_sum - down_sum) / (up_sum + down_sum) * 100
+
+        Args:
+            data: Price series
+            period: Lookback period (default 14)
+
+        Returns:
+            CMO series (-100 to 100)
+        """
+        delta = data.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = (-delta).where(delta < 0, 0.0)
+
+        up_sum = gain.rolling(window=period, min_periods=period).sum()
+        down_sum = loss.rolling(window=period, min_periods=period).sum()
+
+        total = up_sum + down_sum
+        cmo = ((up_sum - down_sum) / total.replace(0, np.nan)) * 100
+        return cmo
+
+    @staticmethod
+    def tsi(
+        data: pd.Series,
+        long_period: int = 25,
+        short_period: int = 13,
+    ) -> pd.Series:
+        """True Strength Index.
+
+        Double-smoothed EMA of price change / double-smoothed EMA of abs change.
+
+        Args:
+            data: Price series
+            long_period: Long EMA period (default 25)
+            short_period: Short EMA period (default 13)
+
+        Returns:
+            TSI series
+        """
+        delta = data.diff()
+
+        # Double-smoothed price change
+        ema1 = delta.ewm(span=long_period, adjust=False, min_periods=long_period).mean()
+        double_smoothed = ema1.ewm(span=short_period, adjust=False, min_periods=short_period).mean()
+
+        # Double-smoothed absolute price change
+        abs_ema1 = delta.abs().ewm(span=long_period, adjust=False, min_periods=long_period).mean()
+        abs_double_smoothed = abs_ema1.ewm(span=short_period, adjust=False, min_periods=short_period).mean()
+
+        tsi = (double_smoothed / abs_double_smoothed.replace(0, np.nan)) * 100
+        return tsi
+
+    @staticmethod
+    def stoch_rsi(
+        data: pd.Series,
+        rsi_period: int = 14,
+        stoch_period: int = 14,
+        k_period: int = 3,
+    ) -> pd.Series:
+        """Stochastic RSI.
+
+        Applies Stochastic formula to RSI values.
+
+        Args:
+            data: Price series
+            rsi_period: RSI calculation period (default 14)
+            stoch_period: Stochastic lookback period (default 14)
+            k_period: Smoothing period for %K (default 3)
+
+        Returns:
+            Stochastic RSI series (0-100)
+        """
+        rsi = IndicatorService.rsi(data, rsi_period)
+
+        rsi_min = rsi.rolling(window=stoch_period, min_periods=stoch_period).min()
+        rsi_max = rsi.rolling(window=stoch_period, min_periods=stoch_period).max()
+
+        stoch_rsi = ((rsi - rsi_min) / (rsi_max - rsi_min).replace(0, np.nan)) * 100
+        # Apply smoothing
+        return stoch_rsi.rolling(window=k_period, min_periods=k_period).mean()
+
+    @staticmethod
+    def klinger(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        volume: pd.Series,
+        fast_period: int = 34,
+        slow_period: int = 55,
+    ) -> pd.Series:
+        """Klinger Oscillator.
+
+        KO = EMA(fast, volume_force) - EMA(slow, volume_force)
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            volume: Volume data
+            fast_period: Fast EMA period (default 34)
+            slow_period: Slow EMA period (default 55)
+
+        Returns:
+            Klinger Oscillator series
+        """
+        hlc = high + low + close
+        trend = np.where(hlc > hlc.shift(1), 1, -1)
+
+        dm = high - low
+        cm = pd.Series(np.zeros(len(close)), index=close.index)
+        cm.iloc[0] = dm.iloc[0]
+        for i in range(1, len(close)):
+            if trend[i] == trend[i - 1]:
+                cm.iloc[i] = cm.iloc[i - 1] + dm.iloc[i]
+            else:
+                cm.iloc[i] = dm.iloc[i]
+
+        # Volume force
+        vf = volume * abs(2 * (dm / cm.replace(0, np.nan)) - 1) * np.sign(trend) * 100
+
+        fast_ema = vf.ewm(span=fast_period, adjust=False, min_periods=fast_period).mean()
+        slow_ema = vf.ewm(span=slow_period, adjust=False, min_periods=slow_period).mean()
+
+        return fast_ema - slow_ema
+
+    @staticmethod
+    def ad(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        volume: pd.Series,
+    ) -> pd.Series:
+        """Accumulation/Distribution Line.
+
+        AD = cumsum(((close - low) - (high - close)) / (high - low) * volume)
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            volume: Volume data
+
+        Returns:
+            A/D line series
+        """
+        hl_range = high - low
+        clv = ((close - low) - (high - close)) / hl_range.replace(0, np.nan)
+        clv = clv.fillna(0)
+        return (clv * volume).cumsum()
+
+    @staticmethod
+    def vwma(
+        close: pd.Series,
+        volume: pd.Series,
+        period: int = 20,
+    ) -> pd.Series:
+        """Volume Weighted Moving Average.
+
+        VWMA = sum(close * volume, period) / sum(volume, period)
+
+        Args:
+            close: Close prices
+            volume: Volume data
+            period: Lookback period (default 20)
+
+        Returns:
+            VWMA series
+        """
+        cv = close * volume
+        return cv.rolling(window=period, min_periods=period).sum() / \
+            volume.rolling(window=period, min_periods=period).sum()
+
+    @staticmethod
+    def plus_di(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        period: int = 14,
+    ) -> pd.Series:
+        """Plus Directional Indicator (+DI).
+
+        Extracted from ADX calculation.
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            period: Lookback period (default 14)
+
+        Returns:
+            +DI series
+        """
+        plus_dm = high.diff()
+        minus_dm = -low.diff()
+
+        plus_dm[plus_dm < 0] = 0
+        minus_dm[minus_dm < 0] = 0
+
+        plus_dm[(plus_dm < minus_dm)] = 0
+        minus_dm[(minus_dm < plus_dm)] = 0
+
+        atr = IndicatorService.atr(high, low, close, period)
+
+        return 100 * (
+            plus_dm.ewm(alpha=1 / period, min_periods=period, adjust=False).mean() / atr
+        )
+
+    @staticmethod
+    def minus_di(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        period: int = 14,
+    ) -> pd.Series:
+        """Minus Directional Indicator (-DI).
+
+        Extracted from ADX calculation.
+
+        Args:
+            high: High prices
+            low: Low prices
+            close: Close prices
+            period: Lookback period (default 14)
+
+        Returns:
+            -DI series
+        """
+        plus_dm = high.diff()
+        minus_dm = -low.diff()
+
+        plus_dm[plus_dm < 0] = 0
+        minus_dm[minus_dm < 0] = 0
+
+        plus_dm[(plus_dm < minus_dm)] = 0
+        minus_dm[(minus_dm < plus_dm)] = 0
+
+        atr = IndicatorService.atr(high, low, close, period)
+
+        return 100 * (
+            minus_dm.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+            / atr
+        )
+
+    @staticmethod
+    def beta(
+        data: pd.Series,
+        benchmark: pd.Series | None = None,
+        period: int = 252,
+    ) -> pd.Series:
+        """Rolling Beta against benchmark.
+
+        If no benchmark provided, returns NaN series with a warning.
+
+        Args:
+            data: Price series
+            benchmark: Benchmark price series (optional)
+            period: Rolling window (default 252)
+
+        Returns:
+            Beta series
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if benchmark is None:
+            logger.warning("BETA: No benchmark data provided, returning NaN")
+            return pd.Series(np.nan, index=data.index)
+
+        asset_returns = data.pct_change()
+        bench_returns = benchmark.pct_change()
+
+        cov = asset_returns.rolling(window=period, min_periods=period).cov(bench_returns)
+        var = bench_returns.rolling(window=period, min_periods=period).var()
+
+        return cov / var.replace(0, np.nan)
+
+    @staticmethod
+    def correlation(
+        data: pd.Series,
+        benchmark: pd.Series | None = None,
+        period: int = 252,
+    ) -> pd.Series:
+        """Rolling Correlation against benchmark.
+
+        If no benchmark provided, returns NaN series with a warning.
+
+        Args:
+            data: Price series
+            benchmark: Benchmark price series (optional)
+            period: Rolling window (default 252)
+
+        Returns:
+            Correlation series (-1 to 1)
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if benchmark is None:
+            logger.warning("CORRELATION: No benchmark data provided, returning NaN")
+            return pd.Series(np.nan, index=data.index)
+
+        asset_returns = data.pct_change()
+        bench_returns = benchmark.pct_change()
+
+        return asset_returns.rolling(window=period, min_periods=period).corr(bench_returns)
+
+    @staticmethod
+    def percentile(data: pd.Series, period: int = 252) -> pd.Series:
+        """Rolling Percentile Rank.
+
+        Current value's percentile rank within the rolling window.
+
+        Args:
+            data: Price series
+            period: Rolling window (default 252)
+
+        Returns:
+            Percentile series (0-100)
+        """
+        return data.rolling(window=period, min_periods=period).apply(
+            lambda x: (np.sum(x < x[-1]) / (len(x) - 1)) * 100 if len(x) > 1 else 50.0,
+            raw=True,
+        )
+
+    @staticmethod
+    def rank(data: pd.Series, period: int = 252) -> pd.Series:
+        """Rolling Rank.
+
+        Rank of current value within the rolling window (1 = lowest).
+
+        Args:
+            data: Price series
+            period: Rolling window (default 252)
+
+        Returns:
+            Rank series (1 to period)
+        """
+        return data.rolling(window=period, min_periods=period).apply(
+            lambda x: np.sum(x <= x[-1]),
+            raw=True,
+        )
+
+    @staticmethod
+    def zscore(data: pd.Series, period: int = 20) -> pd.Series:
+        """Rolling Z-Score.
+
+        (value - rolling_mean) / rolling_std
+
+        Args:
+            data: Price series
+            period: Rolling window (default 20)
+
+        Returns:
+            Z-score series
+        """
+        rolling_mean = data.rolling(window=period, min_periods=period).mean()
+        rolling_std = data.rolling(window=period, min_periods=period).std()
+        return (data - rolling_mean) / rolling_std.replace(0, np.nan)
+
+    @staticmethod
+    def simple_return(data: pd.Series, period: int = 1) -> pd.Series:
+        """Simple Return over period.
+
+        return = (current - previous) / previous
+
+        Args:
+            data: Price series
+            period: Lookback period (default 1)
+
+        Returns:
+            Return series (as decimal, e.g. 0.05 = 5%)
+        """
+        shifted = data.shift(period)
+        return (data - shifted) / shifted
+
+    @staticmethod
+    def drawdown(data: pd.Series) -> pd.Series:
+        """Drawdown from rolling maximum.
+
+        drawdown = (current - rolling_max) / rolling_max
+
+        Args:
+            data: Price series
+
+        Returns:
+            Drawdown series (negative values, 0 at peaks)
+        """
+        rolling_max = data.expanding(min_periods=1).max()
+        return (data - rolling_max) / rolling_max

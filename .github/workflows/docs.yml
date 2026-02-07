@@ -8,6 +8,7 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'examples/**'
+      - 'schema/**'
       - 'packages/utss/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:

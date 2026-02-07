@@ -9,23 +9,27 @@ from __future__ import annotations
 # Indicators implemented in IndicatorService
 IMPLEMENTED_INDICATORS: set[str] = {
     # Moving Averages
-    "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA",
+    "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA",
     # Momentum
     "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
-    "STOCH_K", "STOCH_D", "ROC", "MOMENTUM",
-    "WILLIAMS_R", "CCI", "MFI",
+    "STOCH_K", "STOCH_D", "STOCH_RSI", "ROC", "MOMENTUM",
+    "WILLIAMS_R", "CCI", "MFI", "CMO", "TSI",
     # Trend
-    "ADX", "SUPERTREND", "PSAR",
+    "ADX", "PLUS_DI", "MINUS_DI", "SUPERTREND", "PSAR",
+    "AROON_UP", "AROON_DOWN", "AROON_OSC",
     # Volatility
     "ATR", "STDDEV", "VARIANCE",
     "BB_UPPER", "BB_MIDDLE", "BB_LOWER", "BB_WIDTH", "BB_PERCENT",
+    "DC_UPPER", "DC_MIDDLE", "DC_LOWER",
+    "KC_UPPER", "KC_MIDDLE", "KC_LOWER",
     # Volume
-    "OBV", "VWAP",
+    "OBV", "VWAP", "AD", "CMF", "KLINGER",
     # Statistical
-    "HIGHEST", "LOWEST",
+    "HIGHEST", "LOWEST", "PERCENTILE", "RANK", "ZSCORE",
+    "BETA", "CORRELATION", "RETURN", "DRAWDOWN",
     # Ichimoku
     "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN",
-    "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B",
+    "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B", "ICHIMOKU_CHIKOU",
 }
 
 # Signal types implemented in SignalEvaluator

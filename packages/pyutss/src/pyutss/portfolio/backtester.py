@@ -1,11 +1,15 @@
 """Portfolio backtester for multi-symbol strategies.
 
 Provides portfolio-level backtesting with shared capital pool and rebalancing.
+
+.. deprecated::
+    Use :class:`pyutss.Engine` instead. ``PortfolioBacktester`` will be removed in v1.0.
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -83,7 +87,15 @@ class PortfolioBacktester:
 
         Args:
             config: Portfolio configuration
+
+        .. deprecated::
+            Use ``Engine`` instead. ``PortfolioBacktester`` will be removed in v1.0.
         """
+        warnings.warn(
+            "PortfolioBacktester is deprecated; use pyutss.Engine instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.config = config or PortfolioConfig()
         self._state: PortfolioState | None = None
         self._rebalancer: Rebalancer | None = None

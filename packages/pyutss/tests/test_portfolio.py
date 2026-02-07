@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+
 from pyutss.portfolio import (
     PortfolioBacktester,
     PortfolioConfig,

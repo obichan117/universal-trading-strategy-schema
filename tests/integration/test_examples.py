@@ -1,5 +1,7 @@
 """Integration tests for UTSS example strategies with REAL market data.
 
+These tests use the deprecated BacktestEngine for backward-compatibility validation.
+
 These tests:
 1. Load actual YAML strategy files from examples/
 2. Fetch real market data from Yahoo Finance
@@ -53,7 +55,10 @@ def backtest_engine():
 
 
 # Skip all tests if Yahoo Finance is not available
-pytestmark = pytest.mark.skipif(not has_yahoo(), reason="Yahoo Finance not available")
+pytestmark = [
+    pytest.mark.skipif(not has_yahoo(), reason="Yahoo Finance not available"),
+    pytest.mark.filterwarnings("ignore::DeprecationWarning"),
+]
 
 
 class TestExampleStrategiesLoad:

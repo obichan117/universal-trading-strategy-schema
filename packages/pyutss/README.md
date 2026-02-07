@@ -22,23 +22,20 @@ pip install pyutss[all]
 
 ```python
 from utss import validate_yaml
-from pyutss import BacktestEngine
-from pyutss.data import YahooProvider
+from pyutss import Engine
+from pyutss.data import fetch
 
 # Load strategy
 strategy = validate_yaml(open("my_strategy.yaml").read())
 
-# Setup data provider
-provider = YahooProvider()
-
-# Run backtest
-engine = BacktestEngine(provider, initial_capital=100_000)
-result = engine.run(strategy, start="2020-01-01", end="2024-01-01")
+# Fetch data and run backtest
+data = fetch("AAPL", "2020-01-01", "2024-01-01")
+engine = Engine(initial_capital=100_000)
+result = engine.backtest(strategy, data=data, symbol="AAPL")
 
 # View results
-print(result.metrics.sharpe_ratio)
-print(result.metrics.max_drawdown)
-result.plot()
+print(f"Return: {result.total_return_pct:.2f}%")
+print(f"Trades: {result.total_trades}")
 ```
 
 ## Features
