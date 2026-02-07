@@ -5,7 +5,7 @@ Provides MCP tools for building and backtesting trading strategies
 using Claude Code or other MCP-compatible clients.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from utss_mcp.tools import (
     backtest_strategy,

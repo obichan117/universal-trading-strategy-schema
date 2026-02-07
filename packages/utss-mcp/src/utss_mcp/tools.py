@@ -153,7 +153,7 @@ async def backtest_strategy(
     """
     try:
         from pyutss import Engine, MetricsCalculator
-        from pyutss.data import fetch
+        from pyutss.data import Ticker
 
         # Parse strategy
         strategy = yaml.safe_load(strategy_yaml)
@@ -163,7 +163,8 @@ async def backtest_strategy(
         end = date.fromisoformat(end_date)
 
         # Fetch real market data (auto-detects source based on symbol)
-        data = fetch(symbol, start, end)
+        ticker = Ticker(symbol)
+        data = ticker.history(start=start, end=end)
 
         if data.empty:
             return {
@@ -187,7 +188,7 @@ async def backtest_strategy(
 
         return {
             "success": True,
-            "data_source": "yahoo_finance",  # Registry uses Yahoo by default
+            "data_source": ticker.source,
             "data_points": len(data),
             "metrics": {
                 "total_return_pct": round(metrics.total_return_pct, 2),

@@ -10,6 +10,10 @@ from utss_llm.providers.base import LLMProvider, LLMResponse
 __all__ = [
     "LLMProvider",
     "LLMResponse",
+    "get_openai_provider",
+    "get_anthropic_provider",
+    "get_gemini_provider",
+    "get_local_provider",
 ]
 
 # Lazy imports for optional dependencies

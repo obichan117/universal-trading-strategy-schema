@@ -178,7 +178,7 @@ class WalkForwardOptimizer:
 
                 all_best_params.append(best_params)
 
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"Window {window_idx} in-sample failed: {e}")
                 continue
 
@@ -216,7 +216,7 @@ class WalkForwardOptimizer:
 
                 window_results.append(window_result)
 
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"Window {window_idx} out-of-sample failed: {e}")
                 continue
 

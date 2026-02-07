@@ -30,20 +30,7 @@ Output only the YAML, no explanations. Start with:
 info:
   id: ..."""
 
-# Template for beginner (guided) mode
-BEGINNER_TEMPLATE = """I'll help you create a trading strategy. Based on your description:
-
-"{description}"
-
-I need to clarify a few things:
-
-{questions}
-
-Please answer these questions so I can generate the complete strategy."""
-
-
 __all__ = [
     "SYSTEM_PROMPT",
     "ADVANCED_TEMPLATE",
-    "BEGINNER_TEMPLATE",
 ]

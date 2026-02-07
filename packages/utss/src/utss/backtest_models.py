@@ -10,7 +10,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # =============================================================================
@@ -58,6 +58,12 @@ class CommissionTier(BacktestBaseModel):
     above: float | None = Field(None, description="Trade value floor for final tier (exclusive)")
     fee: float | None = Field(None, ge=0, description="Fixed fee for this tier")
     value: float | None = Field(None, ge=0, description="Percentage or per-share rate for this tier")
+
+    @model_validator(mode="after")
+    def _require_fee_or_value(self) -> "CommissionTier":
+        if self.fee is None and self.value is None:
+            raise ValueError("At least one of 'fee' or 'value' must be provided")
+        return self
 
 
 class CommissionConfig(BacktestBaseModel):

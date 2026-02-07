@@ -154,7 +154,7 @@ class GridSearchOptimizer:
                 if best_result is None or metric_value > best_result.metric_value:
                     best_result = param_result
 
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"Backtest failed for params {params}: {e}")
                 continue
 
@@ -309,7 +309,7 @@ class RandomSearchOptimizer:
                 if best_result is None or metric_value > best_result.metric_value:
                     best_result = param_result
 
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"Backtest failed for params {params}: {e}")
                 continue
 

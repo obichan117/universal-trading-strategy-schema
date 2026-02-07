@@ -24,6 +24,7 @@ from utss_llm.conversation.questions import (
 from utss_llm.conversation.state import (
     ConversationResponse,
     ConversationState,
+    PartialStrategy,
     Question,
     ResponseType,
 )
@@ -391,7 +392,7 @@ class StrategyBuilder:
         self, state: ConversationState, answer: str
     ) -> ConversationResponse:
         """Handle final confirmation."""
-        if answer == "yes" or answer.lower() in ("yes", "y", "true"):
+        if answer.lower() in ("yes", "y", "true", "1"):
             state.is_complete = True
             strategy_dict = state.partial_strategy.to_utss_dict()
             strategy_yaml = yaml.dump(
@@ -405,7 +406,8 @@ class StrategyBuilder:
                 strategy_dict=strategy_dict,
             )
         else:
-            # Go back to strategy type to start over (simplified)
+            # Reset partial strategy and go back to start
+            state.partial_strategy = PartialStrategy()
             state.current_step = "strategy_type"
             return ConversationResponse(
                 type=ResponseType.QUESTION,

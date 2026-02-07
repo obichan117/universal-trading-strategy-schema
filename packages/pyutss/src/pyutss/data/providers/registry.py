@@ -157,7 +157,7 @@ class DataProviderRegistry:
                 data = await p.get_ohlcv(symbol, start_date, end_date, timeframe)
                 if data:
                     return data
-            except Exception as e:
+            except Exception as e:  # Intentionally broad: try next provider on any failure
                 logger.warning(f"Provider {p.name} failed for {symbol}: {e}")
                 errors.append((p.name, str(e)))
                 continue

@@ -144,7 +144,7 @@ class YahooFinanceProvider(BaseDataProvider):
 
             return result
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             raise DataProviderError(f"Yahoo Finance error for {symbol}: {e}") from e
 
     async def get_stock_info(self, symbol: str) -> StockMetadata | None:
@@ -179,7 +179,7 @@ class YahooFinanceProvider(BaseDataProvider):
                 currency=info.get("currency", "USD" if market == Market.US else "JPY"),
             )
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             logger.warning(f"Failed to get stock info for {symbol}: {e}")
             return None
 
@@ -221,7 +221,7 @@ class YahooFinanceProvider(BaseDataProvider):
                 book_value_per_share=info.get("bookValue"),
             )
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             logger.warning(f"Failed to get fundamentals for {symbol}: {e}")
             return None
 

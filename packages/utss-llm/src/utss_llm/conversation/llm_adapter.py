@@ -5,9 +5,12 @@ LLM-powered revision, and JSON extraction from LLM responses.
 """
 
 import json
+import logging
 import re
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from utss_llm.conversation.state import (
     ConversationResponse,
@@ -133,8 +136,7 @@ async def smart_start(
             return skip_to_unanswered(state, builder)
 
     except Exception:
-        # Fall back to guided flow on any error
-        pass
+        logger.debug("smart_start LLM call failed", exc_info=True)
 
     return builder.get_initial_question()
 
@@ -172,7 +174,7 @@ async def llm_revise(
             apply_updates(strategy, updates)
             return
     except Exception:
-        pass
+        logger.debug("llm_revise LLM call failed", exc_info=True)
 
     # Fall back to keyword-based if LLM fails
     keyword_revise_fn(instruction)

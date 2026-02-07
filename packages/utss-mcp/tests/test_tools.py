@@ -1,6 +1,6 @@
 """Tests for MCP tools."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -157,7 +157,10 @@ constraints: {}
         # Mock the data provider to return test data
         mock_data = _create_mock_data("2024-01-01", "2024-06-01")
 
-        with patch("pyutss.data.fetch", return_value=mock_data):
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_data
+        mock_ticker.source = "yahoo"
+        with patch("pyutss.data.Ticker", return_value=mock_ticker):
             result = await backtest_strategy(
                 strategy_yaml=yaml,
                 symbol="TEST",
@@ -184,7 +187,10 @@ rules: []
         # Mock with insufficient data
         mock_data = _create_mock_data("2024-01-01", "2024-01-03")
 
-        with patch("pyutss.data.fetch", return_value=mock_data):
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_data
+        mock_ticker.source = "yahoo"
+        with patch("pyutss.data.Ticker", return_value=mock_ticker):
             result = await backtest_strategy(
                 strategy_yaml=yaml,
                 symbol="TEST",

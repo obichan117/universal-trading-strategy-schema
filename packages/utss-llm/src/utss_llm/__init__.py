@@ -19,7 +19,7 @@ from utss_llm.conversation import (
 )
 from utss_llm.parser import ParseMode, ParseResult, StrategyParser
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     # One-shot parser

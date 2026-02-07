@@ -139,7 +139,7 @@ class JQuantsProvider(BaseDataProvider):
             result.sort(key=lambda x: x.date)
             return result
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             raise DataProviderError(f"pyjquants error for {symbol}: {e}") from e
 
     async def get_stock_info(self, symbol: str) -> StockMetadata | None:
@@ -170,7 +170,7 @@ class JQuantsProvider(BaseDataProvider):
                 currency="JPY",
             )
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             logger.warning(f"Failed to get stock info for {symbol}: {e}")
             return None
 
@@ -203,7 +203,7 @@ class JQuantsProvider(BaseDataProvider):
                 eps=getattr(info, "eps", None),
             )
 
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             logger.warning(f"Failed to get fundamentals for {symbol}: {e}")
             return None
 
