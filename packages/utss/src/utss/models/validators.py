@@ -14,7 +14,6 @@ from utss.models.enums import (
     EventType,
     FundamentalMetric,
     IndicatorType,
-    StockIndex,
 )
 
 # Prefix patterns for extensible enums
@@ -33,13 +32,6 @@ EVENT_PREFIXES = [
     r"^custom:[a-zA-Z0-9_]+$",
     r"^calendar:[a-zA-Z0-9_]+$",
 ]
-
-INDEX_PREFIXES = [
-    r"^custom:[a-zA-Z0-9_]+$",
-    r"^etf:[A-Z0-9]+$",
-    r"^sector:[A-Z0-9_]+$",
-]
-
 
 def _make_extensible_validator(enum_class: type[Enum], prefixes: list[str]):
     """Create a validator that accepts enum values or prefixed extensions."""
@@ -80,8 +72,3 @@ ExtensibleEvent = Annotated[
     Field(description="Event type (core or custom:, calendar: prefixed)"),
 ]
 
-ExtensibleIndex = Annotated[
-    str,
-    AfterValidator(_make_extensible_validator(StockIndex, INDEX_PREFIXES)),
-    Field(description="Stock index (core or custom:, etf:, sector: prefixed)"),
-]

@@ -1,7 +1,7 @@
 """Universe resolution for UTSS strategies.
 
 Resolves strategy universe definitions into concrete symbol lists.
-Supports static, index, and screener universe types.
+Supports static and screener universe types.
 
 When data is provided, screener filters are evaluated to select
 symbols that match the conditions.
@@ -39,7 +39,6 @@ class UniverseResolver:
 
     Supports:
     - static: Returns symbols directly
-    - index: Maps index name to constituent symbols (deprecated, use screener)
     - screener: Resolves base universe then applies filters
     """
 
@@ -75,7 +74,10 @@ class UniverseResolver:
         if utype == "static":
             return self._resolve_static(universe)
         elif utype == "index":
-            return self._resolve_index(universe)
+            raise ValueError(
+                "Universe type 'index' has been removed. "
+                "Use 'screener' with 'base' instead, e.g. {type: screener, base: SP500}"
+            )
         elif utype == "screener":
             return self._resolve_screener(universe, data)
         else:
@@ -87,17 +89,6 @@ class UniverseResolver:
         if not symbols:
             raise ValueError("Static universe requires non-empty 'symbols' list")
         return list(symbols)
-
-    def _resolve_index(self, universe: dict) -> list[str]:
-        """Resolve index universe."""
-        index_name = universe.get("index", "")
-        symbols = self._get_index_symbols(index_name)
-
-        limit = universe.get("limit")
-        if limit and isinstance(limit, int):
-            symbols = symbols[:limit]
-
-        return symbols
 
     def _resolve_screener(
         self,

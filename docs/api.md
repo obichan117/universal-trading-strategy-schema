@@ -416,33 +416,6 @@ universe = StaticUniverse(
 )
 ```
 
-### IndexUniverse (Deprecated)
-
-!!! warning "Deprecated"
-    `IndexUniverse` is deprecated. Use a **screener** universe with a `base` field instead,
-    which provides more flexible filtering and ranking capabilities.
-
-```python
-from utss import IndexUniverse, StockIndex
-
-# Deprecated approach
-universe = IndexUniverse(
-    type="index",
-    index=StockIndex.NIKKEI225,
-    rank_by=momentum_signal,  # Optional
-    order="desc",             # asc|desc
-    limit=10                  # Optional
-)
-
-# Preferred approach: use screener with base
-# universe:
-#   type: screener
-#   base: { index: NIKKEI225 }
-#   filters: [...]
-#   rank_by: ...
-#   limit: 10
-```
-
 ---
 
 ## Enums
@@ -466,24 +439,6 @@ IndicatorType.OBV, IndicatorType.VWAP, IndicatorType.CMF
 
 # Statistical
 IndicatorType.ZSCORE, IndicatorType.PERCENTILE, IndicatorType.CORRELATION
-```
-
-### Stock Indices
-
-```python
-from utss import StockIndex
-
-# Japan
-StockIndex.NIKKEI225, StockIndex.TOPIX, StockIndex.TSE_PRIME
-
-# US
-StockIndex.SP500, StockIndex.NASDAQ100, StockIndex.DOW30
-
-# Europe
-StockIndex.FTSE100, StockIndex.DAX40
-
-# Global
-StockIndex.MSCI_WORLD, StockIndex.MSCI_EM
 ```
 
 ---

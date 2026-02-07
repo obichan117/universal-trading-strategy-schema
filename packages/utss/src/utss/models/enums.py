@@ -236,17 +236,6 @@ class EventType(str, Enum):
     SEC_FILING_8K = "SEC_FILING_8K"
 
 
-class RelativeMeasure(str, Enum):
-    """Relative comparison measures."""
-
-    RATIO = "ratio"
-    DIFFERENCE = "difference"
-    BETA = "beta"
-    CORRELATION = "correlation"
-    PERCENTILE = "percentile"
-    Z_SCORE = "z_score"
-
-
 class ComparisonOperator(str, Enum):
     """Comparison operators."""
 
@@ -311,51 +300,6 @@ class ExternalSource(str, Enum):
     WEBHOOK = "webhook"
     FILE = "file"
     PROVIDER = "provider"
-
-
-class StockIndex(str, Enum):
-    """Stock indices."""
-
-    # Japan
-    NIKKEI225 = "NIKKEI225"
-    TOPIX = "TOPIX"
-    TOPIX100 = "TOPIX100"
-    TOPIX500 = "TOPIX500"
-    JPXNIKKEI400 = "JPXNIKKEI400"
-    TSE_PRIME = "TSE_PRIME"
-    TSE_STANDARD = "TSE_STANDARD"
-    TSE_GROWTH = "TSE_GROWTH"
-    TOPIX_LARGE70 = "TOPIX_LARGE70"
-    TOPIX_MID400 = "TOPIX_MID400"
-    TOPIX_SMALL = "TOPIX_SMALL"
-    MOTHERS = "MOTHERS"
-    # US
-    SP500 = "SP500"
-    NASDAQ100 = "NASDAQ100"
-    DOW30 = "DOW30"
-    RUSSELL2000 = "RUSSELL2000"
-    RUSSELL1000 = "RUSSELL1000"
-    SP400 = "SP400"
-    SP600 = "SP600"
-    # Europe
-    FTSE100 = "FTSE100"
-    DAX40 = "DAX40"
-    CAC40 = "CAC40"
-    STOXX50 = "STOXX50"
-    STOXX600 = "STOXX600"
-    # Asia Pacific
-    HANG_SENG = "HANG_SENG"
-    SSE50 = "SSE50"
-    CSI300 = "CSI300"
-    KOSPI = "KOSPI"
-    KOSDAQ = "KOSDAQ"
-    TWSE = "TWSE"
-    ASX200 = "ASX200"
-    # Global
-    MSCI_WORLD = "MSCI_WORLD"
-    MSCI_EM = "MSCI_EM"
-    MSCI_ACWI = "MSCI_ACWI"
-    MSCI_EAFE = "MSCI_EAFE"
 
 
 class Visibility(str, Enum):

@@ -144,7 +144,6 @@ Signal → Condition → Rule → Strategy
 | `portfolio` | Position state | unrealized_pnl, days_in_position |
 | `calendar` | Date patterns | Day of week, month end |
 | `event` | Market events | Earnings, dividends |
-| `relative` | Benchmark comparison | Beta, correlation |
 | `constant` | Fixed numeric value | 30, 70 |
 | `expr` | Custom formula | "(close - SMA(20)) / ATR(14)" |
 | `external` | Runtime signal | Webhook, ML model |

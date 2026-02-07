@@ -11,7 +11,6 @@ from utss.models.enums import (
     Frequency,
     PortfolioField,
     PriceField,
-    RelativeMeasure,
     Timeframe,
 )
 from utss.models.validators import (
@@ -116,17 +115,6 @@ class ConstantSignal(BaseSchema):
     value: float | ParameterReference
 
 
-# Forward references for recursive types
-class RelativeSignal(BaseSchema):
-    """Signal relative to a benchmark."""
-
-    type: Literal["relative"]
-    signal: "Signal"
-    benchmark: str
-    measure: RelativeMeasure
-    lookback: int | None = Field(None, ge=1)
-
-
 class ExpressionSignal(BaseSchema):
     """Custom formula expression signal."""
 
@@ -154,7 +142,6 @@ Signal = Union[
     CalendarSignal,
     EventSignal,
     PortfolioSignal,
-    RelativeSignal,
     ConstantSignal,
     ExpressionSignal,
     ExternalSignal,

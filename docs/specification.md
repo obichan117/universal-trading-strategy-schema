@@ -55,7 +55,6 @@ graph TB
         Calendar["CalendarSignal"]
         Event["EventSignal"]
         Portfolio["PortfolioSignal"]
-        Relative["RelativeSignal"]
         Constant["ConstantSignal"]
         Expression["ExpressionSignal"]
         External["ExternalSignal"]
@@ -343,16 +342,7 @@ universe:
   type: static
   symbols: [string]       # Required. Min 1 item
 
-# Option B: Index-based
-universe:
-  type: index
-  index: StockIndex       # Required. See enums
-  filters: [Condition]    # Optional. Filter criteria
-  rank_by: Signal         # Optional. Ranking signal
-  order: asc | desc       # Optional. Default: desc
-  limit: integer          # Optional. Max symbols
-
-# Option C: Screener
+# Option B: Screener
 universe:
   type: screener
   base: string            # Optional. Starting universe (index or "all")
@@ -361,12 +351,12 @@ universe:
   order: asc | desc       # Optional
   limit: integer          # Optional
 
-# Option D: Dual (for long-short)
+# Option C: Dual (for long-short)
 universe:
   type: dual
-  long:                   # Same structure as index/screener
-    type: index
-    index: SP500
+  long:                   # Same structure as screener
+    type: screener
+    base: SP500
     rank_by: Signal
     limit: 50
     direction: top
@@ -503,7 +493,6 @@ Signal:
     - CalendarSignal
     - EventSignal
     - PortfolioSignal
-    - RelativeSignal
     - ConstantSignal
     - ExpressionSignal
     - ExternalSignal
@@ -549,13 +538,6 @@ classDiagram
         +field: PortfolioField
         +symbol: string
     }
-    class RelativeSignal {
-        +type: "relative"
-        +signal: Signal
-        +benchmark: string
-        +measure: RelativeMeasure
-        +lookback: integer
-    }
     class ConstantSignal {
         +type: "constant"
         +value: number
@@ -583,14 +565,12 @@ classDiagram
     Signal <|-- CalendarSignal
     Signal <|-- EventSignal
     Signal <|-- PortfolioSignal
-    Signal <|-- RelativeSignal
     Signal <|-- ConstantSignal
     Signal <|-- ExpressionSignal
     Signal <|-- ExternalSignal
     Signal <|-- Reference
     Signal <|-- ParameterReference
 
-    RelativeSignal o-- Signal : signal
 ```
 
 #### PriceSignal
@@ -681,45 +661,6 @@ PortfolioField options:
 - `buying_power`: Available buying power
 - `daily_pnl`: Today's P/L
 - `daily_pnl_pct`: Today's P/L as %
-
-#### RelativeSignal
-
-For cross-asset or benchmark-relative comparisons.
-
-```yaml
-type: relative
-signal: Signal              # Required. The signal to compare
-benchmark: string           # Required. Index or symbol (e.g., "SPY", "NIKKEI225")
-measure: RelativeMeasure    # Required. How to compare
-lookback: integer           # Optional. Lookback period for rolling calculations
-```
-
-RelativeMeasure options:
-- `ratio`: signal / benchmark (e.g., price relative strength)
-- `difference`: signal - benchmark
-- `beta`: Rolling beta vs benchmark
-- `correlation`: Rolling correlation vs benchmark
-- `percentile`: Where signal ranks vs benchmark universe
-- `z_score`: Standardized score vs benchmark
-
-**Example - Price Relative to S&P 500:**
-
-```yaml
-signals:
-  relative_strength:
-    type: relative
-    signal: { type: price, field: close }
-    benchmark: SPY
-    measure: ratio
-    lookback: 20
-
-conditions:
-  outperforming:
-    type: comparison
-    left: { $ref: "#/signals/relative_strength" }
-    operator: ">"
-    right: { type: constant, value: 1.0 }
-```
 
 #### ConstantSignal
 
@@ -1275,9 +1216,9 @@ SEC_FILING_10K | SEC_FILING_10Q | SEC_FILING_8K
 | `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:PRODUCT_RECALL` | User-defined events |
 | `calendar:` | `calendar:[a-zA-Z0-9_]+` | `calendar:FOMC_DECISION` | Economic calendar events |
 
-#### StockIndex
+#### Screener Base (Index Names)
 
-**Core Values (Portable):**
+Index names used as the `base` field in screener universes:
 
 | Region | Indices |
 |--------|---------|
@@ -1286,14 +1227,6 @@ SEC_FILING_10K | SEC_FILING_10Q | SEC_FILING_8K
 | Europe | `FTSE100`, `DAX40`, `CAC40`, `STOXX50`, `STOXX600` |
 | Asia-Pacific | `HANG_SENG`, `SSE50`, `CSI300`, `KOSPI`, `KOSDAQ`, `TWSE`, `ASX200` |
 | Global | `MSCI_WORLD`, `MSCI_EM`, `MSCI_ACWI`, `MSCI_EAFE` |
-
-**Extension Prefixes:**
-
-| Prefix | Pattern | Example | Use Case |
-|--------|---------|---------|----------|
-| `custom:` | `custom:[a-zA-Z0-9_]+` | `custom:MY_WATCHLIST` | User-defined lists |
-| `etf:` | `etf:[A-Z0-9]+` | `etf:SPY` | ETF as universe source |
-| `sector:` | `sector:[A-Z0-9_]+` | `sector:TECHNOLOGY` | Sector-based universes |
 
 ---
 

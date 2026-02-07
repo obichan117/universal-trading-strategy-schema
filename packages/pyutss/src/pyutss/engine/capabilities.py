@@ -21,13 +21,12 @@ IMPLEMENTED_INDICATORS: set[str] = (
 IMPLEMENTED_SIGNAL_TYPES: set[str] = {
     "price", "indicator", "constant", "calendar",
     "portfolio", "$ref", "$param", "expr",
+    "fundamental", "external", "event",
 }
 
 # Signal types defined in the schema but intentionally not yet implemented.
 # These are tracked here so the sync test can distinguish "not yet" from "forgot".
-DEFERRED_SIGNAL_TYPES: set[str] = {
-    "fundamental", "event", "relative", "external",
-}
+DEFERRED_SIGNAL_TYPES: set[str] = set()
 
 # Condition types implemented in ConditionEvaluator
 IMPLEMENTED_CONDITION_TYPES: set[str] = {
@@ -48,7 +47,7 @@ IMPLEMENTED_SIZING_TYPES: set[str] = {
 
 # Universe types implemented in UniverseResolver
 IMPLEMENTED_UNIVERSE_TYPES: set[str] = {
-    "static", "index", "screener",
+    "static", "screener",
 }
 
 

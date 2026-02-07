@@ -33,7 +33,7 @@ A trend-following strategy using moving average crossovers.
 **Key Features:**
 
 - Uses `expr` condition type for MA crossover detection
-- Index-based universe (SP500)
+- Screener-based universe (SP500)
 - Trailing stop for risk management
 
 [:octicons-file-code-24: View on GitHub](https://github.com/obichan117/universal-trading-strategy-schema/blob/main/examples/golden-cross.yaml)
@@ -227,8 +227,8 @@ info:
   tags: [japan, momentum]
 
 universe:
-  type: index
-  index: NIKKEI225
+  type: screener
+  base: NIKKEI225
   rank_by:
     type: indicator
     indicator: RETURN

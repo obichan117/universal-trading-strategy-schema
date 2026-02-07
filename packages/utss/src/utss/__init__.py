@@ -59,7 +59,6 @@ from utss.models import (
     FundamentalMetric,
     FundamentalSignal,
     HoldAction,
-    IndexUniverse,
     # Signals
     IndicatorParams,
     IndicatorSignal,
@@ -82,8 +81,6 @@ from utss.models import (
     PriceField,
     PriceSignal,
     Reference,
-    RelativeMeasure,
-    RelativeSignal,
     RiskBasedSizing,
     # Rules
     Rule,
@@ -94,7 +91,6 @@ from utss.models import (
     Sizing,
     # Universe
     StaticUniverse,
-    StockIndex,
     # Constraints
     StopConfig,
     # Strategy
@@ -144,7 +140,6 @@ __all__ = [
     "IndicatorType",
     "FundamentalMetric",
     "EventType",
-    "RelativeMeasure",
     "ComparisonOperator",
     "TradeDirection",
     "OrderType",
@@ -152,7 +147,6 @@ __all__ = [
     "AlertLevel",
     "AlertChannel",
     "ExternalSource",
-    "StockIndex",
     "Visibility",
     "ParameterType",
     # Parameter Reference
@@ -165,7 +159,6 @@ __all__ = [
     "CalendarSignal",
     "EventSignal",
     "PortfolioSignal",
-    "RelativeSignal",
     "ConstantSignal",
     "ExpressionSignal",
     "ExternalSignal",
@@ -198,7 +191,6 @@ __all__ = [
     "Rule",
     # Universe
     "StaticUniverse",
-    "IndexUniverse",
     "ScreenerUniverse",
     "Universe",
     # Constraints

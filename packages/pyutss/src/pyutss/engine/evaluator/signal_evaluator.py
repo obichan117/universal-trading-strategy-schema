@@ -19,10 +19,12 @@ class SignalEvaluator:
     Supports all UTSS signal types:
     - price: OHLCV price fields
     - indicator: Technical indicators (SMA, EMA, RSI, MACD, etc.)
-    - fundamental: Fundamental metrics (not yet implemented)
+    - fundamental: Fundamental metrics (PE_RATIO, ROE, etc.)
     - calendar: Date patterns (day_of_week, is_month_end, etc.)
-    - portfolio: Portfolio state (not yet implemented)
+    - event: Market events (EARNINGS_RELEASE, etc.)
+    - portfolio: Portfolio state
     - constant: Fixed values
+    - external: External data sources (webhook, file, provider)
     - expr: Custom expressions (limited support)
 
     Example:
@@ -70,6 +72,12 @@ class SignalEvaluator:
             return self._eval_constant_signal(signal, context)
         elif signal_type == "calendar":
             return self._eval_calendar_signal(signal, context)
+        elif signal_type == "fundamental":
+            return self._eval_fundamental_signal(signal, context)
+        elif signal_type == "external":
+            return self._eval_external_signal(signal, context)
+        elif signal_type == "event":
+            return self._eval_event_signal(signal, context)
         elif signal_type == "portfolio":
             return self._eval_portfolio_signal(signal, context)
         elif signal_type == "$ref":
@@ -170,6 +178,89 @@ class SignalEvaluator:
             return pd.Series((index.month % 3 == 0) & (self._is_last_trading_day(index)), index=index).astype(int)
         else:
             raise EvaluationError(f"Unknown calendar field: {field}")
+
+    def _eval_fundamental_signal(
+        self, signal: dict[str, Any], context: EvaluationContext
+    ) -> pd.Series:
+        """Evaluate fundamental signal.
+
+        Looks up a fundamental metric (e.g. PE_RATIO) from context.fundamental_data.
+        Returns a constant series (fundamentals are point-in-time snapshots).
+        """
+        metric = signal.get("metric", "PE_RATIO")
+        symbol = signal.get("symbol")
+        data = context.get_data()
+
+        if context.fundamental_data is None:
+            return pd.Series(float("nan"), index=data.index)
+
+        # Look up by explicit symbol or use first available
+        key = symbol or next(iter(context.fundamental_data), None)
+        fund = context.fundamental_data.get(key) if key else None
+        if fund is None:
+            return pd.Series(float("nan"), index=data.index)
+
+        # Map UPPER_CASE metric to snake_case attribute
+        attr = metric.lower()
+        value = getattr(fund, attr, None) if not isinstance(fund, dict) else fund.get(attr)
+        return pd.Series(
+            float(value) if value is not None else float("nan"),
+            index=data.index,
+        )
+
+    def _eval_external_signal(
+        self, signal: dict[str, Any], context: EvaluationContext
+    ) -> pd.Series:
+        """Evaluate external signal.
+
+        Looks up a pre-loaded Series from context.external_data by key.
+        Aligns to primary data index and fills gaps with default value.
+        """
+        source = signal.get("source", "file")
+        default = signal.get("default", 0.0)
+        data = context.get_data()
+
+        if context.external_data is None:
+            return pd.Series(default, index=data.index)
+
+        # Build key from signal definition
+        key = signal.get("url") or signal.get("path") or signal.get("provider") or source
+        series = context.external_data.get(key)
+
+        if series is None:
+            return pd.Series(default, index=data.index)
+
+        # Align to primary data index, fill gaps with default
+        return series.reindex(data.index).fillna(default)
+
+    def _eval_event_signal(
+        self, signal: dict[str, Any], context: EvaluationContext
+    ) -> pd.Series:
+        """Evaluate event signal.
+
+        Returns 1 for dates within the event window, 0 otherwise.
+        The window is defined by days_before and days_after the event date.
+        """
+        event_type = signal.get("event", "EARNINGS_RELEASE")
+        days_before = signal.get("days_before", 0)
+        days_after = signal.get("days_after", 0)
+        data = context.get_data()
+
+        if context.event_data is None:
+            return pd.Series(0, index=data.index, dtype=int)
+
+        event_dates = context.event_data.get(event_type, [])
+        if not event_dates:
+            return pd.Series(0, index=data.index, dtype=int)
+
+        result = pd.Series(0, index=data.index, dtype=int)
+        for event_date in event_dates:
+            for i, idx in enumerate(data.index):
+                current = idx.date() if hasattr(idx, "date") else idx
+                diff = (event_date - current).days
+                if -days_after <= diff <= days_before:
+                    result.iloc[i] = 1
+        return result
 
     def _eval_portfolio_signal(
         self, signal: dict[str, Any], context: EvaluationContext

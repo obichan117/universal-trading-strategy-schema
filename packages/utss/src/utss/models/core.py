@@ -5,7 +5,7 @@ from typing import Annotated, Any, Literal, Union
 from pydantic import ConfigDict, Field
 
 from utss.models.actions import Action
-from utss.models.base import BaseSchema, ParameterReference
+from utss.models.base import BaseSchema
 from utss.models.conditions import Condition
 from utss.models.enums import (
     CommissionType,
@@ -17,7 +17,6 @@ from utss.models.enums import (
     Visibility,
 )
 from utss.models.signals import Signal
-from utss.models.validators import ExtensibleIndex
 
 
 # =============================================================================
@@ -48,28 +47,6 @@ class StaticUniverse(BaseSchema):
     symbols: list[str] = Field(..., min_length=1)
 
 
-class IndexUniverse(BaseSchema):
-    """Index-based universe.
-
-    .. deprecated::
-        Use ``ScreenerUniverse`` with ``base`` instead.
-        Example: ``{type: screener, base: SP500}``
-
-    Supports core indices (e.g., SP500, NIKKEI225) and extensions:
-    - custom:MY_WATCHLIST - User-defined symbol lists
-    - etf:SPY - ETF as universe source
-    - sector:TECHNOLOGY - Sector-based universes
-    """
-
-    type: Literal["index"]
-    index: ExtensibleIndex
-    filters: list[Condition] | None = None
-    rank_by: Signal | None = None
-    order: Literal["asc", "desc"] = "desc"
-    limit: int | ParameterReference | None = Field(None, ge=1)
-    refresh: Literal["daily", "weekly", "monthly", "quarterly", "never"] | None = None
-
-
 class ScreenerUniverse(BaseSchema):
     """Screener-based universe.
 
@@ -89,7 +66,7 @@ class ScreenerUniverse(BaseSchema):
 
 # Universe discriminated union
 Universe = Annotated[
-    Union[StaticUniverse, IndexUniverse, ScreenerUniverse],
+    Union[StaticUniverse, ScreenerUniverse],
     Field(discriminator="type"),
 ]
 

@@ -77,6 +77,7 @@ nav:
       - Installation: installation.md
   - Guide:
       - Architecture: architecture.md
+      - Signal Types: signals.md
       - Formula Reference: formula-reference.md
       - Examples: examples.md
   - Packages:

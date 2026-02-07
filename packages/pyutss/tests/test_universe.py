@@ -24,35 +24,35 @@ class TestUniverseResolverStatic:
             resolver.resolve({"type": "static"})
 
 
-class TestUniverseResolverIndex:
-    """Test index universe resolution."""
+class TestUniverseResolverIndexRemoved:
+    """Test that index universe type is properly removed."""
 
-    def test_dow30(self):
+    def test_index_type_raises_error(self):
         resolver = UniverseResolver()
-        symbols = resolver.resolve({"type": "index", "index": "DOW30"})
+        with pytest.raises(ValueError, match="removed"):
+            resolver.resolve({"type": "index", "index": "DOW30"})
+
+    def test_screener_replaces_index_dow30(self):
+        resolver = UniverseResolver()
+        symbols = resolver.resolve({"type": "screener", "base": "DOW30"})
         assert len(symbols) == 30
         assert "AAPL" in symbols
         assert "MSFT" in symbols
 
-    def test_nikkei225(self):
+    def test_screener_replaces_index_nikkei225(self):
         resolver = UniverseResolver()
-        symbols = resolver.resolve({"type": "index", "index": "NIKKEI225"})
+        symbols = resolver.resolve({"type": "screener", "base": "NIKKEI225"})
         assert len(symbols) == 20  # subset
         assert "7203.T" in symbols
 
-    def test_index_with_limit(self):
+    def test_screener_replaces_index_with_limit(self):
         resolver = UniverseResolver()
-        symbols = resolver.resolve({"type": "index", "index": "DOW30", "limit": 5})
+        symbols = resolver.resolve({"type": "screener", "base": "DOW30", "limit": 5})
         assert len(symbols) == 5
 
-    def test_unknown_index_returns_empty(self):
-        resolver = UniverseResolver()
-        symbols = resolver.resolve({"type": "index", "index": "UNKNOWN"})
-        assert symbols == []
-
-    def test_custom_index(self):
+    def test_screener_custom_base(self):
         resolver = UniverseResolver(custom_indices={"MY_INDEX": ["A", "B", "C"]})
-        symbols = resolver.resolve({"type": "index", "index": "MY_INDEX"})
+        symbols = resolver.resolve({"type": "screener", "base": "MY_INDEX"})
         assert symbols == ["A", "B", "C"]
 
 
@@ -91,7 +91,7 @@ class TestUniverseResolverMisc:
     def test_add_index(self):
         resolver = UniverseResolver()
         resolver.add_index("CUSTOM", ["X", "Y", "Z"])
-        symbols = resolver.resolve({"type": "index", "index": "CUSTOM"})
+        symbols = resolver.resolve({"type": "screener", "base": "CUSTOM"})
         assert symbols == ["X", "Y", "Z"]
 
     def test_default_type_is_static(self):

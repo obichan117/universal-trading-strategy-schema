@@ -64,7 +64,6 @@ SUPPORTED_SIGNAL_TYPES: list[str] = [
     "calendar",
     "event",
     "portfolio",
-    "relative",
     "constant",
     "expr",
     "external",
@@ -92,7 +91,6 @@ SUPPORTED_SIZING_TYPES: list[str] = [
 # Universe types that engines must support
 SUPPORTED_UNIVERSE_TYPES: list[str] = [
     "static",
-    "index",
     "screener",
 ]
 

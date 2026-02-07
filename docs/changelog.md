@@ -27,7 +27,6 @@ UTSS v1.0 is a **clean, minimal design** with 6 condition types and an `expr` es
 | `calendar` | Date patterns (day_of_week, is_month_end, etc.) |
 | `event` | Market events (EARNINGS_RELEASE, DIVIDEND_EX_DATE, etc.) |
 | `portfolio` | Position state (unrealized_pnl, days_in_position, etc.) |
-| `relative` | Benchmark comparisons (ratio, beta, correlation) |
 | `constant` | Fixed numeric values |
 | `expr` | Custom formula expressions |
 | `external` | Runtime signals (webhook, file, provider) |

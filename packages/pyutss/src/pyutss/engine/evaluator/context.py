@@ -54,6 +54,9 @@ class EvaluationContext:
     parameters: dict[str, float] | None = None
     portfolio_state: PortfolioState | None = None
     current_bar_idx: int = 0  # Current bar index for portfolio lookups
+    fundamental_data: dict[str, Any] | None = None  # {symbol: FundamentalMetrics}
+    external_data: dict[str, pd.Series] | None = None  # {key: Series}
+    event_data: dict[str, list] | None = None  # {"EARNINGS_RELEASE": [date1, ...]}
 
     def get_data(self, timeframe: str | None = None) -> pd.DataFrame:
         """Get data for specified timeframe."""

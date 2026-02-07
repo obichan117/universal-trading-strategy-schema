@@ -1,5 +1,7 @@
 """Tests for pyutss signal and condition evaluator using real market data."""
 
+import datetime
+
 import pandas as pd
 import pytest
 
@@ -394,3 +396,193 @@ class TestConditionWithRealMarketBehavior:
         valid_rsi = rsi.dropna()
         assert (valid_rsi >= 0).all(), "RSI should be >= 0"
         assert (valid_rsi <= 100).all(), "RSI should be <= 100"
+
+
+class TestFundamentalSignal:
+    """Tests for fundamental signal evaluation."""
+
+    def test_fundamental_with_object(self, sample_data):
+        """Test fundamental signal with an object that has attributes."""
+
+        class FundamentalMetrics:
+            pe_ratio = 25.5
+            roe = 0.18
+
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            fundamental_data={"AAPL": FundamentalMetrics()},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "fundamental", "metric": "PE_RATIO"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert len(result) == len(sample_data)
+        assert (result == 25.5).all()
+
+    def test_fundamental_with_dict(self, sample_data):
+        """Test fundamental signal with a dict."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            fundamental_data={"AAPL": {"pe_ratio": 30.0, "roe": 0.2}},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "fundamental", "metric": "PE_RATIO"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 30.0).all()
+
+    def test_fundamental_cross_symbol(self, sample_data):
+        """Test fundamental signal with explicit symbol lookup."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            fundamental_data={
+                "AAPL": {"pe_ratio": 25.0},
+                "MSFT": {"pe_ratio": 35.0},
+            },
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "fundamental", "metric": "PE_RATIO", "symbol": "MSFT"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 35.0).all()
+
+    def test_fundamental_missing_data_returns_nan(self, sample_data):
+        """Test fundamental signal with no data returns NaN."""
+        ctx = EvaluationContext(primary_data=sample_data)
+        evaluator = SignalEvaluator()
+        signal = {"type": "fundamental", "metric": "PE_RATIO"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert result.isna().all()
+
+    def test_fundamental_unknown_metric_returns_nan(self, sample_data):
+        """Test fundamental signal with unknown metric returns NaN."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            fundamental_data={"AAPL": {"pe_ratio": 25.0}},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "fundamental", "metric": "UNKNOWN_METRIC"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert result.isna().all()
+
+
+class TestExternalSignal:
+    """Tests for external signal evaluation."""
+
+    def test_external_with_matching_series(self, sample_data):
+        """Test external signal with pre-loaded Series."""
+        ext_series = pd.Series(1.5, index=sample_data.index)
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            external_data={"sentiment_score": ext_series},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "external", "source": "provider", "provider": "sentiment_score"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 1.5).all()
+
+    def test_external_missing_key_returns_default(self, sample_data):
+        """Test external signal with missing key returns default."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            external_data={"other_key": pd.Series(1.0, index=sample_data.index)},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "external", "source": "provider", "provider": "missing", "default": -1.0}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == -1.0).all()
+
+    def test_external_no_data_returns_default(self, sample_data):
+        """Test external signal with no external_data returns default."""
+        ctx = EvaluationContext(primary_data=sample_data)
+        evaluator = SignalEvaluator()
+        signal = {"type": "external", "source": "file", "default": 0.5}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 0.5).all()
+
+    def test_external_reindex_alignment(self, sample_data):
+        """Test external signal reindexes to primary data, filling gaps."""
+        # Create external series with only half the dates
+        half_idx = sample_data.index[:len(sample_data) // 2]
+        ext_series = pd.Series(42.0, index=half_idx)
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            external_data={"model_signal": ext_series},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "external", "source": "file", "path": "model_signal", "default": 0.0}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert len(result) == len(sample_data)
+        # First half should be 42.0, second half should be 0.0 (default)
+        assert (result.iloc[:len(sample_data) // 2] == 42.0).all()
+        assert (result.iloc[len(sample_data) // 2:] == 0.0).all()
+
+
+class TestEventSignal:
+    """Tests for event signal evaluation."""
+
+    def test_event_on_exact_date(self, sample_data):
+        """Test event signal returns 1 on event date."""
+        # Pick a date from the middle of the sample data
+        event_date = sample_data.index[len(sample_data) // 2].date()
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            event_data={"EARNINGS_RELEASE": [event_date]},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "EARNINGS_RELEASE"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert result.sum() == 1
+        assert result.iloc[len(sample_data) // 2] == 1
+
+    def test_event_days_before_window(self, sample_data):
+        """Test event signal with days_before window."""
+        event_date = sample_data.index[len(sample_data) // 2].date()
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            event_data={"EARNINGS_RELEASE": [event_date]},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "EARNINGS_RELEASE", "days_before": 3}
+        result = evaluator.evaluate_signal(signal, ctx)
+        # Should have more than 1 hit (the event date + up to 3 days before)
+        assert result.sum() >= 2
+
+    def test_event_days_after_window(self, sample_data):
+        """Test event signal with days_after window."""
+        event_date = sample_data.index[len(sample_data) // 2].date()
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            event_data={"EARNINGS_RELEASE": [event_date]},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "EARNINGS_RELEASE", "days_after": 1}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert result.sum() >= 2  # event date + day after
+
+    def test_event_no_data_returns_zeros(self, sample_data):
+        """Test event signal with no event_data returns all zeros."""
+        ctx = EvaluationContext(primary_data=sample_data)
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "EARNINGS_RELEASE"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 0).all()
+
+    def test_event_empty_list_returns_zeros(self, sample_data):
+        """Test event signal with empty event list returns all zeros."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            event_data={"EARNINGS_RELEASE": []},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "EARNINGS_RELEASE"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 0).all()
+
+    def test_event_unknown_type_returns_zeros(self, sample_data):
+        """Test event signal with unknown event type returns all zeros."""
+        ctx = EvaluationContext(
+            primary_data=sample_data,
+            event_data={"EARNINGS_RELEASE": [datetime.date(2024, 1, 15)]},
+        )
+        evaluator = SignalEvaluator()
+        signal = {"type": "event", "event": "UNKNOWN_EVENT"}
+        result = evaluator.evaluate_signal(signal, ctx)
+        assert (result == 0).all()

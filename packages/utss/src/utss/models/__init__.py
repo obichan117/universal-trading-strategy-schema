@@ -26,9 +26,7 @@ from utss.models.enums import (
     ParameterType,
     PortfolioField,
     PriceField,
-    RelativeMeasure,
     SlippageType,
-    StockIndex,
     TimeInForce,
     Timeframe,
     TradeDirection,
@@ -40,11 +38,9 @@ from utss.models.validators import (
     EVENT_PREFIXES,
     FUNDAMENTAL_PREFIXES,
     INDICATOR_PREFIXES,
-    INDEX_PREFIXES,
     ExtensibleEvent,
     ExtensibleFundamental,
     ExtensibleIndicator,
-    ExtensibleIndex,
 )
 
 # --- Base ---
@@ -66,7 +62,6 @@ from utss.models.signals import (
     IndicatorSignal,
     PortfolioSignal,
     PriceSignal,
-    RelativeSignal,
     Signal,
 )
 
@@ -109,7 +104,6 @@ from utss.models.core import (
     StrategyCommissionTier,
     Constraints,
     Execution,
-    IndexUniverse,
     Info,
     Parameter,
     Rule,
@@ -127,7 +121,6 @@ from utss.models.core import (
 
 # --- Resolve forward references ---
 # Must be called after all types are imported to handle recursive types
-RelativeSignal.model_rebuild()
 ComparisonCondition.model_rebuild()
 AndCondition.model_rebuild()
 OrCondition.model_rebuild()
@@ -135,7 +128,6 @@ NotCondition.model_rebuild()
 ExpressionCondition.model_rebuild()
 RiskBasedSizing.model_rebuild()
 TradeAction.model_rebuild()
-IndexUniverse.model_rebuild()
 ScreenerUniverse.model_rebuild()
 Strategy.model_rebuild()
 
@@ -150,7 +142,6 @@ __all__ = [
     "IndicatorType",
     "FundamentalMetric",
     "EventType",
-    "RelativeMeasure",
     "ComparisonOperator",
     "TradeDirection",
     "OrderType",
@@ -158,7 +149,6 @@ __all__ = [
     "AlertLevel",
     "AlertChannel",
     "ExternalSource",
-    "StockIndex",
     "Visibility",
     "ParameterType",
     "SlippageType",
@@ -167,11 +157,9 @@ __all__ = [
     "INDICATOR_PREFIXES",
     "FUNDAMENTAL_PREFIXES",
     "EVENT_PREFIXES",
-    "INDEX_PREFIXES",
     "ExtensibleIndicator",
     "ExtensibleFundamental",
     "ExtensibleEvent",
-    "ExtensibleIndex",
     # Base
     "BaseSchema",
     "ParameterReference",
@@ -184,7 +172,6 @@ __all__ = [
     "CalendarSignal",
     "EventSignal",
     "PortfolioSignal",
-    "RelativeSignal",
     "ConstantSignal",
     "ExpressionSignal",
     "ExternalSignal",
@@ -216,7 +203,6 @@ __all__ = [
     "Rule",
     # Universe
     "StaticUniverse",
-    "IndexUniverse",
     "ScreenerUniverse",
     "Universe",
     # Constraints
