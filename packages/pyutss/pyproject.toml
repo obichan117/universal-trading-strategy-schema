@@ -1,6 +1,6 @@
 [project]
 name = "pyutss"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python backtesting engine for Universal Trading Strategy Schema (UTSS)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -28,7 +28,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "utss",
+    "utss>=1.1.0",
     "pandas>=2.0.0",
     "numpy>=1.24.0",
     "httpx>=0.25.0",

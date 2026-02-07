@@ -1,6 +1,6 @@
 [project]
 name = "utss-llm"
-version = "0.1.0"
+version = "0.1.1"
 description = "LLM-powered natural language to UTSS strategy parser"
 readme = "README.md"
 license = { text = "MIT" }
@@ -31,7 +31,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "utss",
+    "utss>=1.1.0",
     "httpx>=0.25.0",
 ]
 

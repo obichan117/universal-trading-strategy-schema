@@ -1,6 +1,6 @@
 [project]
 name = "utss"
-version = "1.0.0"
+version = "1.1.0"
 description = "Universal Trading Strategy Schema - A composable schema for expressing any trading strategy"
 readme = "README.md"
 license = { text = "MIT" }
