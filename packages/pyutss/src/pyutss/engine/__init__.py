@@ -1,6 +1,5 @@
 """Engine module for pyutss."""
 
-from pyutss.engine.backtest import BacktestEngine
 from pyutss.engine.engine import Engine
 from pyutss.engine.evaluator import (
     ConditionEvaluator,
@@ -29,7 +28,6 @@ from pyutss.engine.universe import UniverseResolver
 
 __all__ = [
     "Engine",
-    "BacktestEngine",
     "SignalEvaluator",
     "ConditionEvaluator",
     "EvaluationContext",

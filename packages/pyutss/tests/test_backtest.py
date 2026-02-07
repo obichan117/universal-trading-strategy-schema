@@ -3,9 +3,7 @@
 import pandas as pd
 import pytest
 
-from pyutss import BacktestConfig, BacktestEngine, BacktestResult
-
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+from pyutss import BacktestConfig, BacktestResult, Engine
 
 
 # sample_data fixture is provided by conftest.py (real AAPL data)
@@ -58,25 +56,24 @@ def rsi_strategy():
 
 
 class TestBacktestEngine:
-    """Tests for BacktestEngine using real market data."""
+    """Tests for Engine (formerly BacktestEngine) using real market data."""
 
     def test_engine_initialization(self):
         """Test engine initializes with default config."""
-        engine = BacktestEngine()
-        assert engine.config.initial_capital == 100000
+        engine = Engine()
+        assert engine.initial_capital == 100000
 
     def test_engine_custom_config(self):
         """Test engine with custom config."""
-        config = BacktestConfig(initial_capital=50000, commission_rate=0.002)
-        engine = BacktestEngine(config=config)
-        assert engine.config.initial_capital == 50000
-        assert engine.config.commission_rate == 0.002
+        engine = Engine(initial_capital=50000, commission_rate=0.002)
+        assert engine.initial_capital == 50000
+        assert engine.commission_rate == 0.002
 
     def test_simple_backtest(self, sample_data, simple_strategy):
         """Test basic backtest execution with real AAPL data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=simple_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
         )
@@ -90,14 +87,14 @@ class TestBacktestEngine:
 
     def test_backtest_with_date_range(self, sample_data, simple_strategy):
         """Test backtest with date range filtering using real data."""
-        engine = BacktestEngine()
+        engine = Engine()
 
         # Get actual date range from sample data (handle timezone-aware index)
         data_start = sample_data.index[10]  # Skip first 10 days
         data_end = sample_data.index[-10]   # Skip last 10 days
 
-        result = engine.run(
-            strategy=simple_strategy,
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
             start_date=data_start,
@@ -110,9 +107,9 @@ class TestBacktestEngine:
 
     def test_backtest_trades(self, sample_data, simple_strategy):
         """Test that backtest records trades with real data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=simple_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
         )
@@ -122,9 +119,9 @@ class TestBacktestEngine:
 
     def test_backtest_equity_curve(self, sample_data, simple_strategy):
         """Test equity curve generation with real data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=simple_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
         )
@@ -136,9 +133,9 @@ class TestBacktestEngine:
 
     def test_backtest_with_rsi_strategy(self, real_data_aapl, rsi_strategy):
         """Test backtest with RSI-based strategy on 2 years of real data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=rsi_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            rsi_strategy,
             data=real_data_aapl,
             symbol="AAPL",
         )
@@ -149,21 +146,21 @@ class TestBacktestEngine:
 
     def test_empty_data_raises_error(self, simple_strategy):
         """Test that empty data raises ValueError."""
-        engine = BacktestEngine()
+        engine = Engine()
         empty_data = pd.DataFrame()
 
         with pytest.raises(ValueError):
-            engine.run(
-                strategy=simple_strategy,
+            engine.backtest(
+                simple_strategy,
                 data=empty_data,
                 symbol="TEST",
             )
 
     def test_backtest_result_properties(self, sample_data, simple_strategy):
         """Test BacktestResult computed properties with real data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=simple_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
         )
@@ -176,9 +173,9 @@ class TestBacktestEngine:
 
     def test_equity_tracks_position_value(self, sample_data, simple_strategy):
         """Test that equity curve reflects position value changes with real data."""
-        engine = BacktestEngine()
-        result = engine.run(
-            strategy=simple_strategy,
+        engine = Engine()
+        result = engine.backtest(
+            simple_strategy,
             data=sample_data,
             symbol="AAPL",
         )

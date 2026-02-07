@@ -613,6 +613,9 @@ class Engine:
         end_date: date | str | None,
     ) -> pd.DataFrame:
         """Prepare data: filter dates, ensure lowercase columns."""
+        if data.empty:
+            return data
+
         data = data.copy()
 
         if not isinstance(data.index, pd.DatetimeIndex):

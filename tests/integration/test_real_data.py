@@ -209,14 +209,13 @@ rules:
 class TestEndToEndPipeline:
     """Test the complete pipeline from YAML to backtest results."""
 
-    @pytest.mark.filterwarnings("ignore::DeprecationWarning")
     def test_yaml_to_backtest_pipeline(self):
         """Test loading YAML, fetching data, running backtest."""
         from pathlib import Path
 
         import yaml
 
-        from pyutss import BacktestConfig, BacktestEngine
+        from pyutss import Engine
 
         # 1. Load actual example YAML
         examples_dir = Path(__file__).parent.parent.parent / "examples"
@@ -235,9 +234,8 @@ class TestEndToEndPipeline:
         data = normalize_columns(fetch("AAPL", start_date, end_date))
 
         # 4. Run backtest
-        config = BacktestConfig(initial_capital=100000)
-        engine = BacktestEngine(config=config)
-        result = engine.run(strategy=strategy, data=data, symbol="AAPL")
+        engine = Engine(initial_capital=100000)
+        result = engine.backtest(strategy, data=data, symbol="AAPL")
 
         # 5. Verify complete pipeline worked
         assert result.strategy_id == strategy["info"]["id"]

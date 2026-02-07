@@ -6,11 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
-
+from pyutss import Engine
 from pyutss.portfolio import (
-    PortfolioBacktester,
-    PortfolioConfig,
     PortfolioResult,
     RebalanceFrequency,
     Rebalancer,
@@ -190,7 +187,7 @@ class TestRebalancer:
 
 
 class TestPortfolioBacktester:
-    """Tests for PortfolioBacktester class."""
+    """Tests for multi-symbol portfolio backtesting via Engine."""
 
     @pytest.fixture
     def sample_data(self):
@@ -206,33 +203,25 @@ class TestPortfolioBacktester:
 
     def test_basic_portfolio_backtest(self, sample_data, strategy):
         """Test basic portfolio backtest runs without error."""
-        config = PortfolioConfig(
-            initial_capital=100000,
-            rebalance="monthly",
-        )
-        backtester = PortfolioBacktester(config)
+        engine = Engine(initial_capital=100000)
 
-        result = backtester.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=sample_data,
             weights="equal",
         )
 
         assert isinstance(result, PortfolioResult)
-        assert result.symbols == ["AAPL", "MSFT"]
+        assert set(result.symbols) == {"AAPL", "MSFT"}
         assert result.initial_capital == 100000
         assert result.final_equity > 0
 
     def test_portfolio_with_inverse_vol(self, sample_data, strategy):
         """Test portfolio with inverse volatility weighting."""
-        config = PortfolioConfig(
-            initial_capital=100000,
-            rebalance="monthly",
-        )
-        backtester = PortfolioBacktester(config)
+        engine = Engine(initial_capital=100000)
 
-        result = backtester.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=sample_data,
             weights="inverse_vol",
         )
@@ -242,14 +231,10 @@ class TestPortfolioBacktester:
 
     def test_portfolio_with_custom_weights(self, sample_data, strategy):
         """Test portfolio with custom weights."""
-        config = PortfolioConfig(
-            initial_capital=100000,
-            rebalance="monthly",
-        )
-        backtester = PortfolioBacktester(config)
+        engine = Engine(initial_capital=100000)
 
-        result = backtester.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=sample_data,
             weights={"AAPL": 0.6, "MSFT": 0.4},
         )

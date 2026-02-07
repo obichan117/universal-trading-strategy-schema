@@ -1,26 +1,18 @@
-"""Portfolio backtesting module for multi-symbol strategies.
+"""Portfolio module for weight schemes, rebalancing, and results.
 
-Provides portfolio-level backtesting with shared capital pool,
-rebalancing, and various weight schemes.
+Use :class:`pyutss.Engine` for multi-symbol portfolio backtesting.
 
 Example:
-    from pyutss.portfolio import PortfolioBacktester, PortfolioConfig
+    from pyutss import Engine
 
-    config = PortfolioConfig(initial_capital=100000, rebalance="monthly")
-    backtester = PortfolioBacktester(config)
-
-    result = backtester.run(
-        strategy=strategy,
-        data={"AAPL": aapl_df, "MSFT": msft_df, "GOOGL": googl_df},
-        start_date=date(2020, 1, 1),
-        end_date=date(2024, 1, 1),
+    engine = Engine(initial_capital=100000)
+    result = engine.backtest(
+        strategy,
+        data={"AAPL": aapl_df, "MSFT": msft_df},
         weights="equal",
     )
-
-    print(f"Portfolio return: {result.total_return_pct:.2f}%")
 """
 
-from pyutss.portfolio.backtester import PortfolioBacktester, PortfolioConfig
 from pyutss.portfolio.rebalancer import RebalanceFrequency, Rebalancer
 from pyutss.portfolio.result import PortfolioResult
 from pyutss.portfolio.weights import (
@@ -32,8 +24,6 @@ from pyutss.portfolio.weights import (
 )
 
 __all__ = [
-    "PortfolioBacktester",
-    "PortfolioConfig",
     "PortfolioResult",
     "Rebalancer",
     "RebalanceFrequency",

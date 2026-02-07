@@ -120,10 +120,6 @@ executor = BacktestExecutor(
 engine = Engine(initial_capital=10_000_000, executor=executor)
 ```
 
-## BacktestEngine (Deprecated)
-
-Legacy API. Use `Engine` instead. `BacktestEngine` is still available for backward compatibility.
-
 ## BacktestConfig
 
 Configuration for backtest execution.
@@ -414,10 +410,6 @@ for sym, sym_result in result.per_symbol_results.items():
 - `"risk_parity"`: Target equal risk contribution
 - `dict[str, float]`: Custom target weights (e.g., `{"AAPL": 0.5, "MSFT": 0.3, "GOOGL": 0.2}`)
 
-### PortfolioBacktester (Deprecated)
-
-Legacy API. Use `Engine` with a data dict instead.
-
 ## Optimization
 
 ### Grid Search
@@ -558,7 +550,6 @@ from pyutss import (
     UniverseResolver,
 
     # Legacy (deprecated, use Engine instead)
-    BacktestEngine,
     BacktestConfig,
 
     # Results

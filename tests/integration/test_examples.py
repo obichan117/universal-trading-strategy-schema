@@ -1,7 +1,5 @@
 """Integration tests for UTSS example strategies with REAL market data.
 
-These tests use the deprecated BacktestEngine for backward-compatibility validation.
-
 These tests:
 1. Load actual YAML strategy files from examples/
 2. Fetch real market data from Yahoo Finance
@@ -17,7 +15,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from pyutss import BacktestConfig, BacktestEngine, BacktestResult
+from pyutss import BacktestResult, Engine
 from pyutss.data import available_sources, fetch
 
 
@@ -44,21 +42,17 @@ def load_strategy(filename: str) -> dict:
 
 
 @pytest.fixture
-def backtest_engine():
+def engine():
     """Create a configured backtest engine."""
-    config = BacktestConfig(
+    return Engine(
         initial_capital=100000,
         commission_rate=0.001,
         slippage_rate=0.0005,
     )
-    return BacktestEngine(config=config)
 
 
 # Skip all tests if Yahoo Finance is not available
-pytestmark = [
-    pytest.mark.skipif(not has_yahoo(), reason="Yahoo Finance not available"),
-    pytest.mark.filterwarnings("ignore::DeprecationWarning"),
-]
+pytestmark = pytest.mark.skipif(not has_yahoo(), reason="Yahoo Finance not available")
 
 
 class TestExampleStrategiesLoad:
@@ -125,7 +119,7 @@ class TestExampleStrategiesLoad:
 class TestRSIReversalWithRealData:
     """Test RSI reversal strategy with real data over multi-year period."""
 
-    def test_backtest_rsi_reversal_on_aapl(self, backtest_engine):
+    def test_backtest_rsi_reversal_on_aapl(self, engine):
         """Run rsi-reversal.yaml on 3 years of AAPL data - should generate trades."""
         # Load ACTUAL strategy YAML
         strategy = load_strategy("rsi-reversal.yaml")
@@ -136,8 +130,8 @@ class TestRSIReversalWithRealData:
         data = normalize_columns(fetch("AAPL", start_date, end_date))
 
         # Run backtest with actual schema (including $ref resolution)
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="AAPL",
         )
@@ -167,7 +161,7 @@ class TestRSIReversalWithRealData:
             for i, trade in enumerate(result.trades[:5]):  # Show first 5 trades
                 print(f"  {i+1}. {trade}")
 
-    def test_backtest_rsi_reversal_on_volatile_stock(self, backtest_engine):
+    def test_backtest_rsi_reversal_on_volatile_stock(self, engine):
         """Run rsi-reversal.yaml on volatile stock (TSLA) - more RSI extremes."""
         strategy = load_strategy("rsi-reversal.yaml")
 
@@ -176,8 +170,8 @@ class TestRSIReversalWithRealData:
         start_date = end_date - timedelta(days=730)  # 2 years
         data = normalize_columns(fetch("TSLA", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="TSLA",
         )
@@ -192,7 +186,7 @@ class TestRSIReversalWithRealData:
 class TestGoldenCrossWithRealData:
     """Test Golden Cross strategy with real data - needs long history."""
 
-    def test_backtest_golden_cross_on_spy(self, backtest_engine):
+    def test_backtest_golden_cross_on_spy(self, engine):
         """Run golden-cross.yaml on 5 years of SPY data - should catch crossovers."""
         # Load ACTUAL strategy YAML
         strategy = load_strategy("golden-cross.yaml")
@@ -203,8 +197,8 @@ class TestGoldenCrossWithRealData:
         start_date = end_date - timedelta(days=1825)  # ~5 years
         data = normalize_columns(fetch("SPY", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="SPY",
         )
@@ -225,7 +219,7 @@ class TestGoldenCrossWithRealData:
             for trade in result.trades:
                 print(f"  {trade}")
 
-    def test_backtest_golden_cross_on_qqq(self, backtest_engine):
+    def test_backtest_golden_cross_on_qqq(self, engine):
         """Run golden-cross.yaml on QQQ (more volatile than SPY)."""
         strategy = load_strategy("golden-cross.yaml")
 
@@ -233,8 +227,8 @@ class TestGoldenCrossWithRealData:
         start_date = end_date - timedelta(days=1460)  # 4 years
         data = normalize_columns(fetch("QQQ", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="QQQ",
         )
@@ -248,7 +242,7 @@ class TestGoldenCrossWithRealData:
 class TestMondayFridayWithRealData:
     """Test Monday-Friday calendar strategy - trades weekly."""
 
-    def test_backtest_monday_friday_on_spy(self, backtest_engine):
+    def test_backtest_monday_friday_on_spy(self, engine):
         """Run monday-friday.yaml on 2 years of SPY - weekly buy/sell cycles."""
         strategy = load_strategy("monday-friday.yaml")
 
@@ -257,8 +251,8 @@ class TestMondayFridayWithRealData:
         start_date = end_date - timedelta(days=730)
         data = normalize_columns(fetch("SPY", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="SPY",
         )
@@ -284,7 +278,7 @@ class TestMondayFridayWithRealData:
 class TestMultipleSymbols:
     """Test strategies across multiple real symbols with sufficient history."""
 
-    def test_rsi_strategy_multi_symbol(self, backtest_engine):
+    def test_rsi_strategy_multi_symbol(self, engine):
         """Run RSI strategy on multiple symbols - 2 years each."""
         strategy = load_strategy("rsi-reversal.yaml")
 
@@ -298,8 +292,8 @@ class TestMultipleSymbols:
         total_trades = 0
         for symbol in symbols:
             data = normalize_columns(fetch(symbol, start_date, end_date))
-            result = backtest_engine.run(
-                strategy=strategy,
+            result = engine.backtest(
+                strategy,
                 data=data,
                 symbol=symbol,
             )
@@ -319,7 +313,7 @@ class TestMultipleSymbols:
 class TestBacktestResultIntegrity:
     """Test that backtest results are consistent and complete."""
 
-    def test_equity_curve_length_matches_data(self, backtest_engine):
+    def test_equity_curve_length_matches_data(self, engine):
         """Equity curve should have same length as input data."""
         strategy = load_strategy("rsi-reversal.yaml")
 
@@ -327,8 +321,8 @@ class TestBacktestResultIntegrity:
         start_date = end_date - timedelta(days=730)  # 2 years for trades
         data = normalize_columns(fetch("AAPL", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="AAPL",
         )
@@ -336,7 +330,7 @@ class TestBacktestResultIntegrity:
         assert len(result.equity_curve) == len(data)
         assert len(result.portfolio_history) == len(data)
 
-    def test_final_equity_matches_curve(self, backtest_engine):
+    def test_final_equity_matches_curve(self, engine):
         """Final equity should approximately match last value in equity curve."""
         strategy = load_strategy("rsi-reversal.yaml")
 
@@ -344,8 +338,8 @@ class TestBacktestResultIntegrity:
         start_date = end_date - timedelta(days=730)
         data = normalize_columns(fetch("AAPL", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="AAPL",
         )
@@ -359,7 +353,7 @@ class TestBacktestResultIntegrity:
 class TestTradeLogicVerification:
     """Verify that trade logic and PnL calculations are correct."""
 
-    def test_trade_pnl_calculation(self, backtest_engine):
+    def test_trade_pnl_calculation(self, engine):
         """Verify trade PnL is calculated correctly from entry/exit prices."""
         # Use Monday-Friday strategy - guaranteed trades
         strategy = load_strategy("monday-friday.yaml")
@@ -368,8 +362,8 @@ class TestTradeLogicVerification:
         start_date = end_date - timedelta(days=365)
         data = normalize_columns(fetch("SPY", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="SPY",
         )
@@ -385,7 +379,7 @@ class TestTradeLogicVerification:
         print(f"Total trades: {result.num_trades}")
         print(f"Sample trades: {result.trades[:3]}")
 
-    def test_position_sizing_applied(self, backtest_engine):
+    def test_position_sizing_applied(self, engine):
         """Verify position sizing is applied correctly."""
         strategy = load_strategy("monday-friday.yaml")
 
@@ -393,8 +387,8 @@ class TestTradeLogicVerification:
         start_date = end_date - timedelta(days=180)
         data = normalize_columns(fetch("SPY", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="SPY",
         )
@@ -409,7 +403,7 @@ class TestTradeLogicVerification:
         print(f"Trades: {result.num_trades}")
         print(f"Equity std dev: {result.equity_curve.std():.2f}")
 
-    def test_total_return_matches_equity_change(self, backtest_engine):
+    def test_total_return_matches_equity_change(self, engine):
         """Total return % should match equity change."""
         strategy = load_strategy("monday-friday.yaml")
 
@@ -417,8 +411,8 @@ class TestTradeLogicVerification:
         start_date = end_date - timedelta(days=365)
         data = normalize_columns(fetch("SPY", start_date, end_date))
 
-        result = backtest_engine.run(
-            strategy=strategy,
+        result = engine.backtest(
+            strategy,
             data=data,
             symbol="SPY",
         )
