@@ -19,7 +19,7 @@ from pyutss.engine.executor import BacktestExecutor, Fill, OrderRequest
 from pyutss.engine.live_executor import (
     AccountInfo,
     AlpacaExecutor,
-    LiveExecutorBase,
+    LiveExecutor,
     PaperExecutor,
 )
 from pyutss.engine.portfolio import PortfolioManager
@@ -43,7 +43,7 @@ __all__ = [
     "Fill",
     "PaperExecutor",
     "AlpacaExecutor",
-    "LiveExecutorBase",
+    "LiveExecutor",
     "AccountInfo",
     "PortfolioManager",
     "calculate_size",

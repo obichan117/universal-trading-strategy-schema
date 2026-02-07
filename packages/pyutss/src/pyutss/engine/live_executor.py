@@ -4,13 +4,36 @@ Provides broker-agnostic executor implementations that use the
 same Executor protocol as BacktestExecutor, enabling seamless
 transition from backtesting to live trading.
 
+Supported Brokerages
+--------------------
++------------------+----------+-------------+---------------------------+
+| Executor         | Type     | Dependency  | Markets                   |
++------------------+----------+-------------+---------------------------+
+| BacktestExecutor | Backtest | (built-in)  | Any (historical data)     |
+| PaperExecutor    | Paper    | (built-in)  | Any (simulated fills)     |
+| AlpacaExecutor   | Live     | alpaca-py   | US stocks (paper + live)  |
++------------------+----------+-------------+---------------------------+
+
+BacktestExecutor lives in executor.py. PaperExecutor and AlpacaExecutor
+live here. All satisfy the Executor protocol (execute(order) -> Fill).
+
+AlpacaExecutor additionally satisfies the LiveExecutor protocol which
+adds get_account(), get_price(), and cancel_all().
+
+Adding a new brokerage
+~~~~~~~~~~~~~~~~~~~~~~
+1. Create a class with an ``execute(order: OrderRequest) -> Fill | None`` method.
+2. Optionally implement get_account / get_price / cancel_all for LiveExecutor.
+3. Lazy-import the broker SDK inside methods to keep it an optional dependency.
+4. Pass the executor to ``Engine(executor=your_executor)``.
+
 Usage:
     # Paper trading (simulates fills using live prices)
     executor = PaperExecutor(initial_cash=100000)
     fill = executor.execute(order)
 
-    # Live trading via Alpaca
-    executor = AlpacaExecutor(api_key="...", secret_key="...")
+    # Live trading via Alpaca (pip install alpaca-py)
+    executor = AlpacaExecutor(api_key="...", secret_key="...", paper=True)
     fill = executor.execute(order)
 
     # Use with Engine
@@ -20,9 +43,9 @@ Usage:
 from __future__ import annotations
 
 import logging
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Protocol, runtime_checkable
 
 from pyutss.engine.executor import Fill, OrderRequest
 
@@ -49,28 +72,26 @@ class AccountInfo:
     positions: dict[str, float] = field(default_factory=dict)
 
 
-class LiveExecutorBase(ABC):
-    """Abstract base for live trading executors.
+@runtime_checkable
+class LiveExecutor(Protocol):
+    """Protocol for live trading executors.
 
-    Subclass this to integrate with a specific broker API.
+    Extends the basic Executor protocol with broker-specific operations.
+    Implementations satisfy this structurally (no inheritance needed).
     """
 
-    @abstractmethod
     def execute(self, order: OrderRequest) -> Fill | None:
         """Execute an order against the broker."""
         ...
 
-    @abstractmethod
     def get_account(self) -> AccountInfo:
         """Get current account information."""
         ...
 
-    @abstractmethod
     def get_price(self, symbol: str) -> float | None:
         """Get current market price for a symbol."""
         ...
 
-    @abstractmethod
     def cancel_all(self) -> int:
         """Cancel all open orders. Returns count cancelled."""
         ...
@@ -216,7 +237,7 @@ class PaperExecutor:
         self.order_log.clear()
 
 
-class AlpacaExecutor(LiveExecutorBase):
+class AlpacaExecutor:
     """Alpaca broker executor (requires alpaca-py).
 
     Supports both paper and live trading via Alpaca's API.

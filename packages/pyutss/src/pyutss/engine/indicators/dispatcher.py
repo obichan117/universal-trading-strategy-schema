@@ -52,6 +52,7 @@ class IndicatorSpec:
     component_param: str = "line"
     default_component: str | None = None
     aliases: list[str] = field(default_factory=list)
+    category: str = ""
 
     def resolve_params(self, raw_params: dict[str, Any]) -> dict[str, Any]:
         """Resolve params dict, applying defaults and type coercion."""
@@ -145,21 +146,21 @@ class IndicatorSpec:
 
 _SPECS: list[IndicatorSpec] = [
     # --- Moving Averages ---
-    IndicatorSpec("sma", [ParamDef("period", int, 20)]),
-    IndicatorSpec("ema", [ParamDef("period", int, 20)]),
-    IndicatorSpec("wma", [ParamDef("period", int, 20)]),
-    IndicatorSpec("dema", [ParamDef("period", int, 20)]),
-    IndicatorSpec("tema", [ParamDef("period", int, 20)]),
+    IndicatorSpec("sma", [ParamDef("period", int, 20)], category="Moving Averages"),
+    IndicatorSpec("ema", [ParamDef("period", int, 20)], category="Moving Averages"),
+    IndicatorSpec("wma", [ParamDef("period", int, 20)], category="Moving Averages"),
+    IndicatorSpec("dema", [ParamDef("period", int, 20)], category="Moving Averages"),
+    IndicatorSpec("tema", [ParamDef("period", int, 20)], category="Moving Averages"),
     IndicatorSpec("kama", [
         ParamDef("period", int, 10),
         ParamDef("fast_period", int, 2),
         ParamDef("slow_period", int, 30),
-    ]),
-    IndicatorSpec("hull", [ParamDef("period", int, 9)]),
-    IndicatorSpec("vwma", [ParamDef("period", int, 20)], inputs="cv"),
+    ], category="Moving Averages"),
+    IndicatorSpec("hull", [ParamDef("period", int, 9)], category="Moving Averages"),
+    IndicatorSpec("vwma", [ParamDef("period", int, 20)], inputs="cv", category="Moving Averages"),
 
     # --- Momentum ---
-    IndicatorSpec("rsi", [ParamDef("period", int, 14)]),
+    IndicatorSpec("rsi", [ParamDef("period", int, 14)], category="Momentum"),
     IndicatorSpec("macd", [
         ParamDef("fast_period", int, 12),
         ParamDef("slow_period", int, 26),
@@ -168,35 +169,35 @@ _SPECS: list[IndicatorSpec] = [
         "macd": "macd_line",
         "signal": "signal_line",
         "histogram": "histogram",
-    }, default_component="macd", aliases=["MACD"]),
+    }, default_component="macd", aliases=["MACD"], category="Momentum"),
     IndicatorSpec("stochastic", [
         ParamDef("k_period", int, 14),
         ParamDef("d_period", int, 3),
     ], inputs="hlc", components={
         "k": "k",
         "d": "d",
-    }, default_component="k", aliases=["STOCH", "STOCHASTIC"]),
+    }, default_component="k", aliases=["STOCH", "STOCHASTIC"], category="Momentum"),
     IndicatorSpec("williams_r", [ParamDef("period", int, 14)], inputs="hlc",
-                  aliases=["WILLIAMS_R", "WILLR"]),
-    IndicatorSpec("cci", [ParamDef("period", int, 20)], inputs="hlc"),
-    IndicatorSpec("mfi", [ParamDef("period", int, 14)], inputs="hlcv"),
-    IndicatorSpec("cmo", [ParamDef("period", int, 14)]),
+                  aliases=["WILLIAMS_R", "WILLR"], category="Momentum"),
+    IndicatorSpec("cci", [ParamDef("period", int, 20)], inputs="hlc", category="Momentum"),
+    IndicatorSpec("mfi", [ParamDef("period", int, 14)], inputs="hlcv", category="Momentum"),
+    IndicatorSpec("cmo", [ParamDef("period", int, 14)], category="Momentum"),
     IndicatorSpec("tsi", [
         ParamDef("long_period", int, 25),
         ParamDef("short_period", int, 13),
-    ]),
+    ], category="Momentum"),
     IndicatorSpec("stoch_rsi", [
         ParamDef("rsi_period", int, 14),
         ParamDef("stoch_period", int, 14),
         ParamDef("k_period", int, 3),
-    ]),
-    IndicatorSpec("roc", [ParamDef("period", int, 12)]),
-    IndicatorSpec("momentum", [ParamDef("period", int, 10)]),
+    ], category="Momentum"),
+    IndicatorSpec("roc", [ParamDef("period", int, 12)], category="Momentum"),
+    IndicatorSpec("momentum", [ParamDef("period", int, 10)], category="Momentum"),
 
     # --- Volatility ---
-    IndicatorSpec("atr", [ParamDef("period", int, 14)], inputs="hlc"),
-    IndicatorSpec("stddev", [ParamDef("period", int, 20)]),
-    IndicatorSpec("variance", [ParamDef("period", int, 20)]),
+    IndicatorSpec("atr", [ParamDef("period", int, 14)], inputs="hlc", category="Volatility"),
+    IndicatorSpec("stddev", [ParamDef("period", int, 20)], category="Volatility"),
+    IndicatorSpec("variance", [ParamDef("period", int, 20)], category="Volatility"),
     IndicatorSpec("bollinger_bands", [
         ParamDef("period", int, 20),
         ParamDef("std_dev", float, 2.0),
@@ -207,41 +208,41 @@ _SPECS: list[IndicatorSpec] = [
         "bandwidth": "bandwidth",
         "percent_b": "percent_b",
     }, component_param="band", default_component="percent_b",
-        aliases=["BB", "BOLLINGER"]),
+        aliases=["BB", "BOLLINGER"], category="Volatility"),
 
     # --- Trend ---
-    IndicatorSpec("adx", [ParamDef("period", int, 14)], inputs="hlc"),
-    IndicatorSpec("plus_di", [ParamDef("period", int, 14)], inputs="hlc"),
-    IndicatorSpec("minus_di", [ParamDef("period", int, 14)], inputs="hlc"),
+    IndicatorSpec("adx", [ParamDef("period", int, 14)], inputs="hlc", category="Trend"),
+    IndicatorSpec("plus_di", [ParamDef("period", int, 14)], inputs="hlc", category="Trend"),
+    IndicatorSpec("minus_di", [ParamDef("period", int, 14)], inputs="hlc", category="Trend"),
     IndicatorSpec("supertrend", [
         ParamDef("period", int, 10),
         ParamDef("multiplier", float, 3.0),
-    ], inputs="hlc"),
+    ], inputs="hlc", category="Trend"),
     IndicatorSpec("psar", [
         ParamDef("af_start", float, 0.02),
         ParamDef("af_increment", float, 0.02),
         ParamDef("af_max", float, 0.2),
-    ], inputs="hlc"),
+    ], inputs="hlc", category="Trend"),
     IndicatorSpec("aroon", [ParamDef("period", int, 25)], inputs="hl",
                   components={
                       "up": "aroon_up",
                       "down": "aroon_down",
                       "oscillator": "oscillator",
-                  }, component_param="line", default_component="up"),
-    IndicatorSpec("ichimoku_tenkan", [ParamDef("period", int, 9)], inputs="hl"),
-    IndicatorSpec("ichimoku_kijun", [ParamDef("period", int, 26)], inputs="hl"),
+                  }, component_param="line", default_component="up", category="Trend"),
+    IndicatorSpec("ichimoku_tenkan", [ParamDef("period", int, 9)], inputs="hl", category="Trend"),
+    IndicatorSpec("ichimoku_kijun", [ParamDef("period", int, 26)], inputs="hl", category="Trend"),
     IndicatorSpec("ichimoku_senkou_a", [
         ParamDef("tenkan_period", int, 9),
         ParamDef("kijun_period", int, 26),
-    ], inputs="hl"),
-    IndicatorSpec("ichimoku_senkou_b", [ParamDef("period", int, 52)], inputs="hl"),
-    IndicatorSpec("ichimoku_chikou", [ParamDef("period", int, 26)], inputs="source"),
+    ], inputs="hl", category="Trend"),
+    IndicatorSpec("ichimoku_senkou_b", [ParamDef("period", int, 52)], inputs="hl", category="Trend"),
+    IndicatorSpec("ichimoku_chikou", [ParamDef("period", int, 26)], inputs="source", category="Trend"),
     IndicatorSpec("donchian_channel", [ParamDef("period", int, 20)], inputs="hl",
                   components={
                       "upper": "upper",
                       "middle": "middle",
                       "lower": "lower",
-                  }, default_component="upper"),
+                  }, default_component="upper", category="Trend"),
     IndicatorSpec("keltner_channel", [
         ParamDef("ema_period", int, 20),
         ParamDef("atr_period", int, 10),
@@ -250,29 +251,29 @@ _SPECS: list[IndicatorSpec] = [
         "upper": "upper",
         "middle": "middle",
         "lower": "lower",
-    }, default_component="upper"),
+    }, default_component="upper", category="Trend"),
 
     # --- Volume ---
-    IndicatorSpec("obv", [], inputs="cv"),
-    IndicatorSpec("vwap", [], inputs="hlcv"),
-    IndicatorSpec("cmf", [ParamDef("period", int, 20)], inputs="hlcv"),
-    IndicatorSpec("ad", [], inputs="hlcv"),
+    IndicatorSpec("obv", [], inputs="cv", category="Volume"),
+    IndicatorSpec("vwap", [], inputs="hlcv", category="Volume"),
+    IndicatorSpec("cmf", [ParamDef("period", int, 20)], inputs="hlcv", category="Volume"),
+    IndicatorSpec("ad", [], inputs="hlcv", category="Volume"),
     IndicatorSpec("klinger", [
         ParamDef("fast_period", int, 34),
         ParamDef("slow_period", int, 55),
-    ], inputs="hlcv"),
+    ], inputs="hlcv", category="Volume"),
 
     # --- Statistical ---
-    IndicatorSpec("highest", [ParamDef("period", int, 20)]),
-    IndicatorSpec("lowest", [ParamDef("period", int, 20)]),
+    IndicatorSpec("highest", [ParamDef("period", int, 20)], category="Statistical"),
+    IndicatorSpec("lowest", [ParamDef("period", int, 20)], category="Statistical"),
     IndicatorSpec("simple_return", [ParamDef("period", int, 1)],
-                  aliases=["RETURN"]),
-    IndicatorSpec("drawdown", []),
-    IndicatorSpec("zscore", [ParamDef("period", int, 20)]),
-    IndicatorSpec("percentile", [ParamDef("period", int, 252)]),
-    IndicatorSpec("rank", [ParamDef("period", int, 252)]),
-    IndicatorSpec("beta", [ParamDef("period", int, 252)]),
-    IndicatorSpec("correlation", [ParamDef("period", int, 252)]),
+                  aliases=["RETURN"], category="Statistical"),
+    IndicatorSpec("drawdown", [], category="Statistical"),
+    IndicatorSpec("zscore", [ParamDef("period", int, 20)], category="Statistical"),
+    IndicatorSpec("percentile", [ParamDef("period", int, 252)], category="Statistical"),
+    IndicatorSpec("rank", [ParamDef("period", int, 252)], category="Statistical"),
+    IndicatorSpec("beta", [ParamDef("period", int, 252)], category="Statistical"),
+    IndicatorSpec("correlation", [ParamDef("period", int, 252)], category="Statistical"),
 ]
 
 
@@ -315,6 +316,36 @@ _COMPONENT_SHORTCUTS: dict[str, tuple[str, str, str]] = {
     "AROON_DOWN": ("AROON", "line", "down"),
     "AROON_OSC": ("AROON", "line", "oscillator"),
 }
+
+
+def get_indicator_categories() -> dict[str, list[str]]:
+    """Get indicators organized by category.
+
+    Derives categories from IndicatorSpec.category field plus
+    component shortcuts. Single source of truth for MCP tools.
+
+    Returns:
+        Dict mapping category name to list of indicator names.
+    """
+    categories: dict[str, list[str]] = {}
+
+    # Base indicators from _SPECS
+    for spec in _SPECS:
+        cat = spec.category or "Other"
+        name = spec.method.upper()
+        categories.setdefault(cat, []).append(name)
+        for alias in spec.aliases:
+            if alias.upper() != name:
+                categories[cat].append(alias.upper())
+
+    # Component shortcuts inherit category from their base indicator
+    for shortcut_name, (base_name, _, _) in _COMPONENT_SHORTCUTS.items():
+        base_spec = INDICATOR_REGISTRY.get(base_name)
+        if base_spec:
+            cat = base_spec.category or "Other"
+            categories.setdefault(cat, []).append(shortcut_name)
+
+    return categories
 
 
 def dispatch_indicator(

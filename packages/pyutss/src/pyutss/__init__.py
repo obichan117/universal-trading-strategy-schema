@@ -68,7 +68,7 @@ from pyutss.engine.universe import UniverseResolver
 from pyutss.engine.live_executor import (
     AccountInfo,
     AlpacaExecutor,
-    LiveExecutorBase,
+    LiveExecutor,
     PaperExecutor,
 )
 
@@ -149,7 +149,7 @@ __all__ = [
     "UniverseResolver",
     "PaperExecutor",
     "AlpacaExecutor",
-    "LiveExecutorBase",
+    "LiveExecutor",
     "AccountInfo",
     # Analysis
     "MonteCarloSimulator",

@@ -71,3 +71,54 @@ jobs:
               print(f'  ✓ {strategy.info.name}')
           print('All examples valid!')
           "
+
+      - name: Validate notebooks
+        run: |
+          uv run python -c "
+          import json, yaml, sys
+          from pathlib import Path
+          from utss import validate_yaml
+
+          errors = []
+          for nb_path in Path('examples').glob('**/*.ipynb'):
+              print(f'Checking {nb_path}...')
+              try:
+                  nb = json.loads(nb_path.read_text())
+              except json.JSONDecodeError as e:
+                  errors.append(f'{nb_path}: invalid JSON - {e}')
+                  continue
+
+              # Validate notebook structure
+              if 'cells' not in nb:
+                  errors.append(f'{nb_path}: missing cells key')
+                  continue
+              print(f'  ✓ valid notebook structure ({len(nb[\"cells\"])} cells)')
+
+              # Extract and validate embedded strategy YAMLs
+              for i, cell in enumerate(nb['cells']):
+                  if cell.get('cell_type') != 'code':
+                      continue
+                  source = ''.join(cell.get('source', []))
+                  # Find triple-quoted YAML strings with strategy markers
+                  for marker in ['info:', 'universe:', 'rules:']:
+                      if marker in source and '\"\"\"' in source:
+                          start = source.find('\"\"\"') + 3
+                          end = source.find('\"\"\"', start)
+                          if end > start:
+                              yaml_str = source[start:end]
+                              if 'info:' in yaml_str and 'rules:' in yaml_str:
+                                  try:
+                                      validate_yaml(yaml_str)
+                                      print(f'  ✓ cell {i}: embedded strategy YAML valid')
+                                  except Exception as e:
+                                      errors.append(f'{nb_path} cell {i}: invalid strategy - {e}')
+                          break
+
+          if errors:
+              print()
+              print('ERRORS:')
+              for e in errors:
+                  print(f'  ✗ {e}')
+              sys.exit(1)
+          print('All notebooks valid!')
+          "

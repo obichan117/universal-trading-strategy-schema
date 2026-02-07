@@ -79,6 +79,7 @@ utss/
 │   │   │   │   ├── single_runner.py  # Single-symbol backtest runner
 │   │   │   │   ├── portfolio_runner.py # Multi-symbol portfolio runner
 │   │   │   │   ├── executor.py     # Executor protocol + BacktestExecutor
+│   │   │   │   ├── live_executor.py  # LiveExecutor protocol + PaperExecutor + AlpacaExecutor
 │   │   │   │   ├── universe.py     # UniverseResolver
 │   │   │   │   ├── portfolio.py    # PortfolioManager
 │   │   │   │   ├── sizing.py       # Position sizing logic
@@ -178,6 +179,25 @@ Signal → Condition → Rule → Strategy
 | `constraints` | Risk limits and stops |
 | `schedule` | When to evaluate |
 | `parameters` | Optimizable values |
+
+---
+
+## Supported Brokerages
+
+| Executor | Type | Dependency | Markets | File |
+|----------|------|------------|---------|------|
+| `BacktestExecutor` | Backtest | built-in | Any (historical data) | `engine/executor.py` |
+| `PaperExecutor` | Paper | built-in | Any (simulated fills) | `engine/live_executor.py` |
+| `AlpacaExecutor` | Live | `alpaca-py` | US stocks (paper + live) | `engine/live_executor.py` |
+
+**Alpaca API usage** (`alpaca-py`, lazy-imported):
+- `alpaca.trading.client.TradingClient` — authenticated broker connection
+- `alpaca.trading.requests.MarketOrderRequest` — market order submission
+- `alpaca.trading.enums.OrderSide`, `TimeInForce` — order parameters
+- `alpaca.data.historical.StockHistoricalDataClient` — latest quote data
+- `alpaca.data.requests.StockLatestQuoteRequest` — price lookup
+
+To add a new brokerage: implement `execute(order: OrderRequest) -> Fill | None` and pass to `Engine(executor=...)`. See `live_executor.py` docstring for details.
 
 ---
 

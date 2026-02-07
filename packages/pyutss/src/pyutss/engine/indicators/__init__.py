@@ -4,6 +4,7 @@ Provides indicator implementations that match UTSS schema definitions.
 All indicators are implemented as static methods for easy testing and reuse.
 """
 
+from pyutss.engine.indicators.dispatcher import get_indicator_categories
 from pyutss.engine.indicators.results import (
     AroonResult,
     BollingerBandsResult,
@@ -17,6 +18,7 @@ from pyutss.engine.indicators.service import IndicatorService
 
 __all__ = [
     "IndicatorService",
+    "get_indicator_categories",
     "MACDResult",
     "BollingerBandsResult",
     "StochasticResult",

@@ -1,7 +1,11 @@
-"""Tests for PaperExecutor and LiveExecutor."""
+"""Tests for PaperExecutor, AlpacaExecutor, and LiveExecutor protocol."""
+
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from pyutss.engine.executor import OrderRequest
-from pyutss.engine.live_executor import AccountInfo, PaperExecutor
+from pyutss.engine.live_executor import AccountInfo, AlpacaExecutor, LiveExecutor, PaperExecutor
 
 
 class TestPaperExecutor:
@@ -163,3 +167,241 @@ class TestPaperExecutor:
 
         result = engine.backtest(strategy, data=data, symbol="TEST")
         assert result is not None
+
+
+class TestLiveExecutorProtocol:
+    """Tests for LiveExecutor protocol conformance."""
+
+    def test_paper_executor_has_execute_method(self):
+        """PaperExecutor should have execute method matching Executor protocol."""
+        executor = PaperExecutor()
+        assert hasattr(executor, "execute")
+        assert callable(executor.execute)
+
+    def test_alpaca_executor_satisfies_live_protocol(self):
+        """AlpacaExecutor should satisfy LiveExecutor protocol."""
+        executor = AlpacaExecutor(api_key="test", secret_key="test")
+        assert isinstance(executor, LiveExecutor)
+
+
+class TestAlpacaExecutor:
+    """Tests for AlpacaExecutor with mocked Alpaca API."""
+
+    def test_init_stores_config(self):
+        """Should store API keys and paper flag."""
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk", paper=False)
+        assert executor.api_key == "pk"
+        assert executor.secret_key == "sk"
+        assert executor.paper is False
+        assert executor._client is None
+
+    def test_lazy_client_creation(self):
+        """Client should not be created until first use."""
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+        assert executor._client is None
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_execute_buy(self, mock_get_client):
+        """Should submit buy order and return fill."""
+        mock_client = MagicMock()
+        mock_result = MagicMock()
+        mock_result.id = "order-123"
+        mock_result.filled_avg_price = "151.50"
+        mock_result.filled_qty = "10"
+        mock_client.submit_order.return_value = mock_result
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {
+            "alpaca": MagicMock(),
+            "alpaca.trading": MagicMock(),
+            "alpaca.trading.requests": MagicMock(),
+            "alpaca.trading.enums": MagicMock(),
+        }):
+            # Patch the imports inside execute()
+            mock_order_side = MagicMock()
+            mock_order_side.BUY = "buy"
+            mock_order_side.SELL = "sell"
+            mock_time_in_force = MagicMock()
+            mock_time_in_force.DAY = "day"
+            mock_market_order = MagicMock()
+
+            with patch("alpaca.trading.enums.OrderSide", mock_order_side), \
+                 patch("alpaca.trading.enums.TimeInForce", mock_time_in_force), \
+                 patch("alpaca.trading.requests.MarketOrderRequest", mock_market_order):
+                order = OrderRequest(symbol="AAPL", direction="buy", quantity=10, price=150.0)
+                fill = executor.execute(order)
+
+        assert fill is not None
+        assert fill.symbol == "AAPL"
+        assert fill.direction == "buy"
+        assert fill.quantity == 10.0
+        assert fill.fill_price == 151.50
+        assert fill.commission == 0.0
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_execute_sell(self, mock_get_client):
+        """Should submit sell order."""
+        mock_client = MagicMock()
+        mock_result = MagicMock()
+        mock_result.id = "order-456"
+        mock_result.filled_avg_price = "155.00"
+        mock_result.filled_qty = "5"
+        mock_client.submit_order.return_value = mock_result
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {
+            "alpaca": MagicMock(),
+            "alpaca.trading": MagicMock(),
+            "alpaca.trading.requests": MagicMock(),
+            "alpaca.trading.enums": MagicMock(),
+        }):
+            mock_order_side = MagicMock()
+            mock_order_side.BUY = "buy"
+            mock_order_side.SELL = "sell"
+            mock_time_in_force = MagicMock()
+            mock_time_in_force.DAY = "day"
+            mock_market_order = MagicMock()
+
+            with patch("alpaca.trading.enums.OrderSide", mock_order_side), \
+                 patch("alpaca.trading.enums.TimeInForce", mock_time_in_force), \
+                 patch("alpaca.trading.requests.MarketOrderRequest", mock_market_order):
+                order = OrderRequest(symbol="AAPL", direction="sell", quantity=5, price=155.0)
+                fill = executor.execute(order)
+
+        assert fill is not None
+        assert fill.direction == "sell"
+        assert fill.quantity == 5.0
+
+    def test_execute_zero_quantity_rejected(self):
+        """Zero quantity should return None without calling API."""
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {
+            "alpaca": MagicMock(),
+            "alpaca.trading": MagicMock(),
+            "alpaca.trading.requests": MagicMock(),
+            "alpaca.trading.enums": MagicMock(),
+        }):
+            mock_order_side = MagicMock()
+            mock_order_side.BUY = "buy"
+            mock_time_in_force = MagicMock()
+            mock_time_in_force.DAY = "day"
+
+            with patch("alpaca.trading.enums.OrderSide", mock_order_side), \
+                 patch("alpaca.trading.enums.TimeInForce", mock_time_in_force), \
+                 patch("alpaca.trading.requests.MarketOrderRequest", MagicMock()):
+                order = OrderRequest(symbol="AAPL", direction="buy", quantity=0, price=150.0)
+                fill = executor.execute(order)
+
+        assert fill is None
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_execute_api_failure_returns_none(self, mock_get_client):
+        """API failure should return None, not raise."""
+        mock_client = MagicMock()
+        mock_client.submit_order.side_effect = Exception("API error")
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {
+            "alpaca": MagicMock(),
+            "alpaca.trading": MagicMock(),
+            "alpaca.trading.requests": MagicMock(),
+            "alpaca.trading.enums": MagicMock(),
+        }):
+            mock_order_side = MagicMock()
+            mock_order_side.BUY = "buy"
+            mock_time_in_force = MagicMock()
+            mock_time_in_force.DAY = "day"
+
+            with patch("alpaca.trading.enums.OrderSide", mock_order_side), \
+                 patch("alpaca.trading.enums.TimeInForce", mock_time_in_force), \
+                 patch("alpaca.trading.requests.MarketOrderRequest", MagicMock()):
+                order = OrderRequest(symbol="AAPL", direction="buy", quantity=10, price=150.0)
+                fill = executor.execute(order)
+
+        assert fill is None
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_execute_no_fill_price_uses_order_price(self, mock_get_client):
+        """When filled_avg_price is None, should use order price."""
+        mock_client = MagicMock()
+        mock_result = MagicMock()
+        mock_result.id = "order-789"
+        mock_result.filled_avg_price = None
+        mock_result.filled_qty = "10"
+        mock_client.submit_order.return_value = mock_result
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {
+            "alpaca": MagicMock(),
+            "alpaca.trading": MagicMock(),
+            "alpaca.trading.requests": MagicMock(),
+            "alpaca.trading.enums": MagicMock(),
+        }):
+            mock_order_side = MagicMock()
+            mock_order_side.BUY = "buy"
+            mock_time_in_force = MagicMock()
+            mock_time_in_force.DAY = "day"
+
+            with patch("alpaca.trading.enums.OrderSide", mock_order_side), \
+                 patch("alpaca.trading.enums.TimeInForce", mock_time_in_force), \
+                 patch("alpaca.trading.requests.MarketOrderRequest", MagicMock()):
+                order = OrderRequest(symbol="AAPL", direction="buy", quantity=10, price=150.0)
+                fill = executor.execute(order)
+
+        assert fill is not None
+        assert fill.fill_price == 150.0
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_get_account(self, mock_get_client):
+        """Should return AccountInfo from Alpaca API."""
+        mock_client = MagicMock()
+        mock_account = MagicMock()
+        mock_account.cash = "50000.00"
+        mock_account.equity = "75000.00"
+        mock_account.buying_power = "100000.00"
+        mock_client.get_account.return_value = mock_account
+
+        mock_pos = MagicMock()
+        mock_pos.symbol = "AAPL"
+        mock_pos.qty = "10"
+        mock_client.get_all_positions.return_value = [mock_pos]
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+        account = executor.get_account()
+
+        assert isinstance(account, AccountInfo)
+        assert account.cash == 50000.0
+        assert account.equity == 75000.0
+        assert account.buying_power == 100000.0
+        assert account.positions == {"AAPL": 10.0}
+
+    @patch("pyutss.engine.live_executor.AlpacaExecutor._get_client")
+    def test_cancel_all(self, mock_get_client):
+        """Should cancel all orders and return count."""
+        mock_client = MagicMock()
+        mock_client.cancel_orders.return_value = [MagicMock(), MagicMock()]
+        mock_get_client.return_value = mock_client
+
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+        count = executor.cancel_all()
+
+        assert count == 2
+        mock_client.cancel_orders.assert_called_once()
+
+    def test_get_client_import_error(self):
+        """Should raise ImportError with helpful message when alpaca-py missing."""
+        executor = AlpacaExecutor(api_key="pk", secret_key="sk")
+
+        with patch.dict("sys.modules", {"alpaca": None, "alpaca.trading": None, "alpaca.trading.client": None}):
+            with pytest.raises(ImportError, match="alpaca-py"):
+                executor._get_client()
