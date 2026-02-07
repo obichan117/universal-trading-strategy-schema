@@ -1,0 +1,1182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://obichan117.github.io/universal-trading-strategy-schema/schema/v1/strategy.json",
+  "title": "Universal Trading Strategy Schema (UTSS) v1.0",
+  "description": "A comprehensive, composable schema for expressing any trading strategy",
+  "type": "object",
+  "required": ["info", "universe", "rules"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema URL for validation"
+    },
+    "info": { "$ref": "#/definitions/Info" },
+    "universe": { "$ref": "#/definitions/Universe" },
+    "signals": {
+      "type": "object",
+      "description": "Named signal definitions for reuse",
+      "additionalProperties": { "$ref": "#/definitions/Signal" }
+    },
+    "conditions": {
+      "type": "object",
+      "description": "Named condition definitions for reuse",
+      "additionalProperties": { "$ref": "#/definitions/Condition" }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Trading rules (condition -> action pairs)",
+      "items": { "$ref": "#/definitions/Rule" },
+      "minItems": 1
+    },
+    "constraints": { "$ref": "#/definitions/Constraints" },
+    "schedule": { "$ref": "#/definitions/Schedule" },
+    "parameters": {
+      "type": "object",
+      "description": "Optimizable parameters",
+      "additionalProperties": { "$ref": "#/definitions/Parameter" }
+    },
+    "execution": { "$ref": "#/definitions/Execution" }
+  },
+  "patternProperties": {
+    "^x-": {
+      "description": "Platform-specific extensions"
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "Info": {
+      "type": "object",
+      "description": "Strategy metadata",
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "author": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" }
+          },
+          "required": ["id", "name"]
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 10
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "private", "unlisted"],
+          "default": "private"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Signal": {
+      "description": "Produces a numeric value from market data",
+      "oneOf": [
+        { "$ref": "#/definitions/PriceSignal" },
+        { "$ref": "#/definitions/IndicatorSignal" },
+        { "$ref": "#/definitions/FundamentalSignal" },
+        { "$ref": "#/definitions/CalendarSignal" },
+        { "$ref": "#/definitions/EventSignal" },
+        { "$ref": "#/definitions/PortfolioSignal" },
+        { "$ref": "#/definitions/RelativeSignal" },
+        { "$ref": "#/definitions/ConstantSignal" },
+        { "$ref": "#/definitions/ArithmeticSignal" },
+        { "$ref": "#/definitions/ExpressionSignal" },
+        { "$ref": "#/definitions/ExternalSignal" },
+        { "$ref": "#/definitions/Reference" },
+        { "$ref": "#/definitions/ParameterReference" }
+      ]
+    },
+
+    "PriceSignal": {
+      "type": "object",
+      "description": "Raw price data signal",
+      "required": ["type", "field"],
+      "properties": {
+        "type": { "const": "price" },
+        "field": {
+          "type": "string",
+          "enum": ["open", "high", "low", "close", "volume", "vwap"]
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Bars back (0 = current, 1 = previous)",
+          "default": 0
+        },
+        "timeframe": { "$ref": "#/definitions/Timeframe" },
+        "symbol": {
+          "type": "string",
+          "description": "Cross-symbol reference. If omitted, uses current universe symbol."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "IndicatorSignal": {
+      "type": "object",
+      "description": "Technical indicator signal",
+      "required": ["type", "indicator"],
+      "properties": {
+        "type": { "const": "indicator" },
+        "indicator": { "$ref": "#/definitions/IndicatorType" },
+        "params": {
+          "type": "object",
+          "description": "Indicator-specific parameters",
+          "properties": {
+            "period": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+            "fast_period": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+            "slow_period": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+            "signal_period": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+            "std_dev": { "oneOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/definitions/ParameterReference" }] },
+            "source": {
+              "type": "string",
+              "enum": ["open", "high", "low", "close", "hl2", "hlc3", "ohlc4"]
+            }
+          },
+          "additionalProperties": true
+        },
+        "offset": { "type": "integer", "default": 0 },
+        "timeframe": { "$ref": "#/definitions/Timeframe" },
+        "symbol": {
+          "type": "string",
+          "description": "Cross-symbol reference"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "FundamentalSignal": {
+      "type": "object",
+      "description": "Fundamental data signal",
+      "required": ["type", "metric"],
+      "properties": {
+        "type": { "const": "fundamental" },
+        "metric": { "$ref": "#/definitions/FundamentalMetric" },
+        "symbol": {
+          "type": "string",
+          "description": "Cross-symbol reference"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CalendarSignal": {
+      "type": "object",
+      "description": "Calendar/date pattern signal",
+      "required": ["type", "field"],
+      "properties": {
+        "type": { "const": "calendar" },
+        "field": {
+          "type": "string",
+          "enum": [
+            "day_of_week",
+            "day_of_month",
+            "week_of_month",
+            "month",
+            "quarter",
+            "year",
+            "is_month_start",
+            "is_month_end",
+            "is_quarter_start",
+            "is_quarter_end",
+            "is_year_start",
+            "is_year_end"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "EventSignal": {
+      "type": "object",
+      "description": "Event-driven signal",
+      "required": ["type", "event"],
+      "properties": {
+        "type": { "const": "event" },
+        "event": { "$ref": "#/definitions/EventType" },
+        "days_before": { "type": "integer", "minimum": 0 },
+        "days_after": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "PortfolioSignal": {
+      "type": "object",
+      "description": "Portfolio and position state signal",
+      "required": ["type", "field"],
+      "properties": {
+        "type": { "const": "portfolio" },
+        "field": {
+          "type": "string",
+          "enum": [
+            "position_qty",
+            "position_value",
+            "position_side",
+            "avg_entry_price",
+            "unrealized_pnl",
+            "unrealized_pnl_pct",
+            "realized_pnl",
+            "days_in_position",
+            "bars_in_position",
+            "equity",
+            "cash",
+            "buying_power",
+            "margin_used",
+            "daily_pnl",
+            "daily_pnl_pct"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Symbol to check position for. If omitted, uses current universe symbol."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "RelativeSignal": {
+      "type": "object",
+      "description": "Signal relative to a benchmark",
+      "required": ["type", "signal", "benchmark", "measure"],
+      "properties": {
+        "type": { "const": "relative" },
+        "signal": { "$ref": "#/definitions/Signal" },
+        "benchmark": {
+          "type": "string",
+          "description": "Index or symbol for comparison"
+        },
+        "measure": {
+          "type": "string",
+          "enum": ["ratio", "difference", "beta", "correlation", "percentile", "z_score"]
+        },
+        "lookback": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+
+    "ConstantSignal": {
+      "type": "object",
+      "description": "A constant numeric value",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "constant" },
+        "value": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/ParameterReference" }] }
+      },
+      "additionalProperties": false
+    },
+
+    "ArithmeticSignal": {
+      "type": "object",
+      "description": "Arithmetic operation on signals",
+      "required": ["type", "operator", "operands"],
+      "properties": {
+        "type": { "const": "arithmetic" },
+        "operator": {
+          "type": "string",
+          "enum": ["add", "subtract", "multiply", "divide", "min", "max", "avg", "abs", "pow"]
+        },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Signal" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ExpressionSignal": {
+      "type": "object",
+      "description": "Custom formula expression",
+      "required": ["type", "formula"],
+      "properties": {
+        "type": { "const": "expr" },
+        "formula": {
+          "type": "string",
+          "description": "Expression string, e.g., '(SMA(close, 20) - SMA(close, 50)) / ATR(14)'"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ExternalSignal": {
+      "type": "object",
+      "description": "Runtime-resolved external signal",
+      "required": ["type", "source"],
+      "properties": {
+        "type": { "const": "external" },
+        "source": {
+          "type": "string",
+          "enum": ["webhook", "file", "provider"]
+        },
+        "url": { "type": "string", "format": "uri" },
+        "path": { "type": "string" },
+        "provider": { "type": "string" },
+        "refresh": { "$ref": "#/definitions/Frequency" },
+        "default": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+
+    "Condition": {
+      "description": "Produces a boolean from signals. Use primitives (comparison, and/or/not) for simple cases, expr for complex patterns.",
+      "oneOf": [
+        { "$ref": "#/definitions/ComparisonCondition" },
+        { "$ref": "#/definitions/AndCondition" },
+        { "$ref": "#/definitions/OrCondition" },
+        { "$ref": "#/definitions/NotCondition" },
+        { "$ref": "#/definitions/ExpressionCondition" },
+        { "$ref": "#/definitions/AlwaysCondition" },
+        { "$ref": "#/definitions/Reference" }
+      ]
+    },
+
+    "ComparisonCondition": {
+      "type": "object",
+      "description": "Compare a signal to a value or another signal",
+      "required": ["type", "left", "operator", "right"],
+      "properties": {
+        "type": { "const": "comparison" },
+        "left": { "$ref": "#/definitions/Signal" },
+        "operator": {
+          "type": "string",
+          "enum": ["<", "<=", "=", ">=", ">", "!="]
+        },
+        "right": { "$ref": "#/definitions/Signal" }
+      },
+      "additionalProperties": false
+    },
+
+    "AndCondition": {
+      "type": "object",
+      "description": "All conditions must be true",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "and" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Condition" },
+          "minItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "OrCondition": {
+      "type": "object",
+      "description": "Any condition must be true",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "or" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Condition" },
+          "minItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "NotCondition": {
+      "type": "object",
+      "description": "Negate a condition",
+      "required": ["type", "condition"],
+      "properties": {
+        "type": { "const": "not" },
+        "condition": { "$ref": "#/definitions/Condition" }
+      },
+      "additionalProperties": false
+    },
+
+    "ExpressionCondition": {
+      "type": "object",
+      "description": "Boolean expression for complex patterns. Use for crossovers, ranges, temporal, sequences, etc.",
+      "required": ["type", "formula"],
+      "properties": {
+        "type": { "const": "expr" },
+        "formula": {
+          "type": "string",
+          "description": "Boolean expression, e.g., 'SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)' for cross above"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "AlwaysCondition": {
+      "type": "object",
+      "description": "Always true (for scheduled actions)",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "always" }
+      },
+      "additionalProperties": false
+    },
+
+    "Action": {
+      "description": "What to do when a condition is met",
+      "oneOf": [
+        { "$ref": "#/definitions/TradeAction" },
+        { "$ref": "#/definitions/RebalanceAction" },
+        { "$ref": "#/definitions/AlertAction" },
+        { "$ref": "#/definitions/HoldAction" }
+      ]
+    },
+
+    "TradeAction": {
+      "type": "object",
+      "description": "Execute a trade",
+      "required": ["type", "direction", "sizing"],
+      "properties": {
+        "type": { "const": "trade" },
+        "direction": {
+          "type": "string",
+          "enum": ["buy", "sell", "short", "cover"]
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Symbol to trade. If omitted, uses current universe symbol."
+        },
+        "sizing": { "$ref": "#/definitions/Sizing" },
+        "order_type": {
+          "type": "string",
+          "enum": ["market", "limit", "stop", "stop_limit"],
+          "default": "market"
+        },
+        "limit_price": { "$ref": "#/definitions/Signal" },
+        "stop_price": { "$ref": "#/definitions/Signal" },
+        "time_in_force": {
+          "type": "string",
+          "enum": ["day", "gtc", "ioc", "fok"],
+          "default": "day"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "RebalanceAction": {
+      "type": "object",
+      "description": "Rebalance to target weights",
+      "required": ["type", "method"],
+      "properties": {
+        "type": { "const": "rebalance" },
+        "method": {
+          "type": "string",
+          "enum": ["equal_weight", "market_cap_weight", "risk_parity", "inverse_volatility", "target_weights"]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "weight"],
+            "properties": {
+              "symbol": { "type": "string" },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Minimum deviation to trigger rebalance",
+          "default": 0.05
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "AlertAction": {
+      "type": "object",
+      "description": "Send notification or log event",
+      "required": ["type", "message"],
+      "properties": {
+        "type": { "const": "alert" },
+        "message": {
+          "type": "string",
+          "description": "Alert message. Supports {symbol}, {price} placeholders."
+        },
+        "level": {
+          "type": "string",
+          "enum": ["info", "warning", "critical"],
+          "default": "info"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["log", "webhook", "email", "sms", "telegram", "discord", "slack"]
+          },
+          "default": ["log"]
+        },
+        "throttle_minutes": {
+          "type": "integer",
+          "description": "Minimum minutes between repeated alerts",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "HoldAction": {
+      "type": "object",
+      "description": "Explicitly do nothing",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "hold" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "Sizing": {
+      "description": "How to size a position",
+      "oneOf": [
+        { "$ref": "#/definitions/FixedAmountSizing" },
+        { "$ref": "#/definitions/PercentEquitySizing" },
+        { "$ref": "#/definitions/PercentPositionSizing" },
+        { "$ref": "#/definitions/RiskBasedSizing" },
+        { "$ref": "#/definitions/KellySizing" },
+        { "$ref": "#/definitions/VolatilityAdjustedSizing" },
+        { "$ref": "#/definitions/ConditionalSizing" }
+      ]
+    },
+
+    "FixedAmountSizing": {
+      "type": "object",
+      "required": ["type", "amount"],
+      "properties": {
+        "type": { "const": "fixed_amount" },
+        "amount": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "default": "USD" }
+      },
+      "additionalProperties": false
+    },
+
+    "PercentEquitySizing": {
+      "type": "object",
+      "required": ["type", "percent"],
+      "properties": {
+        "type": { "const": "percent_of_equity" },
+        "percent": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 100 }, { "$ref": "#/definitions/ParameterReference" }] }
+      },
+      "additionalProperties": false
+    },
+
+    "PercentPositionSizing": {
+      "type": "object",
+      "required": ["type", "percent"],
+      "properties": {
+        "type": { "const": "percent_of_position" },
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+
+    "RiskBasedSizing": {
+      "type": "object",
+      "required": ["type", "risk_percent", "stop_distance"],
+      "properties": {
+        "type": { "const": "risk_based" },
+        "risk_percent": {
+          "type": "number",
+          "description": "Percent of equity to risk",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stop_distance": { "$ref": "#/definitions/Signal" }
+      },
+      "additionalProperties": false
+    },
+
+    "KellySizing": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "kelly" },
+        "fraction": {
+          "type": "number",
+          "description": "Fraction of Kelly (0.5 = half Kelly)",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lookback": {
+          "type": "integer",
+          "description": "Bars for win rate calculation",
+          "default": 100
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "VolatilityAdjustedSizing": {
+      "type": "object",
+      "required": ["type", "target_volatility"],
+      "properties": {
+        "type": { "const": "volatility_adjusted" },
+        "target_volatility": {
+          "type": "number",
+          "description": "Target annualized volatility",
+          "minimum": 0
+        },
+        "lookback": { "type": "integer", "default": 20 }
+      },
+      "additionalProperties": false
+    },
+
+    "ConditionalSizing": {
+      "type": "object",
+      "description": "Size based on conditions",
+      "required": ["type", "cases", "default"],
+      "properties": {
+        "type": { "const": "conditional" },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["when", "sizing"],
+            "properties": {
+              "when": { "$ref": "#/definitions/Condition" },
+              "sizing": { "$ref": "#/definitions/Sizing" }
+            }
+          },
+          "minItems": 1
+        },
+        "default": { "$ref": "#/definitions/Sizing" }
+      },
+      "additionalProperties": false
+    },
+
+    "Rule": {
+      "type": "object",
+      "description": "A condition-action pair",
+      "required": ["name", "when", "then"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable rule name"
+        },
+        "description": { "type": "string" },
+        "when": { "$ref": "#/definitions/Condition" },
+        "then": { "$ref": "#/definitions/Action" },
+        "priority": {
+          "type": "integer",
+          "description": "Higher priority rules evaluated first",
+          "default": 0
+        },
+        "enabled": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    },
+
+    "Universe": {
+      "description": "Which assets to trade",
+      "oneOf": [
+        { "$ref": "#/definitions/StaticUniverse" },
+        { "$ref": "#/definitions/IndexUniverse" },
+        { "$ref": "#/definitions/ScreenerUniverse" },
+        { "$ref": "#/definitions/DualUniverse" }
+      ]
+    },
+
+    "StaticUniverse": {
+      "type": "object",
+      "required": ["type", "symbols"],
+      "properties": {
+        "type": { "const": "static" },
+        "symbols": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "IndexUniverse": {
+      "type": "object",
+      "required": ["type", "index"],
+      "properties": {
+        "type": { "const": "index" },
+        "index": { "$ref": "#/definitions/StockIndex" },
+        "filters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Condition" }
+        },
+        "rank_by": { "$ref": "#/definitions/Signal" },
+        "order": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
+        },
+        "limit": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/definitions/ParameterReference" }] },
+        "refresh": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "never"],
+          "default": "never",
+          "description": "How often to re-evaluate the universe (for dynamic filtering)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ScreenerUniverse": {
+      "type": "object",
+      "required": ["type", "filters"],
+      "properties": {
+        "type": { "const": "screener" },
+        "base": {
+          "type": "string",
+          "description": "Starting universe (index name or 'all')"
+        },
+        "filters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Condition" },
+          "minItems": 1
+        },
+        "rank_by": { "$ref": "#/definitions/Signal" },
+        "order": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
+        },
+        "limit": { "type": "integer", "minimum": 1 },
+        "refresh": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "never"],
+          "default": "never",
+          "description": "How often to re-evaluate the screener filters"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "DualUniverse": {
+      "type": "object",
+      "description": "Separate long and short universes",
+      "required": ["type", "long", "short"],
+      "properties": {
+        "type": { "const": "dual" },
+        "long": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string" },
+            "index": { "$ref": "#/definitions/StockIndex" },
+            "filters": { "type": "array", "items": { "$ref": "#/definitions/Condition" } },
+            "rank_by": { "$ref": "#/definitions/Signal" },
+            "order": { "type": "string", "enum": ["asc", "desc"] },
+            "limit": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "short": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string" },
+            "index": { "$ref": "#/definitions/StockIndex" },
+            "filters": { "type": "array", "items": { "$ref": "#/definitions/Condition" } },
+            "rank_by": { "$ref": "#/definitions/Signal" },
+            "order": { "type": "string", "enum": ["asc", "desc"] },
+            "limit": { "type": "integer", "minimum": 1 }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Constraints": {
+      "type": "object",
+      "description": "Risk and position constraints",
+      "properties": {
+        "max_positions": { "type": "integer", "minimum": 1 },
+        "min_positions": { "type": "integer", "minimum": 0 },
+        "max_position_size": {
+          "type": "number",
+          "description": "Max % of portfolio in single position",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_sector_exposure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_correlation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_drawdown": {
+          "type": "number",
+          "description": "Stop trading at this drawdown %",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "daily_loss_limit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stop_loss": { "$ref": "#/definitions/StopConfig" },
+        "take_profit": { "$ref": "#/definitions/StopConfig" },
+        "trailing_stop": { "$ref": "#/definitions/TrailingStopConfig" },
+        "time_stop": {
+          "type": "object",
+          "properties": {
+            "bars": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "max_daily_turnover": { "type": "number", "minimum": 0, "maximum": 100 },
+        "min_holding_bars": { "type": "integer", "minimum": 0 },
+        "no_shorting": { "type": "boolean", "default": false },
+        "no_leverage": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    },
+
+    "StopConfig": {
+      "type": "object",
+      "properties": {
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "atr_multiple": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "TrailingStopConfig": {
+      "type": "object",
+      "properties": {
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "atr_multiple": { "type": "number", "minimum": 0 },
+        "activation_percent": {
+          "type": "number",
+          "description": "Activate trailing stop after this profit %",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Execution": {
+      "type": "object",
+      "description": "Strategy execution assumptions (slippage, commission, requirements). DEPRECATED for backtest configuration - use a separate backtest config file (backtest.schema.json) instead. This section remains for documenting the strategy's design assumptions.",
+      "properties": {
+        "slippage": { "$ref": "#/definitions/SlippageModel" },
+        "commission": { "$ref": "#/definitions/CommissionModel" },
+        "min_capital": {
+          "type": "number",
+          "description": "Minimum capital required for this strategy",
+          "minimum": 0
+        },
+        "min_history": {
+          "type": "integer",
+          "description": "Minimum bars/days of history needed for indicator warmup",
+          "minimum": 1
+        },
+        "timeframe": { "$ref": "#/definitions/Timeframe" }
+      },
+      "additionalProperties": false
+    },
+
+    "SlippageModel": {
+      "type": "object",
+      "description": "Expected slippage model",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["percentage", "fixed", "tiered"],
+          "description": "Slippage model type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Slippage value (percentage as decimal, e.g., 0.001 = 0.1%)",
+          "minimum": 0
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Tiered slippage based on order size",
+          "items": {
+            "type": "object",
+            "required": ["up_to", "value"],
+            "properties": {
+              "up_to": { "type": "number", "description": "Order size threshold" },
+              "value": { "type": "number", "description": "Slippage for this tier" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CommissionModel": {
+      "type": "object",
+      "description": "Expected commission model",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["per_trade", "per_share", "percentage", "tiered"],
+          "description": "Commission model type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Commission value",
+          "minimum": 0
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum commission per trade",
+          "minimum": 0
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum commission per trade",
+          "minimum": 0
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Tiered commission based on trade value",
+          "items": {
+            "type": "object",
+            "required": ["up_to", "value"],
+            "properties": {
+              "up_to": { "type": "number", "description": "Trade value threshold" },
+              "value": { "type": "number", "description": "Commission for this tier" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Schedule": {
+      "type": "object",
+      "description": "When to evaluate the strategy",
+      "properties": {
+        "frequency": { "$ref": "#/definitions/Frequency" },
+        "market_hours_only": { "type": "boolean", "default": true },
+        "timezone": { "type": "string", "default": "America/New_York" },
+        "trading_days": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+          }
+        },
+        "evaluate_at": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific times to evaluate, e.g., ['09:30', '15:55']"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Parameter": {
+      "type": "object",
+      "description": "Optimizable parameter definition",
+      "required": ["type", "default"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["integer", "number", "boolean", "string"]
+        },
+        "default": {},
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number" },
+        "choices": { "type": "array" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "ParameterReference": {
+      "type": "object",
+      "description": "Reference to a parameter",
+      "required": ["$param"],
+      "properties": {
+        "$param": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "Reference": {
+      "type": "object",
+      "description": "Reference to a reusable component",
+      "required": ["$ref"],
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "description": "Path to component (e.g., #/signals/rsi_14)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Timeframe": {
+      "type": "string",
+      "enum": ["1m", "5m", "15m", "30m", "1h", "4h", "daily", "weekly", "monthly"]
+    },
+
+    "Frequency": {
+      "type": "string",
+      "enum": ["tick", "1m", "5m", "15m", "30m", "1h", "4h", "daily", "weekly", "monthly"]
+    },
+
+    "IndicatorType": {
+      "description": "Technical indicator. Core indicators are portable across all engines. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core indicators (portable)",
+          "enum": [
+            "SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA",
+            "RSI", "MACD", "MACD_SIGNAL", "MACD_HIST",
+            "STOCH_K", "STOCH_D", "STOCH_RSI",
+            "ROC", "MOMENTUM", "WILLIAMS_R", "CCI", "MFI", "CMO", "TSI",
+            "ADX", "PLUS_DI", "MINUS_DI", "AROON_UP", "AROON_DOWN", "AROON_OSC",
+            "SUPERTREND", "PSAR",
+            "ATR", "STDDEV", "VARIANCE",
+            "BB_UPPER", "BB_MIDDLE", "BB_LOWER", "BB_WIDTH", "BB_PERCENT",
+            "KC_UPPER", "KC_MIDDLE", "KC_LOWER",
+            "DC_UPPER", "DC_MIDDLE", "DC_LOWER",
+            "OBV", "VWAP", "AD", "CMF", "KLINGER",
+            "HIGHEST", "LOWEST", "RETURN", "DRAWDOWN",
+            "ZSCORE", "PERCENTILE", "RANK", "CORRELATION", "BETA",
+            "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU_A", "ICHIMOKU_SENKOU_B", "ICHIMOKU_CHIKOU"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined indicator (e.g., custom:MY_SUPERTREND). Engine MAY support, SHOULD log warning if not."
+        },
+        {
+          "type": "string",
+          "pattern": "^talib:[A-Z0-9_]+$",
+          "description": "TA-Lib indicator (e.g., talib:CDLHAMMER). For engines with TA-Lib support."
+        },
+        {
+          "type": "string",
+          "pattern": "^platform:[a-z]+:[a-zA-Z0-9_]+$",
+          "description": "Platform-specific indicator (e.g., platform:tradingview:SQUEEZE_MOMENTUM)."
+        }
+      ]
+    },
+
+    "FundamentalMetric": {
+      "description": "Fundamental data metric. Core metrics are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core metrics (portable)",
+          "enum": [
+            "PE_RATIO", "PB_RATIO", "PS_RATIO", "PEG_RATIO", "EV_EBITDA", "EARNINGS_YIELD",
+            "ROE", "ROA", "ROIC", "PROFIT_MARGIN", "OPERATING_MARGIN", "NET_MARGIN",
+            "DIVIDEND_YIELD", "PAYOUT_RATIO",
+            "MARKET_CAP", "ENTERPRISE_VALUE", "REVENUE", "EBITDA", "NET_INCOME",
+            "EPS", "EPS_GROWTH", "REVENUE_GROWTH",
+            "DEBT_TO_EQUITY", "CURRENT_RATIO", "QUICK_RATIO", "INTEREST_COVERAGE",
+            "F_SCORE", "ALTMAN_Z",
+            "INDEX_WEIGHT", "FREE_FLOAT", "SHORT_INTEREST", "ANALYST_RATING", "PRICE_TARGET",
+            "EARNINGS_SURPRISE"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined metric (e.g., custom:MODIFIED_ALTMAN_Z)"
+        },
+        {
+          "type": "string",
+          "pattern": "^provider:[a-z]+:[a-zA-Z0-9_]+$",
+          "description": "Data provider-specific metric (e.g., provider:bloomberg:WACC)"
+        }
+      ]
+    },
+
+    "EventType": {
+      "description": "Corporate/market event type. Core events are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core events (portable)",
+          "enum": [
+            "EARNINGS_RELEASE", "DIVIDEND_EX_DATE", "DIVIDEND_PAY_DATE", "STOCK_SPLIT",
+            "IPO", "DELISTING", "FDA_APPROVAL", "PRODUCT_LAUNCH",
+            "INDEX_ADD", "INDEX_REMOVE",
+            "INSIDER_BUY", "INSIDER_SELL", "ANALYST_UPGRADE", "ANALYST_DOWNGRADE",
+            "SEC_FILING_10K", "SEC_FILING_10Q", "SEC_FILING_8K"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined event (e.g., custom:CENTRAL_BANK_MEETING)"
+        },
+        {
+          "type": "string",
+          "pattern": "^calendar:[a-zA-Z0-9_]+$",
+          "description": "Economic calendar event (e.g., calendar:FOMC_DECISION, calendar:NFP_RELEASE)"
+        }
+      ]
+    },
+
+    "StockIndex": {
+      "description": "Stock index/universe. Core indices are portable. Use prefixes for extensions.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Core indices (portable)",
+          "enum": [
+            "NIKKEI225", "TOPIX", "TOPIX100", "TOPIX500", "JPXNIKKEI400",
+            "TSE_PRIME", "TSE_STANDARD", "TSE_GROWTH",
+            "TOPIX_LARGE70", "TOPIX_MID400", "TOPIX_SMALL", "MOTHERS",
+            "SP500", "NASDAQ100", "DOW30", "RUSSELL2000", "RUSSELL1000", "SP400", "SP600",
+            "FTSE100", "DAX40", "CAC40", "STOXX50", "STOXX600",
+            "HANG_SENG", "SSE50", "CSI300", "KOSPI", "KOSDAQ", "TWSE", "ASX200",
+            "MSCI_WORLD", "MSCI_EM", "MSCI_ACWI", "MSCI_EAFE"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[a-zA-Z0-9_]+$",
+          "description": "User-defined index/list (e.g., custom:MY_WATCHLIST)"
+        },
+        {
+          "type": "string",
+          "pattern": "^etf:[A-Z0-9]+$",
+          "description": "ETF as universe source (e.g., etf:SPY, etf:QQQ)"
+        },
+        {
+          "type": "string",
+          "pattern": "^sector:[A-Z0-9_]+$",
+          "description": "Sector-based universe (e.g., sector:TECHNOLOGY, sector:HEALTHCARE)"
+        }
+      ]
+    }
+  }
+}
