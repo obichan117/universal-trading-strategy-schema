@@ -6,6 +6,8 @@ from pyutss.metrics.benchmark import (
 )
 from pyutss.metrics.calculator import (
     MetricsCalculator,
+)
+from pyutss.metrics.types import (
     PerformanceMetrics,
     PeriodBreakdown,
 )

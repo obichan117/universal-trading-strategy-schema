@@ -9,7 +9,9 @@ A comprehensive, composable schema for expressing any trading strategy. Define y
 | Package | Description | Install |
 |---------|-------------|---------|
 | **[utss](./packages/utss/)** | Schema definition & validation | `pip install utss` |
-| **[pyutss](./packages/pyutss/)** | Backtesting engine (WIP) | `pip install pyutss` |
+| **[pyutss](./packages/pyutss/)** | Backtesting engine | `pip install pyutss` |
+| **[utss-llm](./packages/utss-llm/)** | LLM conversational strategy builder | `pip install utss-llm` |
+| **[utss-mcp](./packages/utss-mcp/)** | MCP server for Claude Code | `pip install utss-mcp` |
 
 ## Features
 
@@ -26,8 +28,14 @@ A comprehensive, composable schema for expressing any trading strategy. Define y
 # Schema package only
 pip install utss
 
-# With backtesting engine (coming soon)
+# With backtesting engine
 pip install pyutss
+
+# With LLM strategy builder
+pip install utss-llm
+
+# MCP server for Claude Code
+pip install utss-mcp
 ```
 
 ## Quick Start
@@ -288,15 +296,25 @@ utss/
 ├── packages/
 │   ├── utss/                    # Schema package (pip install utss)
 │   │   └── src/utss/
-│   │       ├── models.py        # Pydantic models
+│   │       ├── models/          # Pydantic models
 │   │       ├── validator.py     # YAML/dict validation
 │   │       └── capabilities.py  # Exported capabilities for engine sync
 │   │
-│   └── pyutss/                  # Backtesting engine (pip install pyutss)
-│       └── src/pyutss/
-│           ├── data/            # Data providers (Yahoo, J-Quants)
-│           ├── engine/          # Backtest execution
-│           └── metrics/         # Performance metrics
+│   ├── pyutss/                  # Backtesting engine (pip install pyutss)
+│   │   └── src/pyutss/
+│   │       ├── data/            # Data providers (Yahoo, J-Quants)
+│   │       ├── engine/          # Backtest execution
+│   │       └── metrics/         # Performance metrics
+│   │
+│   ├── utss-llm/                # LLM integration (pip install utss-llm)
+│   │   └── src/utss_llm/
+│   │       ├── conversation/    # Conversational strategy builder
+│   │       └── parser.py        # Natural language parser
+│   │
+│   └── utss-mcp/                # MCP server (pip install utss-mcp)
+│       └── src/utss_mcp/
+│           ├── server.py        # MCP server implementation
+│           └── tools.py         # Tool definitions
 │
 ├── schema/v1/
 │   └── strategy.schema.json     # JSON Schema (source of truth)
@@ -346,4 +364,7 @@ MIT
 
 - [JSON Schema](./schema/v1/strategy.schema.json)
 - [PyPI - utss](https://pypi.org/project/utss/)
+- [PyPI - pyutss](https://pypi.org/project/pyutss/)
+- [PyPI - utss-llm](https://pypi.org/project/utss-llm/)
+- [PyPI - utss-mcp](https://pypi.org/project/utss-mcp/)
 - [Documentation](https://obichan117.github.io/utss/)

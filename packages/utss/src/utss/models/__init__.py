@@ -106,7 +106,7 @@ from utss.models.actions import (
 from utss.models.core import (
     Author,
     CommissionModel,
-    CommissionTier,
+    StrategyCommissionTier,
     Constraints,
     Execution,
     IndexUniverse,
@@ -116,7 +116,7 @@ from utss.models.core import (
     Schedule,
     ScreenerUniverse,
     SlippageModel,
-    SlippageTier,
+    StrategySlippageTier,
     StaticUniverse,
     StopConfig,
     Strategy,
@@ -229,9 +229,9 @@ __all__ = [
     # Parameters
     "Parameter",
     # Execution
-    "SlippageTier",
+    "StrategySlippageTier",
     "SlippageModel",
-    "CommissionTier",
+    "StrategyCommissionTier",
     "CommissionModel",
     "Execution",
     # Info

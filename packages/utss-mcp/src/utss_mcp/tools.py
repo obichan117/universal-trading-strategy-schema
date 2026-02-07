@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 from utss.capabilities import SUPPORTED_CONDITION_TYPES, SUPPORTED_INDICATORS
+from utss.models.enums import IndicatorType
 from utss_llm.conversation import (
     create_session,
     delete_session,
@@ -234,50 +235,39 @@ async def list_indicators() -> dict[str, Any]:
     Returns:
         dict with indicator categories and their indicators
     """
-    # Organize indicators by category
-    categories = {
-        "Moving Averages": ["SMA", "EMA", "WMA", "DEMA", "TEMA", "KAMA", "HULL", "VWMA"],
-        "Momentum": [
-            "RSI",
-            "MACD",
-            "MACD_SIGNAL",
-            "MACD_HIST",
-            "STOCH_K",
-            "STOCH_D",
-            "STOCH_RSI",
-            "ROC",
-            "MOMENTUM",
-            "WILLIAMS_R",
-            "CCI",
-            "MFI",
-            "CMO",
-            "TSI",
-        ],
-        "Trend": [
-            "ADX",
-            "PLUS_DI",
-            "MINUS_DI",
-            "AROON_UP",
-            "AROON_DOWN",
-            "AROON_OSC",
-            "SUPERTREND",
-            "PSAR",
-        ],
-        "Volatility": [
-            "ATR",
-            "STDDEV",
-            "VARIANCE",
-            "BB_UPPER",
-            "BB_LOWER",
-            "BB_MIDDLE",
-            "BB_WIDTH",
-            "BB_PERCENT_B",
-            "NATR",
-            "KELTNER_UPPER",
-            "KELTNER_LOWER",
-        ],
-        "Volume": ["OBV", "CMF", "AD", "ADL", "VOLUME_OSC", "VOLUME_ROC", "VWAP"],
+    # Build categories dynamically from IndicatorType enum
+    # Category boundaries follow the comment structure in the enum definition
+    _CATEGORY_MAP = {
+        "SMA": "Moving Averages", "EMA": "Moving Averages", "WMA": "Moving Averages",
+        "DEMA": "Moving Averages", "TEMA": "Moving Averages", "KAMA": "Moving Averages",
+        "HULL": "Moving Averages", "VWMA": "Moving Averages",
+        "RSI": "Momentum", "MACD": "Momentum", "MACD_SIGNAL": "Momentum",
+        "MACD_HIST": "Momentum", "STOCH_K": "Momentum", "STOCH_D": "Momentum",
+        "STOCH_RSI": "Momentum", "ROC": "Momentum", "MOMENTUM": "Momentum",
+        "WILLIAMS_R": "Momentum", "CCI": "Momentum", "MFI": "Momentum",
+        "CMO": "Momentum", "TSI": "Momentum",
+        "ADX": "Trend", "PLUS_DI": "Trend", "MINUS_DI": "Trend",
+        "AROON_UP": "Trend", "AROON_DOWN": "Trend", "AROON_OSC": "Trend",
+        "SUPERTREND": "Trend", "PSAR": "Trend",
+        "ATR": "Volatility", "STDDEV": "Volatility", "VARIANCE": "Volatility",
+        "BB_UPPER": "Volatility", "BB_MIDDLE": "Volatility", "BB_LOWER": "Volatility",
+        "BB_WIDTH": "Volatility", "BB_PERCENT": "Volatility",
+        "KC_UPPER": "Volatility", "KC_MIDDLE": "Volatility", "KC_LOWER": "Volatility",
+        "DC_UPPER": "Volatility", "DC_MIDDLE": "Volatility", "DC_LOWER": "Volatility",
+        "OBV": "Volume", "VWAP": "Volume", "AD": "Volume", "CMF": "Volume",
+        "KLINGER": "Volume",
+        "HIGHEST": "Statistical", "LOWEST": "Statistical", "RETURN": "Statistical",
+        "DRAWDOWN": "Statistical", "ZSCORE": "Statistical", "PERCENTILE": "Statistical",
+        "RANK": "Statistical", "CORRELATION": "Statistical", "BETA": "Statistical",
+        "ICHIMOKU_TENKAN": "Ichimoku", "ICHIMOKU_KIJUN": "Ichimoku",
+        "ICHIMOKU_SENKOU_A": "Ichimoku", "ICHIMOKU_SENKOU_B": "Ichimoku",
+        "ICHIMOKU_CHIKOU": "Ichimoku",
     }
+
+    categories: dict[str, list[str]] = {}
+    for member in IndicatorType:
+        category = _CATEGORY_MAP.get(member.value, "Other")
+        categories.setdefault(category, []).append(member.value)
 
     return {
         "total_indicators": len(SUPPORTED_INDICATORS),

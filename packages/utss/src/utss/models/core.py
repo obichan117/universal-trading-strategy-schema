@@ -177,8 +177,8 @@ class Parameter(BaseSchema):
 # =============================================================================
 
 
-class SlippageTier(BaseSchema):
-    """A tier in tiered slippage model."""
+class StrategySlippageTier(BaseSchema):
+    """A tier in tiered slippage model (strategy-level design assumption)."""
 
     up_to: float = Field(..., description="Order size threshold")
     value: float = Field(..., description="Slippage for this tier")
@@ -195,13 +195,13 @@ class SlippageModel(BaseSchema):
     value: float | None = Field(
         None, ge=0, description="Slippage value (percentage as decimal, e.g., 0.001 = 0.1%)"
     )
-    tiers: list[SlippageTier] | None = Field(
+    tiers: list[StrategySlippageTier] | None = Field(
         None, description="Tiered slippage based on order size"
     )
 
 
-class CommissionTier(BaseSchema):
-    """A tier in tiered commission model."""
+class StrategyCommissionTier(BaseSchema):
+    """A tier in tiered commission model (strategy-level design assumption)."""
 
     up_to: float = Field(..., description="Trade value threshold")
     value: float = Field(..., description="Commission for this tier")
@@ -218,7 +218,7 @@ class CommissionModel(BaseSchema):
     value: float | None = Field(None, ge=0, description="Commission value")
     min: float | None = Field(None, ge=0, description="Minimum commission per trade")
     max: float | None = Field(None, ge=0, description="Maximum commission per trade")
-    tiers: list[CommissionTier] | None = Field(
+    tiers: list[StrategyCommissionTier] | None = Field(
         None, description="Tiered commission based on trade value"
     )
 

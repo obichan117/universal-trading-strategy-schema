@@ -6,10 +6,10 @@ against historical market data.
 
 Example:
     from pyutss import Engine
-    from utss import load_yaml
+    from utss import validate_yaml
 
-    # Load strategy
-    strategy = load_yaml("my_strategy.yaml")
+    # Load and validate strategy
+    strategy = validate_yaml(open("my_strategy.yaml").read())
 
     # Run backtest
     engine = Engine(initial_capital=100000)

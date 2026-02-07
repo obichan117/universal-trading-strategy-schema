@@ -11,6 +11,7 @@ from utss_mcp.tools import (
     backtest_strategy,
     build_strategy,
     list_indicators,
+    revise_strategy,
     validate_strategy,
 )
 
@@ -19,4 +20,5 @@ __all__ = [
     "backtest_strategy",
     "validate_strategy",
     "list_indicators",
+    "revise_strategy",
 ]
