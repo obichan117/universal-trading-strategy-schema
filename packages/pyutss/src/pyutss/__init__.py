@@ -31,7 +31,7 @@ Advanced features:
     from pyutss.visualization import TearSheet
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.2"
 
 # Data models
 from pyutss.data.models import (

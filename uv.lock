@@ -2557,7 +2557,7 @@ wheels = [
 
 [[package]]
 name = "pyutss"
-version = "0.2.0"
+version = "0.2.2"
 source = { editable = "packages/pyutss" }
 dependencies = [
     { name = "httpx" },
@@ -3384,6 +3384,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mplfinance" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3407,6 +3408,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mplfinance", specifier = ">=0.12.10b0" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },

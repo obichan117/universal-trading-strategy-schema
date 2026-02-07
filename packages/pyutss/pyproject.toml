@@ -1,6 +1,6 @@
 [project]
 name = "pyutss"
-version = "0.2.0"
+version = "0.2.2"
 description = "Python backtesting engine for Universal Trading Strategy Schema (UTSS)"
 readme = "README.md"
 license = { text = "MIT" }

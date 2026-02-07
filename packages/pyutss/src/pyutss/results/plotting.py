@@ -49,83 +49,90 @@ def plot_backtest(
             "Install it with: pip install pyutss[viz]"
         )
 
-    # Ensure data has datetime index
-    if not isinstance(data.index, pd.DatetimeIndex):
-        data = data.copy()
-        data.index = pd.to_datetime(data.index)
-
-    # Normalize column names to lowercase
+    # Ensure data has datetime index and lowercase columns
     data = data.copy()
+    if not isinstance(data.index, pd.DatetimeIndex):
+        data.index = pd.to_datetime(data.index)
+    # Normalize to tz-naive for consistent matching
+    if data.index.tz is not None:
+        data.index = data.index.tz_localize(None)
     data.columns = [c.lower() for c in data.columns]
 
+    # Build a date->timestamp lookup for matching trade dates to data index
+    date_to_ts = {ts.date(): ts for ts in data.index}
+
+    def _to_date(d: object) -> object:
+        """Convert any date-like to datetime.date for lookup."""
+        if isinstance(d, pd.Timestamp):
+            return d.date()
+        if hasattr(d, "date") and callable(d.date):
+            return d.date()
+        if hasattr(d, "year") and not hasattr(d, "hour"):
+            return d  # already datetime.date
+        return pd.Timestamp(d).date()
+
     # Build marker data for entries and exits
-    buy_dates = []
-    buy_prices = []
-    sell_dates = []
-    sell_prices = []
+    buy_dates: list[pd.Timestamp] = []
+    buy_prices: list[float] = []
+    sell_dates: list[pd.Timestamp] = []
+    sell_prices: list[float] = []
 
     for trade in result.trades:
         # Entry marker
-        entry_dt = pd.Timestamp(trade.entry_date)
-        if entry_dt in data.index:
+        entry_ts = date_to_ts.get(_to_date(trade.entry_date))
+        if entry_ts is not None:
             if trade.direction == "long":
-                buy_dates.append(entry_dt)
+                buy_dates.append(entry_ts)
                 buy_prices.append(trade.entry_price)
             else:
-                sell_dates.append(entry_dt)
+                sell_dates.append(entry_ts)
                 sell_prices.append(trade.entry_price)
 
         # Exit marker (if closed)
         if trade.exit_date is not None:
-            exit_dt = pd.Timestamp(trade.exit_date)
-            if exit_dt in data.index:
+            exit_ts = date_to_ts.get(_to_date(trade.exit_date))
+            if exit_ts is not None:
                 if trade.direction == "long":
-                    sell_dates.append(exit_dt)
+                    sell_dates.append(exit_ts)
                     sell_prices.append(trade.exit_price)
                 else:
-                    buy_dates.append(exit_dt)
+                    buy_dates.append(exit_ts)
                     buy_prices.append(trade.exit_price)
 
-    # Create addplots for markers
-    addplots = []
+    def _make_scatter(dates: list, prices: list, marker: str, color: str) -> dict | None:
+        """Create scatter addplot only if series has non-NaN data."""
+        series = pd.Series(index=data.index, dtype=float)
+        for dt, price in zip(dates, prices):
+            if dt in series.index:
+                series[dt] = price
+        if series.notna().any():
+            return mpf.make_addplot(
+                series, type="scatter", marker=marker, markersize=100, color=color,
+            )
+        return None
 
-    # Buy markers (green triangles pointing up)
+    # Create addplots for markers (only if they have actual data)
+    addplots: list[dict] = []
+
     if buy_dates:
-        buy_series = pd.Series(index=data.index, dtype=float)
-        for dt, price in zip(buy_dates, buy_prices):
-            if dt in buy_series.index:
-                buy_series[dt] = price
-        addplots.append(
-            mpf.make_addplot(
-                buy_series,
-                type="scatter",
-                marker="^",
-                markersize=100,
-                color="green",
-            )
-        )
+        ap = _make_scatter(buy_dates, buy_prices, "^", "green")
+        if ap is not None:
+            addplots.append(ap)
 
-    # Sell markers (red triangles pointing down)
     if sell_dates:
-        sell_series = pd.Series(index=data.index, dtype=float)
-        for dt, price in zip(sell_dates, sell_prices):
-            if dt in sell_series.index:
-                sell_series[dt] = price
-        addplots.append(
-            mpf.make_addplot(
-                sell_series,
-                type="scatter",
-                marker="v",
-                markersize=100,
-                color="red",
-            )
-        )
+        ap = _make_scatter(sell_dates, sell_prices, "v", "red")
+        if ap is not None:
+            addplots.append(ap)
 
     # Equity curve as subplot
     if show_equity and len(result.equity_curve) > 0:
-        # Align equity curve with data index
-        equity_aligned = result.equity_curve.reindex(data.index)
-        if not equity_aligned.isna().all():
+        equity = result.equity_curve.copy()
+        if not isinstance(equity.index, pd.DatetimeIndex):
+            equity.index = pd.to_datetime(equity.index)
+        if equity.index.tz is not None:
+            equity.index = equity.index.tz_localize(None)
+        equity_aligned = equity.reindex(data.index, method="ffill")
+        if equity_aligned.notna().any():
             panel = 2 if show_volume else 1
             addplots.append(
                 mpf.make_addplot(
@@ -142,24 +149,29 @@ def plot_backtest(
         sign = "+" if return_pct >= 0 else ""
         title = f"{result.symbol} | Return: {sign}{return_pct:.1f}% | Trades: {result.num_trades}"
 
-    # Determine panel ratios
-    if show_equity and len(result.equity_curve) > 0:
+    # Determine panel ratios based on what's actually plotted
+    has_equity = any(
+        ap.get("panel", 0) > 0 for ap in addplots if isinstance(ap, dict)
+    )
+    if has_equity:
         panel_ratios = (3, 1, 1) if show_volume else (4, 1)
     else:
         panel_ratios = (3, 1) if show_volume else None
 
-    # Plot
-    mpf.plot(
-        data,
+    # Plot — never pass addplot=None or addplot=[]
+    plot_kwargs: dict = dict(
         type="candle",
         style="charles",
         title=title,
-        addplot=addplots if addplots else None,
         volume=show_volume,
         panel_ratios=panel_ratios,
         figsize=figsize,
         warn_too_much_data=1000,
     )
+    if addplots:
+        plot_kwargs["addplot"] = addplots
+
+    mpf.plot(data, **plot_kwargs)
 
 
 def print_summary(result: BacktestResult) -> str:
