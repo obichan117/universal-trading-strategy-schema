@@ -8,7 +8,7 @@ Provides visualization for backtest results including:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -99,7 +99,7 @@ def plot_backtest(
                     buy_dates.append(exit_ts)
                     buy_prices.append(trade.exit_price)
 
-    def _make_scatter(dates: list, prices: list, marker: str, color: str) -> dict | None:
+    def _make_scatter(dates: list[Any], prices: list[float], marker: str, color: str) -> dict[str, Any] | None:
         """Create scatter addplot only if series has non-NaN data."""
         series = pd.Series(index=data.index, dtype=float)
         for dt, price in zip(dates, prices):
@@ -159,7 +159,7 @@ def plot_backtest(
         panel_ratios = (3, 1) if show_volume else None
 
     # Plot — never pass addplot=None or addplot=[]
-    plot_kwargs: dict = dict(
+    plot_kwargs: dict[str, Any] = dict(
         type="candle",
         style="charles",
         title=title,

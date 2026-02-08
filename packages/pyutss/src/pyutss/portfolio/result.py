@@ -57,7 +57,7 @@ class PortfolioResult:
     turnover: float = 0.0  # Average turnover per rebalance
 
     # Parameters used
-    parameters: dict | None = None
+    parameters: dict[str, float] | None = None
     weight_scheme: str = "equal"
     rebalance_frequency: str = "monthly"
 

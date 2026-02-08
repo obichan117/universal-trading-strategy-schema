@@ -157,7 +157,7 @@ class Engine:
 
     def _run_single(
         self,
-        strategy: dict,
+        strategy: dict[str, Any],
         data: pd.DataFrame,
         symbol: str,
         start_date: date | str | None,
@@ -170,7 +170,7 @@ class Engine:
 
     def _run_multi(
         self,
-        strategy: dict,
+        strategy: dict[str, Any],
         data: dict[str, pd.DataFrame],
         symbols: list[str],
         start_date: date | str | None,
@@ -183,7 +183,7 @@ class Engine:
         return run_multi(self, strategy, data, symbols, start_date, end_date, parameters, weights)
 
     @staticmethod
-    def _load_yaml(path: str) -> dict:
+    def _load_yaml(path: str) -> dict[str, Any]:
         """Load a YAML file."""
         with open(path) as f:
             return yaml.safe_load(f)

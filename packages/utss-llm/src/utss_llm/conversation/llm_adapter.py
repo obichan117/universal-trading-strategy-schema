@@ -7,6 +7,7 @@ LLM-powered revision, and JSON extraction from LLM responses.
 import json
 import logging
 import re
+from typing import Any
 
 import yaml
 
@@ -76,7 +77,7 @@ Return ONLY a JSON object with the fields to change:
 Only include fields that need to change. Use null for unchanged fields."""
 
 
-def extract_json(content: str) -> dict | None:
+def extract_json(content: str) -> dict[str, Any] | None:
     """Extract JSON from LLM response.
 
     Tries multiple strategies:
@@ -180,7 +181,7 @@ async def llm_revise(
     keyword_revise_fn(instruction)
 
 
-def apply_updates(strategy: PartialStrategy, updates: dict) -> None:
+def apply_updates(strategy: PartialStrategy, updates: dict[str, Any]) -> None:
     """Apply extracted updates to the partial strategy."""
     if updates.get("entry_threshold") is not None:
         strategy.entry_threshold = float(updates["entry_threshold"])
@@ -201,7 +202,7 @@ def apply_updates(strategy: PartialStrategy, updates: dict) -> None:
         strategy.exit_indicator = str(updates["exit_indicator"]).upper()
 
 
-def prefill_strategy(strategy: PartialStrategy, extracted: dict) -> None:
+def prefill_strategy(strategy: PartialStrategy, extracted: dict[str, Any]) -> None:
     """Pre-fill partial strategy from extracted info."""
     # Strategy type
     strategy_type = extracted.get("strategy_type")

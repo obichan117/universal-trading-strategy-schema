@@ -434,7 +434,7 @@ class ExpressionParser:
 
         raise ExpressionError(f"Unknown price field or indicator: {name}")
 
-    def _build_indicator_signal(self, indicator: str, params: list[Any]) -> dict:
+    def _build_indicator_signal(self, indicator: str, params: list[Any]) -> dict[str, Any]:
         """Build a signal definition for an indicator call."""
         from pyutss.engine.indicators.dispatcher import build_indicator_signal
 

@@ -6,6 +6,8 @@ schema defines. Used for honest capability validation and gap analysis.
 
 from __future__ import annotations
 
+from typing import Any
+
 from pyutss.engine.indicators.dispatcher import (
     INDICATOR_REGISTRY,
     _COMPONENT_SHORTCUTS,
@@ -72,7 +74,7 @@ def validate_engine_capabilities() -> dict[str, dict]:
     except ImportError:
         return {"error": "utss package not installed"}
 
-    def _compare(schema_list: list[str], implemented: set[str]) -> dict:
+    def _compare(schema_list: list[str], implemented: set[str]) -> dict[str, Any]:
         schema_set = set(schema_list)
         missing = schema_set - implemented
         coverage = len(schema_set & implemented) / len(schema_set) * 100 if schema_set else 100

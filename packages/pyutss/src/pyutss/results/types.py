@@ -124,7 +124,7 @@ class BacktestResult:
     portfolio_history: list[PortfolioSnapshot] = field(default_factory=list)
     equity_curve: pd.Series = field(default_factory=lambda: pd.Series(dtype=float))
     benchmark_curve: pd.Series | None = None
-    parameters: dict | None = None
+    parameters: dict[str, float] | None = None
 
     @property
     def total_return(self) -> float:

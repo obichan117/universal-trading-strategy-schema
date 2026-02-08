@@ -19,6 +19,7 @@ Example:
 """
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -61,7 +62,7 @@ class MonteCarloResult:
     all_total_returns: np.ndarray = field(repr=False)
     all_sharpe_ratios: np.ndarray = field(repr=False)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert results to dictionary (excludes large arrays)."""
         return {
             "n_iterations": self.n_iterations,
@@ -294,7 +295,7 @@ class MonteCarloSimulator:
             sharpe_ratios=np.array(sharpe_ratios),
         )
 
-    def _extract_pnls(self, trades: list) -> np.ndarray:
+    def _extract_pnls(self, trades: list[Any]) -> np.ndarray:
         """Extract PnL values from trade list."""
         pnls = []
         for trade in trades:

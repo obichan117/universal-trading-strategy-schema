@@ -789,7 +789,7 @@
             "required": ["up_to", "value"],
             "properties": {
               "up_to": { "type": "number", "description": "Order size threshold" },
-              "value": { "type": "number", "description": "Slippage for this tier" }
+              "value": { "type": "number", "minimum": 0, "description": "Slippage for this tier" }
             }
           }
         }
@@ -827,11 +827,16 @@
           "description": "Tiered commission based on trade value",
           "items": {
             "type": "object",
-            "required": ["up_to", "value"],
             "properties": {
-              "up_to": { "type": "number", "description": "Trade value threshold" },
-              "value": { "type": "number", "description": "Commission for this tier" }
-            }
+              "up_to": { "type": "number", "description": "Trade value threshold (inclusive)" },
+              "above": { "type": "number", "description": "Trade value floor for final tier (exclusive)" },
+              "fee": { "type": "number", "minimum": 0, "description": "Fixed fee for this tier" },
+              "value": { "type": "number", "minimum": 0, "description": "Percentage or per-share rate for this tier" }
+            },
+            "anyOf": [
+              { "required": ["fee"] },
+              { "required": ["value"] }
+            ]
           }
         }
       },

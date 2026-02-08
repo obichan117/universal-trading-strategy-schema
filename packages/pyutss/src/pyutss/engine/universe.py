@@ -83,7 +83,7 @@ class UniverseResolver:
         else:
             raise ValueError(f"Unknown universe type: {utype}")
 
-    def _resolve_static(self, universe: dict) -> list[str]:
+    def _resolve_static(self, universe: dict[str, Any]) -> list[str]:
         """Resolve static universe."""
         symbols = universe.get("symbols", [])
         if not symbols:
@@ -92,7 +92,7 @@ class UniverseResolver:
 
     def _resolve_screener(
         self,
-        universe: dict,
+        universe: dict[str, Any],
         data: dict[str, pd.DataFrame] | None = None,
     ) -> list[str]:
         """Resolve screener universe with optional filter evaluation.
@@ -180,7 +180,7 @@ class UniverseResolver:
     def _rank_symbols(
         self,
         symbols: list[str],
-        rank_by: dict,
+        rank_by: dict[str, Any],
         order: str,
         data: dict[str, pd.DataFrame],
     ) -> list[str]:

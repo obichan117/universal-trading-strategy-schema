@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Any
 
 import pandas as pd
 
@@ -269,7 +270,7 @@ class PortfolioManager:
         self,
         prices: dict[str, float],
         current_date: date,
-        constraints: dict,
+        constraints: dict[str, Any],
         commission_rate: float = 0.0,
         slippage_rate: float = 0.0,
     ) -> list[Trade]:

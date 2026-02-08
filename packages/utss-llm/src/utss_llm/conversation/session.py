@@ -3,6 +3,7 @@
 import re
 import uuid
 from dataclasses import dataclass, field
+from typing import Any
 
 import yaml
 
@@ -174,7 +175,7 @@ class ConversationSession:
         strategy_dict = self.state.partial_strategy.to_utss_dict()
         return yaml.dump(strategy_dict, default_flow_style=False, sort_keys=False)
 
-    def export_dict(self) -> dict | None:
+    def export_dict(self) -> dict[str, Any] | None:
         """Export current strategy as dictionary.
 
         Returns:

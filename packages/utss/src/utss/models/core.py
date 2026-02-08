@@ -18,6 +18,9 @@ from utss.models.enums import (
 )
 from utss.models.signals import Signal
 
+# Re-export tier classes from backtest_models (single source of truth)
+from utss.backtest_models import CommissionTier, SlippageTier
+
 
 # =============================================================================
 # RULES - Condition + Action pairs
@@ -154,13 +157,6 @@ class Parameter(BaseSchema):
 # =============================================================================
 
 
-class StrategySlippageTier(BaseSchema):
-    """A tier in tiered slippage model (strategy-level design assumption)."""
-
-    up_to: float = Field(..., description="Order size threshold")
-    value: float = Field(..., description="Slippage for this tier")
-
-
 class SlippageModel(BaseSchema):
     """Expected slippage model.
 
@@ -172,16 +168,9 @@ class SlippageModel(BaseSchema):
     value: float | None = Field(
         None, ge=0, description="Slippage value (percentage as decimal, e.g., 0.001 = 0.1%)"
     )
-    tiers: list[StrategySlippageTier] | None = Field(
+    tiers: list[SlippageTier] | None = Field(
         None, description="Tiered slippage based on order size"
     )
-
-
-class StrategyCommissionTier(BaseSchema):
-    """A tier in tiered commission model (strategy-level design assumption)."""
-
-    up_to: float = Field(..., description="Trade value threshold")
-    value: float = Field(..., description="Commission for this tier")
 
 
 class CommissionModel(BaseSchema):
@@ -195,7 +184,7 @@ class CommissionModel(BaseSchema):
     value: float | None = Field(None, ge=0, description="Commission value")
     min: float | None = Field(None, ge=0, description="Minimum commission per trade")
     max: float | None = Field(None, ge=0, description="Maximum commission per trade")
-    tiers: list[StrategyCommissionTier] | None = Field(
+    tiers: list[CommissionTier] | None = Field(
         None, description="Tiered commission based on trade value"
     )
 

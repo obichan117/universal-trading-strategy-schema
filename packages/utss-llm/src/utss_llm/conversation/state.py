@@ -70,19 +70,19 @@ class PartialStrategy:
     index: str | None = None
 
     # Signals
-    signals: dict[str, dict] = field(default_factory=dict)
+    signals: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Conditions
-    conditions: dict[str, dict] = field(default_factory=dict)
+    conditions: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Entry/Exit
     entry_indicator: str | None = None
-    entry_params: dict = field(default_factory=dict)
+    entry_params: dict[str, int | float] = field(default_factory=dict)
     entry_operator: str | None = None
     entry_threshold: float | None = None
 
     exit_indicator: str | None = None
-    exit_params: dict = field(default_factory=dict)
+    exit_params: dict[str, int | float] = field(default_factory=dict)
     exit_operator: str | None = None
     exit_threshold: float | None = None
 
@@ -96,7 +96,7 @@ class PartialStrategy:
     trailing_stop_pct: float | None = None
     max_positions: int | None = None
 
-    def to_utss_dict(self) -> dict:
+    def to_utss_dict(self) -> dict[str, Any]:
         """Convert partial strategy to UTSS format."""
         strategy: dict[str, Any] = {
             "info": {
@@ -156,7 +156,7 @@ class PartialStrategy:
 
         return strategy
 
-    def _build_entry_rule(self) -> dict | None:
+    def _build_entry_rule(self) -> dict[str, Any] | None:
         """Build entry rule from partial strategy."""
         if not self.entry_indicator:
             return None
@@ -183,7 +183,7 @@ class PartialStrategy:
             },
         }
 
-    def _build_exit_rule(self) -> dict | None:
+    def _build_exit_rule(self) -> dict[str, Any] | None:
         """Build exit rule from partial strategy."""
         if not self.exit_indicator:
             return None
@@ -243,7 +243,7 @@ class ConversationResponse:
     message: str
     question: Question | None = None
     strategy_yaml: str | None = None
-    strategy_dict: dict | None = None
+    strategy_dict: dict[str, Any] | None = None
     preview_yaml: str | None = None
 
     @property
