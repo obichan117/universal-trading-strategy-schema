@@ -215,6 +215,87 @@ class TestExpressionParser:
             parser.evaluate("unknown_field > 0", sample_data, signal_eval)
 
 
+class TestArithmeticOperators:
+    """Tests for arithmetic operators in the expression parser."""
+
+    def test_tokenize_arithmetic_operators(self):
+        """Tokenize arithmetic operators."""
+        lexer = ExpressionLexer("a + b - c * d / e")
+        tokens = lexer.tokenize()
+        types = [t.type for t in tokens]
+        assert TokenType.PLUS in types
+        assert TokenType.MINUS in types
+        assert TokenType.STAR in types
+        assert TokenType.SLASH in types
+
+    def test_addition(self, sample_data):
+        """Parse and evaluate addition: close + 100 > SMA(20)."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate("close + 100 > SMA(20)", sample_data, signal_eval)
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+        # close + 100 should be > SMA(20) once SMA warmup completes
+        assert result.sum() > 0
+
+    def test_subtraction(self, sample_data):
+        """Parse and evaluate subtraction: close - close[-1] > 0."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate("close - close[-1] > 0", sample_data, signal_eval)
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+        # Should have mix of True/False (some up days, some down days)
+        valid = result.dropna()
+        assert valid.any()
+        assert not valid.all()
+
+    def test_multiplication(self, sample_data):
+        """Parse and evaluate multiplication: close[-1] * 1.02 < open."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate("close[-1] * 1.02 < open", sample_data, signal_eval)
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+
+    def test_division(self, sample_data):
+        """Parse and evaluate division: gap-up formula."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate(
+            "(open - close[-1]) / close[-1] >= 0.02", sample_data, signal_eval
+        )
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+
+    def test_unary_minus(self, sample_data):
+        """Parse and evaluate unary minus: -RSI(14) < -70."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate("-RSI(14) < -70", sample_data, signal_eval)
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+
+    def test_operator_precedence(self, sample_data):
+        """Multiplication binds tighter than addition."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        # close + ATR(14) * 2 should be close + (ATR(14) * 2), not (close + ATR(14)) * 2
+        result = parser.evaluate("close + ATR(14) * 2 > SMA(20)", sample_data, signal_eval)
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+
+    def test_complex_arithmetic(self, sample_data):
+        """Parse z-score style formula: (close - SMA(20)) / ATR(14) > 2."""
+        parser = ExpressionParser()
+        signal_eval = SignalEvaluator()
+        result = parser.evaluate(
+            "(close - SMA(20)) / ATR(14) > 2", sample_data, signal_eval
+        )
+        assert isinstance(result, pd.Series)
+        assert result.dtype == bool
+
+
 class TestConditionEvaluatorExpr:
     """Test expr condition type through ConditionEvaluator."""
 

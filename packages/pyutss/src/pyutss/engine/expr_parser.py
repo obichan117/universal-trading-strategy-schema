@@ -5,21 +5,26 @@ Parses and evaluates formulas like:
 - "SMA(50)[-1] <= SMA(200)[-1] and SMA(50) > SMA(200)"  (crossover)
 - "RSI(14) < 30"
 - "close > SMA(20) and volume > SMA(volume, 20)"
+- "(open - close[-1]) / close[-1] >= 0.02"  (gap-up)
+- "close + ATR(14) * 2 > SMA(20)"  (arithmetic)
 
 Grammar (simplified):
-    expr        := or_expr
-    or_expr     := and_expr ("or" and_expr)*
-    and_expr    := not_expr ("and" not_expr)*
-    not_expr    := "not" not_expr | comparison
-    comparison  := term (comp_op term)?
-    term        := atom offset?
-    offset      := "[" "-"? NUMBER "]"
-    atom        := NUMBER | indicator_call | price_field | "(" expr ")"
+    expr           := or_expr
+    or_expr        := and_expr ("or" and_expr)*
+    and_expr       := not_expr ("and" not_expr)*
+    not_expr       := "not" not_expr | comparison
+    comparison     := additive (comp_op additive)?
+    additive       := multiplicative ((PLUS | MINUS) multiplicative)*
+    multiplicative := unary ((STAR | SLASH) unary)*
+    unary          := (MINUS | PLUS) unary | term
+    term           := atom offset?
+    offset         := "[" "-"? NUMBER "]"
+    atom           := NUMBER | indicator_call | price_field | "(" expr ")"
     indicator_call := IDENTIFIER "(" params ")"
-    params      := param ("," param)*
-    param       := NUMBER | IDENTIFIER
-    price_field := "close" | "open" | "high" | "low" | "volume"
-    comp_op     := ">" | "<" | ">=" | "<=" | "==" | "!="
+    params         := param ("," param)*
+    param          := NUMBER | IDENTIFIER
+    price_field    := "close" | "open" | "high" | "low" | "volume"
+    comp_op        := ">" | "<" | ">=" | "<=" | "==" | "!="
 """
 
 from dataclasses import dataclass
@@ -39,7 +44,10 @@ class TokenType(Enum):
     LBRACKET = auto()
     RBRACKET = auto()
     COMMA = auto()
+    PLUS = auto()
     MINUS = auto()
+    STAR = auto()
+    SLASH = auto()
     GT = auto()
     LT = auto()
     GTE = auto()
@@ -127,9 +135,18 @@ class ExpressionLexer:
         if char == ",":
             self.pos += 1
             return Token(TokenType.COMMA, ",", start_pos)
+        if char == "+":
+            self.pos += 1
+            return Token(TokenType.PLUS, "+", start_pos)
         if char == "-":
             self.pos += 1
             return Token(TokenType.MINUS, "-", start_pos)
+        if char == "*":
+            self.pos += 1
+            return Token(TokenType.STAR, "*", start_pos)
+        if char == "/":
+            self.pos += 1
+            return Token(TokenType.SLASH, "/", start_pos)
         if char == ">":
             self.pos += 1
             return Token(TokenType.GT, ">", start_pos)
@@ -303,8 +320,8 @@ class ExpressionParser:
         return self._parse_comparison(ctx)
 
     def _parse_comparison(self, ctx: EvalContext) -> pd.Series:
-        """Parse: term (comp_op term)?"""
-        left = self._parse_term(ctx)
+        """Parse: additive (comp_op additive)?"""
+        left = self._parse_additive(ctx)
 
         comp_ops = {
             TokenType.GT: lambda a, b: a > b,
@@ -318,11 +335,45 @@ class ExpressionParser:
         if self._current().type in comp_ops:
             op = comp_ops[self._current().type]
             self._advance()
-            right = self._parse_term(ctx)
+            right = self._parse_additive(ctx)
             return op(left, right)
 
         # If no comparison, convert to boolean (non-zero = True)
         return left != 0
+
+    def _parse_additive(self, ctx: EvalContext) -> pd.Series:
+        """Parse: multiplicative ((PLUS | MINUS) multiplicative)*"""
+        left = self._parse_multiplicative(ctx)
+        while self._current().type in (TokenType.PLUS, TokenType.MINUS):
+            op = self._advance()
+            right = self._parse_multiplicative(ctx)
+            if op.type == TokenType.PLUS:
+                left = left + right
+            else:
+                left = left - right
+        return left
+
+    def _parse_multiplicative(self, ctx: EvalContext) -> pd.Series:
+        """Parse: unary ((STAR | SLASH) unary)*"""
+        left = self._parse_unary(ctx)
+        while self._current().type in (TokenType.STAR, TokenType.SLASH):
+            op = self._advance()
+            right = self._parse_unary(ctx)
+            if op.type == TokenType.STAR:
+                left = left * right
+            else:
+                left = left / right
+        return left
+
+    def _parse_unary(self, ctx: EvalContext) -> pd.Series:
+        """Parse: (MINUS | PLUS) unary | term"""
+        if self._current().type == TokenType.MINUS:
+            self._advance()
+            return -self._parse_unary(ctx)
+        if self._current().type == TokenType.PLUS:
+            self._advance()
+            return self._parse_unary(ctx)
+        return self._parse_term(ctx)
 
     def _parse_term(self, ctx: EvalContext) -> pd.Series:
         """Parse: atom offset?"""
