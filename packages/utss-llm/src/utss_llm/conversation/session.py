@@ -1,6 +1,7 @@
 """Conversation session for interactive strategy building."""
 
 import re
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -55,6 +56,7 @@ class ConversationSession:
     state: ConversationState = field(default_factory=ConversationState)
     builder: StrategyBuilder = field(default_factory=StrategyBuilder)
     use_llm: bool = False  # Whether to use LLM for question generation
+    created_at: float = field(default_factory=time.time)
 
     async def start(self, initial_prompt: str | None = None) -> ConversationResponse:
         """Start a new strategy building conversation.
@@ -240,6 +242,7 @@ class SessionManager:
         mode: ParseMode = ParseMode.BEGINNER,
     ) -> ConversationSession:
         """Create a new conversation session."""
+        self.cleanup_expired()
         session = ConversationSession(provider=provider, mode=mode)
         self._sessions[session.session_id] = session
         return session
@@ -254,6 +257,25 @@ class SessionManager:
             del self._sessions[session_id]
             return True
         return False
+
+    def cleanup_expired(self, max_age_seconds: float = 3600) -> int:
+        """Remove sessions older than max_age_seconds.
+
+        Args:
+            max_age_seconds: Maximum session age in seconds (default: 1 hour).
+
+        Returns:
+            Number of sessions removed.
+        """
+        now = time.time()
+        expired = [
+            sid
+            for sid, session in self._sessions.items()
+            if now - session.created_at > max_age_seconds
+        ]
+        for sid in expired:
+            del self._sessions[sid]
+        return len(expired)
 
     def clear(self) -> None:
         """Remove all sessions."""

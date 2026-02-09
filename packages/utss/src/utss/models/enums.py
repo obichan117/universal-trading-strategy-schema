@@ -94,78 +94,97 @@ class PortfolioField(str, Enum):
 
 
 class IndicatorType(str, Enum):
-    """Technical indicator types."""
+    """Technical indicator types.
+
+    Indicators fall into three categories:
+
+    - **Primitive**: Computed directly from OHLCV data via a dedicated
+      calculation method (e.g. SMA, RSI, ATR). Each primitive has its own
+      entry in the engine's INDICATOR_REGISTRY.
+
+    - **Component**: A specific output line of a multi-output primitive.
+      In the engine, these are resolved via _COMPONENT_SHORTCUTS to their
+      parent indicator + component selector (e.g. MACD_SIGNAL → MACD
+      with line=signal, BB_UPPER → Bollinger Bands with band=upper).
+
+    - **Derived**: Computed by chaining or transforming primitives
+      (e.g. STOCH_RSI applies Stochastic to RSI output).
+
+    This classification matters when extending the engine: primitives
+    need a new IndicatorService method, components just need a shortcut
+    entry, and derived indicators compose existing methods.
+    """
 
     # Moving Averages
-    SMA = "SMA"
-    EMA = "EMA"
-    WMA = "WMA"
-    DEMA = "DEMA"
-    TEMA = "TEMA"
-    KAMA = "KAMA"
-    HULL = "HULL"
-    VWMA = "VWMA"
+    SMA = "SMA"  # Primitive
+    EMA = "EMA"  # Primitive
+    WMA = "WMA"  # Primitive
+    DEMA = "DEMA"  # Primitive
+    TEMA = "TEMA"  # Primitive
+    KAMA = "KAMA"  # Primitive
+    HULL = "HULL"  # Primitive
+    VWMA = "VWMA"  # Primitive
     # Momentum
-    RSI = "RSI"
-    MACD = "MACD"
-    MACD_SIGNAL = "MACD_SIGNAL"
-    MACD_HIST = "MACD_HIST"
-    STOCH_K = "STOCH_K"
-    STOCH_D = "STOCH_D"
-    STOCH_RSI = "STOCH_RSI"
-    ROC = "ROC"
-    MOMENTUM = "MOMENTUM"
-    WILLIAMS_R = "WILLIAMS_R"
-    CCI = "CCI"
-    MFI = "MFI"
-    CMO = "CMO"
-    TSI = "TSI"
+    RSI = "RSI"  # Primitive
+    MACD = "MACD"  # Primitive (multi-output)
+    MACD_SIGNAL = "MACD_SIGNAL"  # Component (MACD → signal line)
+    MACD_HIST = "MACD_HIST"  # Component (MACD → histogram)
+    STOCH_K = "STOCH_K"  # Component (Stochastic → %K)
+    STOCH_D = "STOCH_D"  # Component (Stochastic → %D)
+    STOCH_RSI = "STOCH_RSI"  # Derived (Stochastic applied to RSI)
+    ROC = "ROC"  # Primitive
+    MOMENTUM = "MOMENTUM"  # Primitive
+    WILLIAMS_R = "WILLIAMS_R"  # Primitive
+    CCI = "CCI"  # Primitive
+    MFI = "MFI"  # Primitive
+    CMO = "CMO"  # Primitive
+    TSI = "TSI"  # Primitive
     # Trend
-    ADX = "ADX"
-    PLUS_DI = "PLUS_DI"
-    MINUS_DI = "MINUS_DI"
-    AROON_UP = "AROON_UP"
-    AROON_DOWN = "AROON_DOWN"
-    AROON_OSC = "AROON_OSC"
-    SUPERTREND = "SUPERTREND"
-    PSAR = "PSAR"
+    ADX = "ADX"  # Primitive
+    PLUS_DI = "PLUS_DI"  # Primitive
+    MINUS_DI = "MINUS_DI"  # Primitive
+    AROON_UP = "AROON_UP"  # Component (Aroon → up)
+    AROON_DOWN = "AROON_DOWN"  # Component (Aroon → down)
+    AROON_OSC = "AROON_OSC"  # Component (Aroon → oscillator)
+    SUPERTREND = "SUPERTREND"  # Primitive
+    PSAR = "PSAR"  # Primitive
     # Volatility
-    ATR = "ATR"
-    STDDEV = "STDDEV"
-    VARIANCE = "VARIANCE"
-    BB_UPPER = "BB_UPPER"
-    BB_MIDDLE = "BB_MIDDLE"
-    BB_LOWER = "BB_LOWER"
-    BB_WIDTH = "BB_WIDTH"
-    BB_PERCENT = "BB_PERCENT"
-    KC_UPPER = "KC_UPPER"
-    KC_MIDDLE = "KC_MIDDLE"
-    KC_LOWER = "KC_LOWER"
-    DC_UPPER = "DC_UPPER"
-    DC_MIDDLE = "DC_MIDDLE"
-    DC_LOWER = "DC_LOWER"
+    ATR = "ATR"  # Primitive
+    STDDEV = "STDDEV"  # Primitive
+    VARIANCE = "VARIANCE"  # Primitive
+    BB_UPPER = "BB_UPPER"  # Component (Bollinger Bands → upper)
+    BB_MIDDLE = "BB_MIDDLE"  # Component (Bollinger Bands → middle)
+    BB_LOWER = "BB_LOWER"  # Component (Bollinger Bands → lower)
+    BB_WIDTH = "BB_WIDTH"  # Component (Bollinger Bands → bandwidth)
+    BB_PERCENT = "BB_PERCENT"  # Component (Bollinger Bands → %B)
+    KC_UPPER = "KC_UPPER"  # Component (Keltner Channel → upper)
+    KC_MIDDLE = "KC_MIDDLE"  # Component (Keltner Channel → middle)
+    KC_LOWER = "KC_LOWER"  # Component (Keltner Channel → lower)
+    DC_UPPER = "DC_UPPER"  # Component (Donchian Channel → upper)
+    DC_MIDDLE = "DC_MIDDLE"  # Component (Donchian Channel → middle)
+    DC_LOWER = "DC_LOWER"  # Component (Donchian Channel → lower)
     # Volume
-    OBV = "OBV"
-    VWAP = "VWAP"
-    AD = "AD"
-    CMF = "CMF"
-    KLINGER = "KLINGER"
+    OBV = "OBV"  # Primitive
+    VWAP = "VWAP"  # Primitive
+    AD = "AD"  # Primitive
+    CMF = "CMF"  # Primitive
+    KLINGER = "KLINGER"  # Primitive
     # Statistical
-    HIGHEST = "HIGHEST"
-    LOWEST = "LOWEST"
-    RETURN = "RETURN"
-    DRAWDOWN = "DRAWDOWN"
-    ZSCORE = "ZSCORE"
-    PERCENTILE = "PERCENTILE"
-    RANK = "RANK"
-    CORRELATION = "CORRELATION"
-    BETA = "BETA"
+    HIGHEST = "HIGHEST"  # Primitive
+    LOWEST = "LOWEST"  # Primitive
+    RETURN = "RETURN"  # Primitive
+    DRAWDOWN = "DRAWDOWN"  # Primitive
+    ZSCORE = "ZSCORE"  # Primitive
+    PERCENTILE = "PERCENTILE"  # Primitive
+    RANK = "RANK"  # Primitive
+    CORRELATION = "CORRELATION"  # Primitive
+    BETA = "BETA"  # Primitive
     # Ichimoku
-    ICHIMOKU_TENKAN = "ICHIMOKU_TENKAN"
-    ICHIMOKU_KIJUN = "ICHIMOKU_KIJUN"
-    ICHIMOKU_SENKOU_A = "ICHIMOKU_SENKOU_A"
-    ICHIMOKU_SENKOU_B = "ICHIMOKU_SENKOU_B"
-    ICHIMOKU_CHIKOU = "ICHIMOKU_CHIKOU"
+    ICHIMOKU_TENKAN = "ICHIMOKU_TENKAN"  # Primitive
+    ICHIMOKU_KIJUN = "ICHIMOKU_KIJUN"  # Primitive
+    ICHIMOKU_SENKOU_A = "ICHIMOKU_SENKOU_A"  # Primitive
+    ICHIMOKU_SENKOU_B = "ICHIMOKU_SENKOU_B"  # Primitive
+    ICHIMOKU_CHIKOU = "ICHIMOKU_CHIKOU"  # Primitive
 
 
 class FundamentalMetric(str, Enum):

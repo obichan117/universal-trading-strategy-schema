@@ -1,5 +1,8 @@
 """Tests for conversation session and builder."""
 
+import time
+from typing import Any
+
 import pytest
 from utss_llm.conversation import (
     ConversationResponse,
@@ -9,6 +12,7 @@ from utss_llm.conversation import (
     PartialStrategy,
     Question,
     ResponseType,
+    SessionManager,
     StrategyBuilder,
     create_session,
     delete_session,
@@ -17,9 +21,12 @@ from utss_llm.conversation import (
 from utss_llm.conversation.llm_adapter import (
     apply_updates,
     extract_json,
+    llm_revise,
     prefill_strategy,
     skip_to_unanswered,
+    smart_start,
 )
+from utss_llm.providers.base import LLMProvider, LLMResponse
 
 
 class TestOption:
@@ -113,8 +120,8 @@ class TestPartialStrategy:
         result = ps.to_utss_dict()
 
         assert "constraints" in result
-        assert result["constraints"]["stop_loss"]["percentage"] == 5
-        assert result["constraints"]["take_profit"]["percentage"] == 15
+        assert result["constraints"]["stop_loss"]["percent"] == 5
+        assert result["constraints"]["take_profit"]["percent"] == 15
         assert result["constraints"]["max_positions"] == 10
 
 
@@ -531,3 +538,182 @@ class TestApplyUpdates:
         apply_updates(ps, updates)
 
         assert ps.entry_threshold == 30
+
+
+# =============================================================================
+# MockProvider for LLM-powered function tests
+# =============================================================================
+
+
+class MockProvider(LLMProvider):
+    """Mock LLM provider that returns pre-configured responses."""
+
+    def __init__(self, response_content: str = "{}"):
+        self._response_content = response_content
+        self._raise: Exception | None = None
+
+    @property
+    def name(self) -> str:
+        return "mock"
+
+    @property
+    def default_model(self) -> str:
+        return "mock-1"
+
+    def set_response(self, content: str) -> None:
+        self._response_content = content
+
+    def set_error(self, error: Exception) -> None:
+        self._raise = error
+
+    async def generate(
+        self,
+        prompt: str,
+        system: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        **kwargs: Any,
+    ) -> LLMResponse:
+        if self._raise:
+            raise self._raise
+        return LLMResponse(
+            content=self._response_content,
+            model="mock-1",
+            tokens_input=10,
+            tokens_output=20,
+        )
+
+
+class TestSmartStartWithMock:
+    """Tests for smart_start using MockProvider."""
+
+    @pytest.mark.asyncio
+    async def test_extraction_success(self):
+        """Should extract strategy info and skip to unanswered."""
+        provider = MockProvider(
+            '{"strategy_type": "mean_reversion", "indicators": ["RSI"], '
+            '"entry_threshold": 30, "exit_threshold": 70}'
+        )
+        state = ConversationState()
+        state.current_step = "strategy_type"
+        builder = StrategyBuilder()
+
+        await smart_start(provider, "RSI reversal strategy", state, builder)
+
+        assert state.partial_strategy.name == "Mean Reversion Strategy"
+        assert state.partial_strategy.entry_indicator == "RSI"
+        assert state.partial_strategy.entry_threshold == 30.0
+        assert state.partial_strategy.exit_threshold == 70.0
+
+    @pytest.mark.asyncio
+    async def test_fallback_on_bad_json(self):
+        """Should fall back to initial question if LLM returns bad JSON."""
+        provider = MockProvider("This is not JSON at all")
+        state = ConversationState()
+        state.current_step = "strategy_type"
+        builder = StrategyBuilder()
+
+        response = await smart_start(provider, "bad input", state, builder)
+
+        # Should fall back to the initial question
+        assert response.type == ResponseType.QUESTION
+        assert response.question.id == "strategy_type"
+
+    @pytest.mark.asyncio
+    async def test_fallback_on_provider_error(self):
+        """Should fall back to initial question if LLM raises."""
+        provider = MockProvider()
+        provider.set_error(RuntimeError("API down"))
+        state = ConversationState()
+        state.current_step = "strategy_type"
+        builder = StrategyBuilder()
+
+        response = await smart_start(provider, "some prompt", state, builder)
+
+        assert response.type == ResponseType.QUESTION
+        assert response.question.id == "strategy_type"
+
+
+class TestLLMReviseWithMock:
+    """Tests for llm_revise using MockProvider."""
+
+    @pytest.mark.asyncio
+    async def test_apply_llm_updates(self):
+        """Should apply updates extracted by LLM."""
+        provider = MockProvider('{"entry_threshold": 25}')
+        ps = PartialStrategy(entry_threshold=30)
+
+        await llm_revise(provider, "change entry to 25", ps, lambda _: None)
+
+        assert ps.entry_threshold == 25.0
+
+    @pytest.mark.asyncio
+    async def test_fallback_on_exception(self):
+        """Should call keyword_revise_fn on LLM error."""
+        provider = MockProvider()
+        provider.set_error(RuntimeError("API error"))
+        ps = PartialStrategy(entry_threshold=30)
+        fallback_called = False
+
+        def keyword_fallback(instruction: str) -> None:
+            nonlocal fallback_called
+            fallback_called = True
+
+        await llm_revise(provider, "change entry to 25", ps, keyword_fallback)
+
+        assert fallback_called
+
+    @pytest.mark.asyncio
+    async def test_fallback_on_bad_json(self):
+        """Should call keyword_revise_fn if LLM returns non-JSON."""
+        provider = MockProvider("I cannot parse that")
+        ps = PartialStrategy(entry_threshold=30)
+        fallback_called = False
+
+        def keyword_fallback(instruction: str) -> None:
+            nonlocal fallback_called
+            fallback_called = True
+
+        await llm_revise(provider, "change entry to 25", ps, keyword_fallback)
+
+        assert fallback_called
+
+
+class TestSessionTTL:
+    """Tests for session TTL cleanup."""
+
+    def test_cleanup_removes_expired(self):
+        """Should remove sessions older than max_age."""
+        manager = SessionManager()
+        session = manager.create()
+        # Backdate the session
+        session.created_at = time.time() - 7200  # 2 hours ago
+
+        removed = manager.cleanup_expired(max_age_seconds=3600)
+
+        assert removed == 1
+        assert manager.get(session.session_id) is None
+
+    def test_cleanup_keeps_fresh(self):
+        """Should keep sessions within max_age."""
+        manager = SessionManager()
+        session = manager.create()
+        # Session was just created, so it's fresh
+
+        removed = manager.cleanup_expired(max_age_seconds=3600)
+
+        assert removed == 0
+        assert manager.get(session.session_id) is session
+
+    def test_lazy_cleanup_on_create(self):
+        """Should clean expired sessions when creating a new one."""
+        manager = SessionManager()
+        old_session = manager.create()
+        old_id = old_session.session_id
+        old_session.created_at = time.time() - 7200  # Expired
+
+        # Creating a new session should trigger cleanup
+        new_session = manager.create()
+
+        assert manager.get(old_id) is None
+        assert manager.get(new_session.session_id) is new_session

@@ -104,12 +104,12 @@ async def validate_strategy(strategy_yaml: str) -> dict[str, Any]:
     try:
         from utss import validate_yaml
 
-        result = validate_yaml(strategy_yaml)
+        validate_yaml(strategy_yaml)
 
         return {
-            "valid": result.is_valid,
-            "errors": result.errors if hasattr(result, "errors") else [],
-            "warnings": result.warnings if hasattr(result, "warnings") else [],
+            "valid": True,
+            "errors": [],
+            "warnings": [],
         }
     except Exception as e:
         return {

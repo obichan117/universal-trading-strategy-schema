@@ -143,11 +143,11 @@ class PartialStrategy:
         # Constraints
         constraints: dict[str, Any] = {}
         if self.stop_loss_pct:
-            constraints["stop_loss"] = {"percentage": self.stop_loss_pct}
+            constraints["stop_loss"] = {"percent": self.stop_loss_pct}
         if self.take_profit_pct:
-            constraints["take_profit"] = {"percentage": self.take_profit_pct}
+            constraints["take_profit"] = {"percent": self.take_profit_pct}
         if self.trailing_stop_pct:
-            constraints["trailing_stop"] = {"percentage": self.trailing_stop_pct}
+            constraints["trailing_stop"] = {"percent": self.trailing_stop_pct}
         if self.max_positions:
             constraints["max_positions"] = self.max_positions
 
@@ -178,7 +178,7 @@ class PartialStrategy:
                 "direction": "buy",
                 "sizing": {
                     "type": self.sizing_type or "percent_of_equity",
-                    "value": self.sizing_value or 10,
+                    "percent": self.sizing_value or 10,
                 },
             },
         }
@@ -203,7 +203,7 @@ class PartialStrategy:
             "then": {
                 "type": "trade",
                 "direction": "sell",
-                "sizing": {"type": "percent_of_position", "value": 100},
+                "sizing": {"type": "percent_of_position", "percent": 100},
             },
         }
 

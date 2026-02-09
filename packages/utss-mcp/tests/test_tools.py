@@ -87,12 +87,11 @@ rules:
       direction: buy
       sizing:
         type: percent_of_equity
-        value: 10
+        percent: 10
 """
         result = await validate_strategy(yaml)
 
-        # Result structure check (actual validation depends on utss implementation)
-        assert "valid" in result
+        assert result["valid"] is True
 
     @pytest.mark.asyncio
     async def test_validate_invalid_yaml(self):
@@ -150,7 +149,7 @@ rules:
       direction: buy
       sizing:
         type: percent_of_equity
-        value: 10
+        percent: 10
 
 constraints: {}
 """
@@ -200,6 +199,58 @@ rules: []
 
         # Should report error due to insufficient data
         assert "success" in result
+
+
+    @pytest.mark.asyncio
+    async def test_backtest_invalid_yaml(self):
+        """Should return error for malformed YAML."""
+        yaml = "not: valid: [yaml"
+
+        result = await backtest_strategy(
+            strategy_yaml=yaml,
+            symbol="TEST",
+            start_date="2024-01-01",
+            end_date="2024-06-01",
+        )
+
+        assert result["success"] is False
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_backtest_empty_data(self):
+        """Should return error when no data is available."""
+        yaml = """
+info:
+  id: test
+  name: Test
+  version: "1.0"
+rules:
+  - name: Always Buy
+    when:
+      type: always
+    then:
+      type: trade
+      direction: buy
+      sizing:
+        type: percent_of_equity
+        percent: 10
+"""
+        # Mock with empty DataFrame
+        mock_data = pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_data
+        mock_ticker.source = "yahoo"
+        with patch("pyutss.data.Ticker", return_value=mock_ticker):
+            result = await backtest_strategy(
+                strategy_yaml=yaml,
+                symbol="TEST",
+                start_date="2024-01-01",
+                end_date="2024-06-01",
+            )
+
+        assert result["success"] is False
+        assert "error" in result
 
 
 class TestListIndicators:
